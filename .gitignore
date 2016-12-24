@@ -1,4 +1,5 @@
 example/*.xml
+example/*.xml.new
 manifest.mf
 HTGT
 HTGT.jar
