@@ -1,0 +1,6 @@
+example/*.xml
+manifest.mf
+HTGT
+HTGT.jar
+HTGT.zip
+*.class
