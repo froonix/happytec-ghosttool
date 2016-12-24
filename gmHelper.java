@@ -104,7 +104,7 @@ abstract class gmHelper
 
 	// Die Kurzbezeichnungen der Strecken bleiben unverändert.
 	// Diese sind auf HAPPYTEC sowieso in der DB vorhanden.
-	// Wir brauchen also nur eine Richtung implementieren.
+	// Es muss also nur eine Richtung implementiert werden.
 	public static String getTrack(String trackKey)
 	{
 		String trackName = "";

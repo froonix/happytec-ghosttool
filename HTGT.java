@@ -75,6 +75,7 @@ public class HTGT
 
 	public static void chooseFile()
 	{
+		// TODO: Get app path from registry?
 		JFileChooser chooser = new JFileChooser("./example");
 
 		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");

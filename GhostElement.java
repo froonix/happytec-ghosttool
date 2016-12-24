@@ -14,21 +14,13 @@ public class GhostElement
 	private static Pattern GhostPattern;
 	private static DateFormat ResultFormat;
 
-	String TrackKey;
-	String TrackName;
-
-	String WeatherString;
-	int    WeatherType;
-	String WeatherName;
-
-	String DataRaw;
-	byte[] DataBinary;
-
-	String GameMode;
-	String Nickname;
-
-	int    Time;
-	String Result;
+	private String Track;
+	private int    Weather;
+	private int    Time;
+	private String GameMode;
+	private String DataRaw;
+	private byte[] DataBinary;
+	private String Nickname;
 
 	// TODO: UID?
 	// ...
@@ -47,42 +39,29 @@ public class GhostElement
 	{
 		if(GhostPattern == null)
 		{
-			GhostPattern = Pattern.compile("\062.\012.(.*?)\022\016");
+			this.GhostPattern = Pattern.compile("\062.\012.(.*?)\022\016");
 		}
 
-		if(ResultFormat == null)
-		{
-			ResultFormat = new SimpleDateFormat("mm:ss,SSS");
-		}
+		this.Track = xml.getAttribute("Track");
+		this.Weather = gmHelper.parseWeather(xml.getAttribute("Weather"));
+		this.Time = Integer.parseInt(xml.getAttribute("Time"));
+		this.GameMode = xml.getAttribute("GameMode");
 
-		GameMode = xml.getAttribute("GameMode");
-
-		TrackKey = xml.getAttribute("Track");
-		TrackName = gmHelper.getTrack(TrackKey);
-
-		WeatherString = xml.getAttribute("Weather");
-		WeatherType = gmHelper.parseWeather(WeatherString);
-		WeatherName = gmHelper.getWeatherName(WeatherType);
-
-		Time = Integer.parseInt(xml.getAttribute("Time"));
-		Result = ResultFormat.format(new Date(Time));
-
-		DataRaw = xml.getAttribute("Data");
-		DataBinary = Base64.getDecoder().decode(DataRaw);
+		this.DataRaw = xml.getAttribute("Data");
+		this.DataBinary = Base64.getDecoder().decode(this.DataRaw);
 
 		// Normalerweise gehört das mit Google's Protocol Buffers extrahiert.
 		// Ich habe aber keine Lust das zu implementieren, wenn es auch so geht.
 		// Sonst kommen ein paar Scherzkekse noch auf blöde Ideen. Muss nicht sein.
-		String BinaryString = new String(DataBinary, StandardCharsets.UTF_8);
-		Matcher m = GhostPattern.matcher(new ByteCharSequence(DataBinary));
+		Matcher m = this.GhostPattern.matcher(new ByteCharSequence(this.DataBinary));
 
 		if(m.find())
 		{
-			Nickname = "";
+			this.Nickname = "";
 			for(int h = m.start() + 4; h < m.end() - 2; h++)
 			{
 				// Das ist höchst ineffizient! Sind aber nur maximal 20 Byte.
-				Nickname = Nickname + Character.toString((char) DataBinary[h]);
+				this.Nickname = this.Nickname + Character.toString((char) DataBinary[h]);
 			}
 		}
 
@@ -92,40 +71,54 @@ public class GhostElement
 
 	public String getNickname()
 	{
-		return Nickname;
+		return this.Nickname;
+	}
+
+	public String getTrack()
+	{
+		return this.Track;
 	}
 
 	public String getTrackName()
 	{
-		// TODO: On-the-fly?
-		return TrackName;
+		return gmHelper.getTrack(this.Track);
+	}
+
+	public int getWeather()
+	{
+		return this.Weather;
 	}
 
 	public String getWeatherName()
 	{
-		// TODO: On-the-fly?
-		return WeatherName;
+		return gmHelper.getWeatherName(this.Weather);
 	}
 
 	public int getTime()
 	{
-		return Time;
+		return this.Time;
 	}
 
 	public String getResult()
 	{
-		// TODO: On-the-fly?
-		return Result;
+		if(this.ResultFormat == null)
+		{
+			// Das HAPPYTEC-Format nutzt ein en Beistrich.
+			// Andere Implementierungen nutzen einen Punkt.
+			this.ResultFormat = new SimpleDateFormat("mm:ss,SSS");
+		}
+
+		return this.ResultFormat.format(new Date(this.Time));
 	}
 
 	public void printDetails()
 	{
 		System.out.printf("--------------------------------\n");
-		System.out.printf(" Nick:    %s\n", Nickname);
-		System.out.printf(" Mode:    %s\n", GameMode);
-		System.out.printf(" Time:    %s (%d)\n", Result, Time);
-		System.out.printf(" Track:   %s (%s)\n", TrackName, TrackKey);
-		System.out.printf(" Weather: %d (%s; %s)\n", WeatherType, WeatherString, WeatherName);
+		System.out.printf(" Nick:    %s\n", this.getNickname());
+		// System.out.printf(" Mode:    %s\n", this.GameMode);
+		System.out.printf(" Time:    %s (%d)\n", this.getResult(), this.getTime());
+		System.out.printf(" Track:   %s (%s)\n", this.getTrackName(), this.getTrack());
+		System.out.printf(" Weather: %d (%s; %s)\n", this.getWeather(), gmHelper.getWeather(this.Weather), this.getWeatherName());
 		// System.out.printf("\n%s\n", DataRaw);
 		System.out.printf("--------------------------------\n");
 	}
