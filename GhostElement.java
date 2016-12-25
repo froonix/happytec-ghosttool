@@ -25,13 +25,13 @@ public class GhostElement
 	private static DateFormat ResultFormat;
 
 	private Element XML;
-	private String Track;
-	private int    Weather;
-	private int    Time;
-	private String GameMode;
-	private String DataRaw;
-	private byte[] DataBinary;
-	private String Nickname;
+	private String  Track;
+	private int     Weather;
+	private int     Time;
+	private String  GameMode;
+	private String  DataRaw;
+	private byte[]  DataBinary;
+	private String  Nickname;
 
 	// TODO: UID?
 	// ...

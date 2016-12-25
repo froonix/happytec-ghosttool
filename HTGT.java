@@ -29,6 +29,7 @@ import javax.xml.transform.stream.*;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.event.KeyEvent;
+import java.awt.Dimension;
 
 import java.util.prefs.*;
 
@@ -44,6 +45,8 @@ public class HTGT
 	static Document xml;
 	static NodeList TrainingGhosts;
 	private static DefaultTableModel TableModel;
+	private static boolean fileChanged = false;
+	private static int selectedProfile;
 
 	private static Preferences cfg;
 
@@ -85,9 +88,9 @@ public class HTGT
 	{
 		while(true)
 		{
-			JFrame frame = new JFrame("Ghost Input");
+			// JFrame frame = new JFrame("Ghost Input");
 			Object input = JOptionPane.showInputDialog(
-				frame,
+				mainwindow,
 				"Um einen Geist hinzuzufügen, kopiere die XML-Daten (<GhostDataPair ... />) in das Eingabefeld:",
 				"Geist einfügen",
 				JOptionPane.PLAIN_MESSAGE,
@@ -144,7 +147,7 @@ public class HTGT
 					e.printStackTrace();
 				}
 
-				JOptionPane.showMessageDialog(null, "anzahl importierter geister: " + i);
+				JOptionPane.showMessageDialog(null, "Importierte Geister: " + i);
 
 				return;
 			}
@@ -158,16 +161,16 @@ public class HTGT
 	public static void deleteToken()
 	{
 		cfg.remove("esports-token");
-		JOptionPane.showMessageDialog(null, "done...");
+		JOptionPane.showMessageDialog(mainwindow, "Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!\n\nDu kannst ihn über das Menü jederzeit erneut eintragen.", "HAPPYTEC-eSports-API", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	public static void setupToken()
 	{
 		while(true)
 		{
-			JFrame frame = new JFrame("Token Setup");
+			//JFrame frame = new JFrame("Token Setup");
 			Object input = JOptionPane.showInputDialog(
-				frame,
+				mainwindow,
 				"Bitte gib deinen persönlichen Zugriffsschlüssel ein:",
 				"HAPPYTEC-eSports-API",
 				JOptionPane.PLAIN_MESSAGE,
@@ -208,6 +211,10 @@ public class HTGT
 	public static void chooseFile()
 	{
 		// TODO: Get app path from registry?
+
+
+
+		// todo: get last path from cfg/prefs!
 		JFileChooser chooser = new JFileChooser("./example");
 
 		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
@@ -225,6 +232,9 @@ public class HTGT
 				if(filename != "")
 				{
 					System.err.println("XML filename: " + filename);
+
+					// save current directory to cfg/prefs
+					// ...
 
 					loadXML();
 					return;
@@ -260,21 +270,103 @@ public class HTGT
 		}
 	}
 
+	public static void selectProfile()
+	{
+		NodeList OfflineProfiles = xml.getElementsByTagName("OfflineProfile");
+		Object[] possibilities = new Object[OfflineProfiles.getLength()];
+
+		String currentSelection = null;
+		for(int i = 0; i < OfflineProfiles.getLength(); i++)
+		{
+
+
+			Node profile = OfflineProfiles.item(i);
+			Element nickname = (Element) profile;
+
+			Element nick = (Element) nickname.getElementsByTagName("Nickname").item(0);
+
+			String item = String.format("[%02d] %s", i + 1, nick.getTextContent());
+			possibilities[i] = item;
+
+			if(selectedProfile == i)
+			{
+				currentSelection = item;
+			}
+		}
+
+		// Object[] possibilities = {"ham", "spam", "yam"};
+		String input = (String)JOptionPane.showInputDialog(
+			mainwindow,
+			"Aktuell genutztes Profil aus der XML-Datei:",
+			"Profilauswahl",
+			JOptionPane.PLAIN_MESSAGE,
+			null,
+			possibilities,
+			currentSelection
+		);
+
+		if(input == null)
+		{
+			System.out.println("selectProfile: CANCEL");
+			return;
+		}
+		else
+		{
+			String inputstring = (String) input;
+
+			int selection = 0;
+			for(int i = 0; i < OfflineProfiles.getLength(); i++)
+			{
+				Node profile = OfflineProfiles.item(i);
+				Element nickname = (Element) profile;
+
+				Element nick = (Element) nickname.getElementsByTagName("Nickname").item(0);
+
+				if(inputstring.equals(String.format("[%02d] %s", i + 1, nick.getTextContent())))
+				{
+					selection = i;
+					break;
+				}
+			}
+
+			System.out.println("selection: " + inputstring);
+			System.out.println("profile: " + selection);
+
+			clearTable();
+			selectProfile(selection);
+
+
+		}
+	}
+
 	public static void selectProfile(int i)
 	{
+		selectedProfile = i;
+
 		NodeList OfflineProfiles = xml.getElementsByTagName("OfflineProfile");
 		Element test = (Element) OfflineProfiles.item(i);
 		TrainingGhosts = test.getElementsByTagName("GhostDataPair");
+
+		for(int h = 0; h < TrainingGhosts.getLength(); h++)
+			{
+				Node ghost = TrainingGhosts.item(h);
+				Element ghostElement = (Element) ghost;
+
+				GhostElement ge = new GhostElement(ghostElement);
+				ge.printDetails();
+				addGhost(ge, false);
+			}
 	}
 
 	public static void updateMainWindow()
 	{
 
 		// todo: nachträgliche auswahl über menüleiste ermöglichen (radio buttons?)
-		selectProfile(0);
+		// selectProfile(0);
+
 
 		Object rowData[][] = {};
-		Object columnNames[] = { "Nick", "Track", "Weather", "Time", "" };
+		Object columnNames[] = { "Spieler", "Strecke", "Wetter", "Ergebnis", "" };
 		TableModel = new DefaultTableModel(rowData, columnNames);
 		JTable table = new JTable(TableModel)
 		{
@@ -296,6 +388,9 @@ public class HTGT
 		{
 			public void actionPerformed(ActionEvent e)
 			{
+				// todo: auslagern!
+				fileChanged();
+
 				JTable table = (JTable)e.getSource();
 				int modelRow = Integer.valueOf( e.getActionCommand() );
 
@@ -305,6 +400,8 @@ public class HTGT
 				Node ghost = TrainingGhosts.item(modelRow);
 				Element ghostElement = (Element) ghost;
 				ghost.getParentNode().removeChild(ghostElement);
+
+				/*
 				try
 				{
 					saveDocument(xml);
@@ -313,6 +410,7 @@ public class HTGT
 				{
 					ex.printStackTrace();
 				}
+				*/
 
 				((DefaultTableModel)table.getModel()).removeRow(modelRow);
 				System.out.println("Row " + modelRow + " deleted!");
@@ -320,11 +418,12 @@ public class HTGT
 		};
 
 		ButtonColumn buttonColumn = new ButtonColumn(table, delete, 4);
-		buttonColumn.setMnemonic(KeyEvent.VK_D);
+		// buttonColumn.setMnemonic(KeyEvent.VK_D);
 
 		// todo: zeile löschen über DEL key?
 		// ...
 
+		/*
 		for(int i = 0; i < TrainingGhosts.getLength(); i++)
 		{
 			Node ghost = TrainingGhosts.item(i);
@@ -334,6 +433,9 @@ public class HTGT
 			test.printDetails();
 			addGhost(test, false);
 		}
+		*/
+
+		selectProfile(0);
 
 		JScrollPane scrollPane = new JScrollPane(table);
 		mainwindow.add(scrollPane, BorderLayout.CENTER);
@@ -341,6 +443,7 @@ public class HTGT
 		// test (bei neuauswahl von profil erforderlich!)
 		// clearTable();
 
+		/*
 		// Der nachfolgende Teil ist ein Beispiel, wie man das veränderte XML ausgibt oder speichert.
 		try
 		{
@@ -353,6 +456,7 @@ public class HTGT
 		{
 			e.printStackTrace();
 		}
+		*/
 	}
 
 	private static void clearTable()
@@ -377,6 +481,8 @@ public class HTGT
 
 		if(create)
 		{
+			fileChanged();
+
 			// add to xml node
 			// ...
 
@@ -394,6 +500,7 @@ public class HTGT
 
 
 
+			/*
 			try
 				{
 					saveDocument(xml);
@@ -402,6 +509,7 @@ public class HTGT
 				{
 					ex.printStackTrace();
 				}
+				**/
 		}
 
 		displayGhost(ghost);
@@ -460,24 +568,44 @@ public class HTGT
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu menuFile = new JMenu("Datei");
-		// JMenuItem menuItemFileOpen = new JMenuItem(new AbstractAction("XML-Datei öffnen") { public void actionPerformed(ActionEvent e) { HTGT.chooseFile(); HTGT.updateMainWindow(); }});
-		// JMenuItem menuItemFileRead = new JMenuItem(new AbstractAction("Ansicht aktualisieren") { public void actionPerformed(ActionEvent e) { HTGT.loadXML(); HTGT.updateMainWindow(); }});
-		// JMenuItem menuItemFileToken = new JMenuItem(new AbstractAction("Token eingeben") { public void actionPerformed(ActionEvent e) { HTGT.setupToken(); }});
-		JMenuItem menuItemFileQuit = new JMenuItem(new AbstractAction("Programm beenden") { public void actionPerformed(ActionEvent e) { System.exit(0); }});
-		// menuFile.add(menuItemFileOpen);
-		// menuFile.add(menuItemFileRead);
-		// menuFile.add(menuItemFileToken);
+		JMenuItem menuItemFileOpen = new JMenuItem(new AbstractAction("Öffnen") { public void actionPerformed(ActionEvent e) { return; }});
+		JMenuItem menuItemFileSave = new JMenuItem(new AbstractAction("Speichern") { public void actionPerformed(ActionEvent e) { HTGT.saveFile(); }});
+		JMenuItem menuItemFileSaveAs = new JMenuItem(new AbstractAction("Speichern unter") { public void actionPerformed(ActionEvent e) { return; }});
+		JMenuItem menuItemFileQuit = new JMenuItem(new AbstractAction("Beenden") { public void actionPerformed(ActionEvent e) { HTGT.quit(); }});
+		menuFile.add(menuItemFileOpen);
+		menuFile.addSeparator();
+		menuFile.add(menuItemFileSave);
+		menuFile.add(menuItemFileSaveAs);
+		menuFile.addSeparator();
 		menuFile.add(menuItemFileQuit);
 		menuBar.add(menuFile);
 
-
-
+		/*
+		JRadioButtonMenuItem profile;
 		JMenu menuProfile = new JMenu("Profil");
+		ButtonGroup group = new ButtonGroup();
+		JRadioButtonMenuItem rbMenuItem1 = new JRadioButtonMenuItem("1...");
+		JRadioButtonMenuItem rbMenuItem2 = new JRadioButtonMenuItem("2...");
+		JRadioButtonMenuItem rbMenuItem3 = new JRadioButtonMenuItem("3...");
+		JRadioButtonMenuItem rbMenuItem4 = new JRadioButtonMenuItem("4...");
+		rbMenuItem2.setSelected(true);
+		group.add(rbMenuItem1);
+		group.add(rbMenuItem2);
+		group.add(rbMenuItem3);
+		group.add(rbMenuItem4);
+		menuProfile.add(rbMenuItem1);
+		menuProfile.add(rbMenuItem2);
+		menuProfile.add(rbMenuItem3);
+		menuProfile.add(rbMenuItem4);
 		menuBar.add(menuProfile);
+		*/
 
 		JMenu menuGhost = new JMenu("Geister");
-		JMenuItem menuItemGhostInput = new JMenuItem(new AbstractAction("Einfügen") { public void actionPerformed(ActionEvent e) { HTGT.ghostInput(); }});
-		JMenuItem menuItemGhostDelete = new JMenuItem(new AbstractAction("Löschen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDelete(); }});
+		JMenuItem menuItemSelectProfile = new JMenuItem(new AbstractAction("Profil auswählen") { public void actionPerformed(ActionEvent e) { HTGT.selectProfile(); }});
+		JMenuItem menuItemGhostInput = new JMenuItem(new AbstractAction("Geist einfügen") { public void actionPerformed(ActionEvent e) { HTGT.ghostInput(); }});
+		JMenuItem menuItemGhostDelete = new JMenuItem(new AbstractAction("Geist löschen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDelete(); }});
+		menuGhost.add(menuItemSelectProfile);
+		menuGhost.addSeparator();
 		menuGhost.add(menuItemGhostInput);
 		menuGhost.add(menuItemGhostDelete);
 		menuBar.add(menuGhost);
@@ -493,13 +621,81 @@ public class HTGT
 		// menuBar.add(menuHelp);
 
 		mainwindow = new JFrame("HTGT (HAPPYTEC Ghosttool)");
-		mainwindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		// mainwindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		mainwindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		mainwindow.setJMenuBar(menuBar);
+
+		mainwindow.addWindowListener(new java.awt.event.WindowAdapter()
+		{
+			@Override
+			public void windowClosing(java.awt.event.WindowEvent windowEvent)
+			{
+				quit();
+			}
+		});
+
 
 		updateMainWindow();
 
 		// mainwindow.setLocation(50,50);
 		mainwindow.setSize(800,400);
+		mainwindow.setMinimumSize(new Dimension(400, 200));
 		mainwindow.setVisible(true);
+	}
+
+	public static void quit()
+	{
+		if(fileChanged)
+		{
+			int input = JOptionPane.showConfirmDialog(mainwindow,
+				"Die Änderungen wurden nicht gespeichert! Trotzdem beenden?",
+				"Es gibt nicht gespeicherte Änderungen",
+				JOptionPane.YES_NO_OPTION,
+				JOptionPane.QUESTION_MESSAGE
+			);
+
+			if(input == JOptionPane.NO_OPTION)
+			{
+				System.out.println("quit: NO");
+				return;
+			}
+			else
+			{
+				System.out.println("quit: YES");
+			}
+		}
+
+		System.exit(0);
+	}
+
+	public static void saveFile()
+	{
+		if(fileChanged)
+		{
+			try
+			{
+				xml.setXmlStandalone(true);
+				// printDocument(xml, System.out);
+				saveDocument(xml);
+
+				fileSaved();
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private static void fileSaved()
+	{
+		fileChanged = false;
+		mainwindow.setTitle("HTGT (HAPPYTEC Ghosttool)");
+	}
+
+	public static void fileChanged()
+	{
+		fileChanged = true;
+		mainwindow.setTitle("HTGT (HAPPYTEC Ghosttool) *");
 	}
 }
