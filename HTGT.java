@@ -1,28 +1,12 @@
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 
-import javax.swing.JFileChooser;
 
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-
-import javax.swing.AbstractAction;
 import java.awt.event.ActionEvent;
 
 import java.awt.Color;
-import javax.swing.JDialog;
-import javax.swing.JMenuBar;
-import javax.swing.border.LineBorder;
-import javax.swing.border.Border;
-
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import java.awt.BorderLayout;
-import javax.swing.table.*;
 
 import java.io.File;
 import java.io.*;
@@ -42,9 +26,16 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
+import javax.swing.*;
+import javax.swing.table.*;
 import java.awt.event.KeyEvent;
+
+import java.util.prefs.*;
+
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
+import org.xml.sax.InputSource;
 
 // HappyTec GhostTool
 public class HTGT
@@ -54,13 +45,18 @@ public class HTGT
 	static NodeList TrainingGhosts;
 	private static DefaultTableModel TableModel;
 
+	private static Preferences cfg;
+
 	static JFrame mainwindow;
 
-	public static void main(String[] args)
+	public static void main(String[] args) throws Exception
 	{
 		// die ganze logik für die xml-verarbeitung in eine eigene klasse packen!
 		// und den ganzen gui kram eventuell auch in eine eigene klasse?
 		// ...
+
+		cfg = Preferences.userRoot().node("HTGT");
+
 
 		try
 		{
@@ -70,6 +66,142 @@ public class HTGT
 		catch(Exception e)
 		{
 			e.printStackTrace();
+		}
+
+		//setupToken();
+
+		eSportsAPI test = new eSportsAPI("xyz");
+		String output = test.test();
+		System.out.println(output);
+
+	}
+
+	public static void ghostDelete()
+	{
+		JOptionPane.showMessageDialog(null, "Geister können direkt über die Schaltfläche in jeder Zeile gelöscht werden.");
+	}
+
+	public static void ghostInput()
+	{
+		while(true)
+		{
+			JFrame frame = new JFrame("Ghost Input");
+			Object input = JOptionPane.showInputDialog(
+				frame,
+				"Um einen Geist hinzuzufügen, kopiere die XML-Daten (<GhostDataPair ... />) in das Eingabefeld:",
+				"Geist einfügen",
+				JOptionPane.PLAIN_MESSAGE,
+				null, null,
+				""
+			);
+
+			if(input == null)
+			{
+				System.out.println("ghostInput: CANCEL");
+				return;
+			}
+
+			String xmlstring = String.format("%s", input);
+
+			if(xmlstring.length() == 0)
+			{
+				System.out.println("ghostInput: EMPTY");
+				continue;
+			}
+			else
+			{
+				System.out.printf("ghostInput: VALUE (%d)\n", xmlstring.length());
+
+				int i = 0;
+				try
+				{
+					//DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+					//DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+
+					Pattern pattern = Pattern.compile("(<GhostDataPair[^>]+>)", Pattern.CASE_INSENSITIVE);
+					Matcher matcher = pattern.matcher(xmlstring);
+
+
+					String xmltag;
+					while(matcher.find())
+					{
+						xmltag = matcher.group(1);
+
+						//Document xmldoc = dBuilder.parse(new InputSource(new StringReader(xmltag)));
+						//NodeList ghosts = xmldoc.getElementsByTagName("GhostDataPair");
+						//Element ghost = (Element) ghosts.item(0);
+						//GhostElement ghostElement = new GhostElement(ghost);
+
+						GhostElement ghostElement = new GhostElement(xmltag);
+						addGhost(ghostElement, true);
+						ghostElement.printDetails();
+
+						i++;
+					}
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+
+				JOptionPane.showMessageDialog(null, "anzahl importierter geister: " + i);
+
+				return;
+			}
+
+
+
+
+		}
+	}
+
+	public static void deleteToken()
+	{
+		cfg.remove("esports-token");
+		JOptionPane.showMessageDialog(null, "done...");
+	}
+
+	public static void setupToken()
+	{
+		while(true)
+		{
+			JFrame frame = new JFrame("Token Setup");
+			Object input = JOptionPane.showInputDialog(
+				frame,
+				"Bitte gib deinen persönlichen Zugriffsschlüssel ein:",
+				"HAPPYTEC-eSports-API",
+				JOptionPane.PLAIN_MESSAGE,
+				null, null,
+				cfg.get("esports-token", "")
+			);
+
+			if(input == null)
+			{
+				System.out.println("setupToken: CANCEL");
+				return;
+			}
+
+			String token = String.format("%s", input).trim().toLowerCase();
+			Pattern p = Pattern.compile("^[A-F0-9]+$", Pattern.CASE_INSENSITIVE);
+			Matcher m = p.matcher(token);
+
+			if(token.length() == 0)
+			{
+				System.out.println("setupToken: EMPTY");
+				continue;
+			}
+			else if(!m.find())
+			{
+				System.out.println("setupToken: INVALID");
+				continue;
+			}
+			else
+			{
+				System.out.printf("setupToken: VALUE (%d)\n", token.length());
+				System.out.printf("New API token: %s\n", token);
+				cfg.put("esports-token", token);
+				return;
+			}
 		}
 	}
 
@@ -247,6 +379,29 @@ public class HTGT
 		{
 			// add to xml node
 			// ...
+
+			// todo: das funktioniert nur, wenn es bereits elemente gibt.
+			// für den anderen fall braucht es eine andere lösung!
+			Node ghostnode = TrainingGhosts.item(TrainingGhosts.getLength() - 1);
+			Element ghostElement = (Element) ghostnode;
+
+			Node newNode = xml.importNode(ghost.getElement(), true);
+			ghostElement.getParentNode().appendChild(newNode);
+
+			// Element ghostElement = (Element) ghostnode;
+			// ghostElement.getParentNode().appendChild(ghost.getElement());
+
+
+
+
+			try
+				{
+					saveDocument(xml);
+				}
+				catch(Exception ex)
+				{
+					ex.printStackTrace();
+				}
 		}
 
 		displayGhost(ghost);
@@ -299,22 +454,43 @@ public class HTGT
 
 	private static void mainWindow()
 	{
+		// todo: speichern nur beim beenden oder über menüeintrag.
+		// ...
+
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu menuFile = new JMenu("Datei");
-		JMenuItem menuItemFileOpen = new JMenuItem(new AbstractAction("XML-Datei öffnen") { public void actionPerformed(ActionEvent e) { HTGT.chooseFile(); HTGT.updateMainWindow(); }});
-		JMenuItem menuItemFileRead = new JMenuItem(new AbstractAction("Ansicht aktualisieren") { public void actionPerformed(ActionEvent e) { HTGT.loadXML(); HTGT.updateMainWindow(); }});
+		// JMenuItem menuItemFileOpen = new JMenuItem(new AbstractAction("XML-Datei öffnen") { public void actionPerformed(ActionEvent e) { HTGT.chooseFile(); HTGT.updateMainWindow(); }});
+		// JMenuItem menuItemFileRead = new JMenuItem(new AbstractAction("Ansicht aktualisieren") { public void actionPerformed(ActionEvent e) { HTGT.loadXML(); HTGT.updateMainWindow(); }});
+		// JMenuItem menuItemFileToken = new JMenuItem(new AbstractAction("Token eingeben") { public void actionPerformed(ActionEvent e) { HTGT.setupToken(); }});
 		JMenuItem menuItemFileQuit = new JMenuItem(new AbstractAction("Programm beenden") { public void actionPerformed(ActionEvent e) { System.exit(0); }});
-		menuFile.add(menuItemFileOpen);
-		menuFile.add(menuItemFileRead);
+		// menuFile.add(menuItemFileOpen);
+		// menuFile.add(menuItemFileRead);
+		// menuFile.add(menuItemFileToken);
 		menuFile.add(menuItemFileQuit);
 		menuBar.add(menuFile);
+
+
 
 		JMenu menuProfile = new JMenu("Profil");
 		menuBar.add(menuProfile);
 
-		JMenu menuHelp = new JMenu("Hilfe");
-		menuBar.add(menuHelp);
+		JMenu menuGhost = new JMenu("Geister");
+		JMenuItem menuItemGhostInput = new JMenuItem(new AbstractAction("Einfügen") { public void actionPerformed(ActionEvent e) { HTGT.ghostInput(); }});
+		JMenuItem menuItemGhostDelete = new JMenuItem(new AbstractAction("Löschen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDelete(); }});
+		menuGhost.add(menuItemGhostInput);
+		menuGhost.add(menuItemGhostDelete);
+		menuBar.add(menuGhost);
+
+		JMenu menuAPI = new JMenu("API");
+		JMenuItem menuItemAPITokenChange = new JMenuItem(new AbstractAction("Token ändern") { public void actionPerformed(ActionEvent e) { HTGT.setupToken(); }});
+		JMenuItem menuItemAPITokenClean = new JMenuItem(new AbstractAction("Token löschen") { public void actionPerformed(ActionEvent e) { HTGT.deleteToken(); }});
+		menuAPI.add(menuItemAPITokenChange);
+		menuAPI.add(menuItemAPITokenClean);
+		menuBar.add(menuAPI);
+
+		// JMenu menuHelp = new JMenu("Hilfe");
+		// menuBar.add(menuHelp);
 
 		mainwindow = new JFrame("HTGT (HAPPYTEC Ghosttool)");
 		mainwindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

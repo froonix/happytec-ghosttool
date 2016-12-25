@@ -1,3 +1,13 @@
+import org.xml.sax.InputSource;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
+import org.w3c.dom.Element;
+
+import java.io.StringReader;
+
 import java.util.Base64;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -14,6 +24,7 @@ public class GhostElement
 	private static Pattern GhostPattern;
 	private static DateFormat ResultFormat;
 
+	private Element XML;
 	private String Track;
 	private int    Weather;
 	private int    Time;
@@ -35,11 +46,44 @@ public class GhostElement
 		importGhost(xml);
 	}
 
+	GhostElement(String xml)
+	{
+		importGhost(xml);
+	}
+
+	public Element getElement()
+	{
+		return this.XML;
+	}
+
+	// todo: regex für mehrere geister! (static)
+	// siehe code in htgt.ghostInput
+	// ...
+
+	public void importGhost(String xml)
+	{
+		try
+		{
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+
+			Document doc = dBuilder.parse(new InputSource(new StringReader(xml)));
+			NodeList gdp = doc.getElementsByTagName("GhostDataPair");
+			importGhost((Element) gdp.item(0));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
 	public void importGhost(Element xml)
 	{
+		this.XML = xml;
+
 		if(GhostPattern == null)
 		{
-			this.GhostPattern = Pattern.compile("\062.\012.(.*?)\022\016");
+			this.GhostPattern = Pattern.compile("\062.\012.(.+)\022\016");
 		}
 
 		this.Track = xml.getAttribute("Track");
@@ -60,7 +104,7 @@ public class GhostElement
 			this.Nickname = "";
 			for(int h = m.start() + 4; h < m.end() - 2; h++)
 			{
-				// Das ist höchst ineffizient! Sind aber nur maximal 20 Byte.
+				// TODO: StringBuilder verwenden?
 				this.Nickname = this.Nickname + Character.toString((char) DataBinary[h]);
 			}
 		}
@@ -103,7 +147,7 @@ public class GhostElement
 	{
 		if(this.ResultFormat == null)
 		{
-			// Das HAPPYTEC-Format nutzt ein en Beistrich.
+			// Das HAPPYTEC-Format nutzt einen Beistrich.
 			// Andere Implementierungen nutzen einen Punkt.
 			this.ResultFormat = new SimpleDateFormat("mm:ss,SSS");
 		}
@@ -117,8 +161,8 @@ public class GhostElement
 		System.out.printf(" Nick:    %s\n", this.getNickname());
 		// System.out.printf(" Mode:    %s\n", this.GameMode);
 		System.out.printf(" Time:    %s (%d)\n", this.getResult(), this.getTime());
-		System.out.printf(" Track:   %s (%s)\n", this.getTrackName(), this.getTrack());
-		System.out.printf(" Weather: %d (%s; %s)\n", this.getWeather(), gmHelper.getWeather(this.Weather), this.getWeatherName());
+		System.out.printf(" Track:   [%s] %s\n", this.getTrack().toUpperCase(), this.getTrackName());
+		System.out.printf(" Weather: [%s] %s (%d)\n", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
 		// System.out.printf("\n%s\n", DataRaw);
 		System.out.printf("--------------------------------\n");
 	}
