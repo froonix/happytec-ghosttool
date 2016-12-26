@@ -1,0 +1,1 @@
+curl -i -H "X-Auth-Token: ..." --data "byID=..." "https://www.esports.happytec.at/api/1.0/offline/ghost.get"

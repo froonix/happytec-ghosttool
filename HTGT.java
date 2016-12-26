@@ -23,6 +23,7 @@ public class HTGT
 	// Diverse fixe Konstanten für die Anwendung
 	private static String    APPLICATION_NAME  = "HTGT"; // u.a. für cfg!
 	private static String    APPLICATION_TITLE = "HTGT (HAPPYTEC Ghosttool)";
+	private static String    APPLICATION_IDENT = "HTGT <https://github.com/froonix/happytec-ghosttool>";
 	private static Dimension WINDOW_SIZE_START = new Dimension(800, 400);
 	private static Dimension WINDOW_SIZE_MIN   = new Dimension(400, 200);
 
@@ -53,10 +54,10 @@ public class HTGT
 		JMenuItem menuItemFileSave = new JMenuItem(new AbstractAction("Speichern") { public void actionPerformed(ActionEvent e) { HTGT.saveFile(); }});
 		JMenuItem menuItemFileSaveAs = new JMenuItem(new AbstractAction("Speichern unter") { public void actionPerformed(ActionEvent e) { return; }});
 		JMenuItem menuItemFileQuit = new JMenuItem(new AbstractAction("Beenden") { public void actionPerformed(ActionEvent e) { HTGT.quit(); }});
-		menuFile.add(menuItemFileOpen);
-		menuFile.addSeparator();
+		// menuFile.add(menuItemFileOpen);
+		// menuFile.addSeparator();
 		menuFile.add(menuItemFileSave);
-		menuFile.add(menuItemFileSaveAs);
+		// menuFile.add(menuItemFileSaveAs);
 		menuFile.addSeparator();
 		menuFile.add(menuItemFileQuit);
 		menuBar.add(menuFile);
@@ -85,10 +86,13 @@ public class HTGT
 		JMenuItem menuItemSelectProfile = new JMenuItem(new AbstractAction("Profil auswählen") { public void actionPerformed(ActionEvent e) { HTGT.selectProfile(); }});
 		JMenuItem menuItemGhostInput = new JMenuItem(new AbstractAction("Geist einfügen") { public void actionPerformed(ActionEvent e) { HTGT.ghostInput(); }});
 		JMenuItem menuItemGhostDelete = new JMenuItem(new AbstractAction("Geist löschen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDelete(); }});
+		JMenuItem menuItemGhostDownload = new JMenuItem(new AbstractAction("Geist herunterladen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDownload(); }});
 		menuGhost.add(menuItemSelectProfile);
 		menuGhost.addSeparator();
 		menuGhost.add(menuItemGhostInput);
 		menuGhost.add(menuItemGhostDelete);
+		menuGhost.addSeparator();
+		menuGhost.add(menuItemGhostDownload);
 		menuBar.add(menuGhost);
 
 		JMenu menuAPI = new JMenu("API");
@@ -135,13 +139,6 @@ public class HTGT
 		{
 			e.printStackTrace();
 		}
-
-		/*
-		eSportsAPI test = new eSportsAPI("xyz");
-		String output = test.test();
-		System.out.println(output);
-		*/
-
 	}
 
 	public static void ghostDelete()
@@ -151,6 +148,71 @@ public class HTGT
 
 	// todo: delete row logik hier einfügen
 	// ...
+
+	public static void ghostDownload()
+	{
+		String token = cfg(CFG_TOKEN);
+		if(token == null || token.equals(""))
+		{
+			setupToken(); token = cfg(CFG_TOKEN);
+			if(token == null || token.equals(""))
+			{
+				return;
+			}
+		}
+
+		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
+		String last_input = "";
+
+		while(true)
+		{
+			Object input = JOptionPane.showInputDialog(
+				mainwindow,
+				"Um einen Geist vom Server herunterzuladen, trage einfach die Ghost-ID ein:",
+				"Geist herunterladen",
+				JOptionPane.PLAIN_MESSAGE,
+				null,
+				null,
+				last_input
+			);
+
+			if(input == null)
+			{
+				System.out.println("ghostDownload: CANCEL");
+				return;
+			}
+
+			int id = FNX.intval(input.toString());
+			last_input = Integer.toString(id);
+
+			if(id <= 0)
+			{
+				System.out.println("ghostDownload: NULL");
+				continue;
+			}
+			else
+			{
+				System.out.printf("ghostDownload: ID (%d)\n", id);
+
+				// ladegrafik? oder wenigstens ein ladedialog?
+				// ...
+
+				String ghostdata = api.getGhostByID(id);
+
+				if(ghostdata == null)
+				{
+					// TODO: Get errmsg from API!
+					JOptionPane.showMessageDialog(null, "Download fehlgeschlagen...");
+					continue;
+				}
+
+				addGhost(new GhostElement(ghostdata), true);
+				JOptionPane.showMessageDialog(null, "Erledigt!");
+
+				return;
+			}
+		}
+	}
 
 	public static void ghostInput()
 	{
@@ -332,6 +394,9 @@ public class HTGT
 		{
 			return;
 		}
+
+		// TODO: Zuletzt genutzes Profile in CFG abspeichern und auslesen
+		// ...
 
 		NodeList OfflineProfiles = xml.getElementsByTagName("OfflineProfile");
 		Object[] availableProfiles = new Object[OfflineProfiles.getLength()];

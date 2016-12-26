@@ -1,9 +1,9 @@
 Work in progress!
 
-=== Requirements ===
+### Requirements
 * Java 8 (or higher)
 
-=== Build requirements ===
+### Build requirements
 * Debian/Ubuntu recommended
 * OpenJDK 8 (JDK) or newer
-* make, zip, ...
+* `make`, `zip`, ...
