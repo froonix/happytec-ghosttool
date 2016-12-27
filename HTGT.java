@@ -10,6 +10,8 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.awt.event.ActionEvent;
+import java.awt.Toolkit;
+import java.awt.datatransfer.*;
 
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
@@ -18,11 +20,14 @@ import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 import org.xml.sax.InputSource;
 
+import java.lang.IndexOutOfBoundsException;
+
 public class HTGT
 {
 	// Diverse fixe Konstanten für die Anwendung
 	private static String    APPLICATION_NAME  = "HTGT"; // u.a. für cfg!
 	private static String    APPLICATION_TITLE = "HTGT (HAPPYTEC Ghosttool)";
+	private static String    APPLICATION_API   = "HAPPYTEC-eSports-API";
 	private static String    APPLICATION_IDENT = "HTGT <https://github.com/froonix/happytec-ghosttool>";
 	private static Dimension WINDOW_SIZE_START = new Dimension(800, 400);
 	private static Dimension WINDOW_SIZE_MIN   = new Dimension(400, 200);
@@ -41,6 +46,7 @@ public class HTGT
 
 	private static DefaultTableModel TableModel;
 	private static JFrame            mainwindow;
+	private static JTable            maintable;
 
 	public static void main(String[] args) throws Exception
 	{
@@ -82,15 +88,28 @@ public class HTGT
 		menuBar.add(menuProfile);
 		*/
 
+		JMenu menuEdit = new JMenu("Bearbeiten");
+		JMenuItem menuItemEditInsert = new JMenuItem(new AbstractAction("Einfügen (aus Zwischenablage)") { public void actionPerformed(ActionEvent e) { HTGT.importFromClipboard(); }});
+		JMenuItem menuItemEditCopy = new JMenuItem(new AbstractAction("Kopieren (in Zwischenablage)") { public void actionPerformed(ActionEvent e) { HTGT.test(); }});
+		JMenuItem menuItemEditDelete = new JMenuItem(new AbstractAction("Markierte löschen") { public void actionPerformed(ActionEvent e) { HTGT.deleteGhost(); }});
+		menuEdit.add(menuItemEditInsert);
+		menuEdit.add(menuItemEditCopy);
+		menuEdit.addSeparator();
+		menuEdit.add(menuItemEditDelete);
+		menuBar.add(menuEdit);
+
+		// todo: einfügen/kopieren über zwischenablage!
+		// ...
+
 		JMenu menuGhost = new JMenu("Geister");
 		JMenuItem menuItemSelectProfile = new JMenuItem(new AbstractAction("Profil auswählen") { public void actionPerformed(ActionEvent e) { HTGT.selectProfile(); }});
 		JMenuItem menuItemGhostInput = new JMenuItem(new AbstractAction("Geist einfügen") { public void actionPerformed(ActionEvent e) { HTGT.ghostInput(); }});
-		JMenuItem menuItemGhostDelete = new JMenuItem(new AbstractAction("Geist löschen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDelete(); }});
+		// JMenuItem menuItemGhostDelete = new JMenuItem(new AbstractAction("Geist löschen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDelete(); }});
 		JMenuItem menuItemGhostDownload = new JMenuItem(new AbstractAction("Geist herunterladen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDownload(); }});
 		menuGhost.add(menuItemSelectProfile);
 		menuGhost.addSeparator();
 		menuGhost.add(menuItemGhostInput);
-		menuGhost.add(menuItemGhostDelete);
+		// menuGhost.add(menuItemGhostDelete);
 		menuGhost.addSeparator();
 		menuGhost.add(menuItemGhostDownload);
 		menuBar.add(menuGhost);
@@ -139,15 +158,86 @@ public class HTGT
 		{
 			e.printStackTrace();
 		}
+
+
+	}
+
+	public static void test()
+	{
+		StringBuilder data = new StringBuilder();
+		int[] selection = maintable.getSelectedRows();
+
+		for (int i = selection.length - 1; i > -1; i--)
+		{
+			int row = selection[i];
+
+			Node ghost = TrainingGhosts.item(i);
+			Element ghostElement = (Element) ghost;
+
+			try
+			{
+				TransformerFactory tf = TransformerFactory.newInstance();
+				Transformer transformer = tf.newTransformer();
+				transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+				transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+				transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+				transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+				// transformer.setOutputProperty(OutputKeys.STANDALONE, "yes");
+				transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+				StreamResult result = new StreamResult(new StringWriter());
+				transformer.transform(new DOMSource(ghostElement), result);
+				data.append(result.getWriter().toString());
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		System.out.println(data.toString());
+
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(data.toString()), null);
+	}
+
+	public static void deleteGhost()
+	{
+		int[] selection = maintable.getSelectedRows();
+
+		// confirm!
+		// ...
+
+		for (int i = selection.length - 1; i > -1; i--)
+		{
+			int row = selection[i];
+
+
+
+			deleteGhost(row);
+		}
+	}
+
+	public static void deleteGhost(int i)
+	{
+		if(i > (TrainingGhosts.getLength() - 1))
+		{
+			throw new IndexOutOfBoundsException(String.format("Ghost #%d", i));
+		}
+
+		Node ghost = TrainingGhosts.item(i);
+		Element ghostElement = (Element) ghost;
+
+		fileChanged();
+		ghost.getParentNode().removeChild(ghostElement);
+		TableModel.removeRow(i);
+
+		System.out.println("Row " + i + " deleted!");
 	}
 
 	public static void ghostDelete()
 	{
 		JOptionPane.showMessageDialog(null, "Geister können direkt über die Schaltfläche in jeder Zeile gelöscht werden.");
 	}
-
-	// todo: delete row logik hier einfügen
-	// ...
 
 	public static void ghostDownload()
 	{
@@ -245,41 +335,69 @@ public class HTGT
 			{
 				System.out.printf("ghostInput: VALUE (%d)\n", xmlstring.length());
 
-				int i = 0;
-				try
-				{
-					Pattern pattern = Pattern.compile("(<GhostDataPair[^>]+>)", Pattern.CASE_INSENSITIVE);
-					Matcher matcher = pattern.matcher(xmlstring);
-
-
-					String xmltag;
-					while(matcher.find())
-					{
-						xmltag = matcher.group(1);
-
-						GhostElement ghostElement = new GhostElement(xmltag);
-						addGhost(ghostElement, true);
-						ghostElement.printDetails();
-
-						i++;
-					}
-				}
-				catch(Exception e)
-				{
-					e.printStackTrace();
-				}
-
-				JOptionPane.showMessageDialog(null, "Importierte Geister: " + i);
+				ghostImport(xmlstring);
 
 				return;
 			}
 		}
 	}
 
+	public static void ghostImport(String xmlstring)
+	{
+		int i = 0;
+		try
+		{
+			Pattern pattern = Pattern.compile("(<GhostDataPair[^>]+>)", Pattern.CASE_INSENSITIVE);
+			Matcher matcher = pattern.matcher(xmlstring);
+
+			String xmltag;
+			while(matcher.find())
+			{
+				xmltag = matcher.group(1);
+
+				GhostElement ghostElement = new GhostElement(xmltag);
+				addGhost(ghostElement, true);
+				ghostElement.printDetails();
+
+				i++;
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+
+		JOptionPane.showMessageDialog(null, "Importierte Geister: " + i);
+	}
+
+	public static void importFromClipboard()
+	{
+		try
+		{
+			Clipboard systemClipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+			Transferable transferData = systemClipboard.getContents(null);
+
+			for(DataFlavor dataFlavor : transferData.getTransferDataFlavors())
+			{
+				Object content = transferData.getTransferData(dataFlavor);
+
+				if(content instanceof String)
+				{
+					ghostImport(content.toString());
+					break;
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+
 	public static void deleteToken()
 	{
 		cfg(CFG_TOKEN, null);
-		JOptionPane.showMessageDialog(mainwindow, "Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!\n\nDu kannst ihn über das Menü jederzeit erneut eintragen.", "HAPPYTEC-eSports-API", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(mainwindow, "Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!\n\nDu kannst ihn über das Menü jederzeit erneut eintragen.", APPLICATION_API, JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	public static void setupToken()
@@ -289,7 +407,7 @@ public class HTGT
 			Object input = JOptionPane.showInputDialog(
 				mainwindow,
 				"Bitte gib deinen persönlichen Zugriffsschlüssel ein:",
-				"HAPPYTEC-eSports-API",
+				APPLICATION_API,
 				JOptionPane.PLAIN_MESSAGE,
 				null,
 				null,
@@ -488,59 +606,64 @@ public class HTGT
 	{
 
 		Object rowData[][] = {};
-		Object columnNames[] = { "Spieler", "Strecke", "Wetter", "Ergebnis", "" };
+		Object columnNames[] = { "Spieler", "Strecke", "Wetter", "Ergebnis" /*, ""*/ };
 		TableModel = new DefaultTableModel(rowData, columnNames);
-		JTable table = new JTable(TableModel)
+		maintable = new JTable(TableModel)
 		{
 			// private static final long serialVersionUID = 1L;
 			public boolean isCellEditable(int row, int column)
 			{
-				if(column == 4)
-				{
-					return true;
-				}
-				else
-				{
+//				if(column == 4)
+//				{
+//					return true;
+//				}
+//				else
+//				{
 					return false;
-				}
+//				}
 			};
 		};
 
-		Action delete = new AbstractAction()
-		{
-			public void actionPerformed(ActionEvent e)
-			{
-				// todo: auslagern!
-				fileChanged();
+		maintable.setFocusable(false);
+		// maintable.setRowSelectionAllowed(true);
+		maintable.setColumnSelectionAllowed(false);
+		//maintable.setCellSelectionEnabled(false);
 
-				JTable table = (JTable)e.getSource();
-				int modelRow = Integer.valueOf( e.getActionCommand() );
+		//Action delete = new AbstractAction()
+		//{
+			//public void actionPerformed(ActionEvent e)
+			//{
+				//// todo: auslagern!
+				//fileChanged();
 
-				// confirm!
-				// ...
+				//JTable table = (JTable)e.getSource();
+				//int modelRow = Integer.valueOf( e.getActionCommand() );
 
-				Node ghost = TrainingGhosts.item(modelRow);
-				Element ghostElement = (Element) ghost;
-				ghost.getParentNode().removeChild(ghostElement);
+				//// confirm!
+				//// ...
 
-				/*
-				try
-				{
-					saveDocument(xml);
-				}
-				catch(Exception ex)
-				{
-					ex.printStackTrace();
-				}
-				*/
+				//Node ghost = TrainingGhosts.item(modelRow);
+				//Element ghostElement = (Element) ghost;
+				//ghost.getParentNode().removeChild(ghostElement);
 
-				((DefaultTableModel)table.getModel()).removeRow(modelRow);
-				System.out.println("Row " + modelRow + " deleted!");
-			}
-		};
+				///*
+				//try
+				//{
+					//saveDocument(xml);
+				//}
+				//catch(Exception ex)
+				//{
+					//ex.printStackTrace();
+				//}
+				//*/
 
-		ButtonColumn buttonColumn = new ButtonColumn(table, delete, 4);
-		// buttonColumn.setMnemonic(KeyEvent.VK_D);
+				//((DefaultTableModel)table.getModel()).removeRow(modelRow);
+				//System.out.println("Row " + modelRow + " deleted!");
+			//}
+		//};
+
+		//ButtonColumn buttonColumn = new ButtonColumn(maintable, delete, 4);
+		//// buttonColumn.setMnemonic(KeyEvent.VK_D);
 
 		// todo: zeile löschen über DEL key?
 		// ...
@@ -559,7 +682,7 @@ public class HTGT
 
 		selectProfile(0);
 
-		JScrollPane scrollPane = new JScrollPane(table);
+		JScrollPane scrollPane = new JScrollPane(maintable);
 		mainwindow.add(scrollPane, BorderLayout.CENTER);
 	}
 
@@ -604,7 +727,7 @@ public class HTGT
 
 	private static void displayGhost(GhostElement ghost)
 	{
-		Object tmp[] = { ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), "Geist löschen" };
+		Object tmp[] = { ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult() /*, "Geist löschen"*/ };
 		TableModel.addRow(tmp);
 	}
 
