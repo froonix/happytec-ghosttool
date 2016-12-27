@@ -10,8 +10,11 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.KeyEvent;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.Toolkit;
 import java.awt.datatransfer.*;
+
 
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
@@ -171,7 +174,7 @@ public class HTGT
 		{
 			int row = selection[i];
 
-			Node ghost = TrainingGhosts.item(i);
+			Node ghost = TrainingGhosts.item(row);
 			Element ghostElement = (Element) ghost;
 
 			try
@@ -187,7 +190,7 @@ public class HTGT
 
 				StreamResult result = new StreamResult(new StringWriter());
 				transformer.transform(new DOMSource(ghostElement), result);
-				data.append(result.getWriter().toString());
+				data.insert(0, result.getWriter().toString());
 			}
 			catch(Exception e)
 			{
@@ -299,6 +302,10 @@ public class HTGT
 				addGhost(new GhostElement(ghostdata), true);
 				JOptionPane.showMessageDialog(null, "Erledigt!");
 
+				int row = TableModel.getRowCount() - 1;
+				maintable.clearSelection();
+				maintable.addRowSelectionInterval(row, row);
+
 				return;
 			}
 		}
@@ -368,6 +375,10 @@ public class HTGT
 		}
 
 		JOptionPane.showMessageDialog(null, "Importierte Geister: " + i);
+
+		int row = TableModel.getRowCount();
+		maintable.clearSelection();
+		maintable.addRowSelectionInterval(row - i, row - 1);
 	}
 
 	public static void importFromClipboard()
@@ -628,6 +639,15 @@ public class HTGT
 		// maintable.setRowSelectionAllowed(true);
 		maintable.setColumnSelectionAllowed(false);
 		//maintable.setCellSelectionEnabled(false);
+
+		maintable.addComponentListener(new ComponentAdapter()
+		{
+			public void componentResized(ComponentEvent e)
+			{
+				int lastIndex = maintable.getRowCount() - 1;
+				maintable.changeSelection(lastIndex, 0, false, false);
+			}
+		});
 
 		//Action delete = new AbstractAction()
 		//{
