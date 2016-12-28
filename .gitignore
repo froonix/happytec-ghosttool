@@ -1,6 +1,4 @@
-build/*
 example/*
-classes/*.class
 src/*.class
 HTGT.geany
 *.swp
