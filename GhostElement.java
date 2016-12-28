@@ -83,7 +83,8 @@ public class GhostElement
 
 		if(GhostPattern == null)
 		{
-			this.GhostPattern = Pattern.compile("\062.\012.(.+)\022\016");
+			// this.GhostPattern = Pattern.compile("\062.\012.(.+)\022\016");
+			this.GhostPattern = Pattern.compile("\062.\012.(.{1,32})\022\016(.{1,32})\030.\100.$", Pattern.DOTALL);
 		}
 
 		this.Track = xml.getAttribute("Track");
@@ -94,19 +95,30 @@ public class GhostElement
 		this.DataRaw = xml.getAttribute("Data");
 		this.DataBinary = Base64.getDecoder().decode(this.DataRaw);
 
-		// Normalerweise gehört das mit Google's Protocol Buffers extrahiert.
-		// Ich habe aber keine Lust das zu implementieren, wenn es auch so geht.
-		// Sonst kommen ein paar Scherzkekse noch auf blöde Ideen. Muss nicht sein.
-		Matcher m = this.GhostPattern.matcher(new ByteCharSequence(this.DataBinary));
-
-		if(m.find())
+		try
 		{
-			this.Nickname = "";
-			for(int h = m.start() + 4; h < m.end() - 2; h++)
+			// Normalerweise gehört das mit Google's Protocol Buffers extrahiert.
+			// Ich habe aber keine Lust das zu implementieren, wenn es auch so geht.
+			// Matcher m = this.GhostPattern.matcher(new ByteCharSequence(this.DataBinary));
+			Matcher m = this.GhostPattern.matcher(new String(this.DataBinary, "ISO-8859-1"));
+
+			if(m.find())
 			{
-				// TODO: StringBuilder verwenden?
-				this.Nickname = this.Nickname + Character.toString((char) DataBinary[h]);
+				/*
+				StringBuilder str = new StringBuilder();
+				for(int h = m.start() + 4; h < m.end() - 2; h++)
+				{
+					str.append(Character.toString((char) DataBinary[h]));
+				}
+				this.Nickname = str.toString();
+				*/
+
+				this.Nickname = m.group(1);
 			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
 		}
 
 		// TODO: Fehlerüberprüfung!
