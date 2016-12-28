@@ -695,50 +695,42 @@ public class HTGT
 		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
 		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
 
-		while(true)
+		int code = chooser.showOpenDialog(null);
+
+		if(code == JFileChooser.APPROVE_OPTION)
 		{
-			int code = chooser.showOpenDialog(null);
+			System.err.println("JFileChooser: APPROVE_OPTION");
+			inputfilename = chooser.getSelectedFile().getAbsolutePath();
 
-			if(code == JFileChooser.APPROVE_OPTION)
+			if(inputfilename != "")
 			{
-				System.err.println("JFileChooser: APPROVE_OPTION");
-				inputfilename = chooser.getSelectedFile().getAbsolutePath();
+				System.err.println("XML inputfilename: " + inputfilename);
+				cfg(CFG_CWD, String.format("%s", chooser.getCurrentDirectory()));
 
-				if(inputfilename != "")
+				try
 				{
-					System.err.println("XML inputfilename: " + inputfilename);
-					cfg(CFG_CWD, String.format("%s", chooser.getCurrentDirectory()));
+					OfflineProfiles = new OfflineProfiles(new File(inputfilename));
 
-					try
-					{
-						OfflineProfiles = new OfflineProfiles(new File(inputfilename));
+					selectProfile(0);
+					updateWindowTitle();
+					enableMenuItems();
+				}
+				catch(Exception e)
+				{
+					reset();
 
-						selectProfile(0);
-						updateWindowTitle();
-						enableMenuItems();
-					}
-					catch(Exception e)
-					{
-						reset();
-
-						e.printStackTrace();
-						JOptionPane.showMessageDialog(mainwindow, "Fehler beim Laden der XML-Datei!", null, JOptionPane.ERROR_MESSAGE);
-						continue;
-					}
-
-					return;
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(mainwindow, "Fehler beim Laden der XML-Datei!", null, JOptionPane.ERROR_MESSAGE);
 				}
 			}
-			else if(code == JFileChooser.CANCEL_OPTION)
-			{
-				System.err.println("JFileChooser: CANCEL_OPTION");
-				System.exit(0);
-			}
-			else if(code == JFileChooser.ERROR_OPTION)
-			{
-				System.err.println("JFileChooser: ERROR_OPTION");
-				System.exit(0);
-			}
+		}
+		else if(code == JFileChooser.CANCEL_OPTION)
+		{
+			System.err.println("JFileChooser: CANCEL_OPTION");
+		}
+		else if(code == JFileChooser.ERROR_OPTION)
+		{
+			System.err.println("JFileChooser: ERROR_OPTION");
 		}
 
 		// todo: listener für dateiänderungen
@@ -759,7 +751,17 @@ public class HTGT
 
 	public static boolean saveFile()
 	{
-		if(OfflineProfiles != null && OfflineProfiles.changed())
+		return saveFile(false);
+	}
+
+	public static boolean saveFile(boolean force)
+	{
+		if(OfflineProfiles == null)
+		{
+			return false;
+		}
+
+		if(force || OfflineProfiles.changed())
 		{
 			if(outputfilename == null)
 			{
@@ -785,6 +787,8 @@ public class HTGT
 		return true;
 	}
 
+	// TODO: Noch nicht fertig!
+	// TODO: XML-Filter auslagern!
 	public static void saveFileAs()
 	{
 		if(OfflineProfiles == null)
@@ -792,15 +796,81 @@ public class HTGT
 			return;
 		}
 
-		// dialog!
-		// ...
+		if(outputfilename == null)
+		{
+			outputfilename = inputfilename;
+		}
 
-		// ...
-		// ...
 
-		// falls sich inputfile von outputfile unterscheidet,
-		// müssen wir inputfile aktualisieren und OfflineProfiles
-		// darüber informieren. Ansonsten endet das in einem Chaos.
+
+
+		JFileChooser chooser = new JFileChooser(cfg(CFG_CWD))
+		{
+			public void approveSelection()
+			{
+				File f = getSelectedFile();
+				if(f.exists() && getDialogType() == SAVE_DIALOG)
+				{
+					int result = JOptionPane.showConfirmDialog(this, "The file exists, overwrite?", "Existing file", JOptionPane.YES_NO_OPTION);
+
+					switch(result)
+					{
+						case JOptionPane.YES_OPTION:
+							super.approveSelection();
+							return;
+
+						default:
+							cancelSelection();
+							return;
+					}
+				}
+
+				super.approveSelection();
+			}
+		};
+
+		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
+		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
+		chooser.setSelectedFile(new File(outputfilename));
+
+		int code = chooser.showSaveDialog(null);
+
+		if(code == JFileChooser.APPROVE_OPTION)
+		{
+			System.err.println("saveFileAs: APPROVE_OPTION");
+			String tmp = chooser.getSelectedFile().getAbsolutePath();
+
+			if(tmp != "")
+			{
+				System.err.println("XML outputfilename: " + tmp);
+				// cfg(CFG_CWD, String.format("%s", chooser.getCurrentDirectory()));
+
+				String oldfile = outputfilename;
+
+				try
+				{
+					OfflineProfiles.updateFile(new File(tmp));
+					outputfilename = tmp;
+					inputfilename = tmp;
+					saveFile(true);
+					return;
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+					outputfilename = oldfile;
+					// OfflineProfiles File?
+				}
+			}
+		}
+		else if(code == JFileChooser.CANCEL_OPTION)
+		{
+			System.err.println("saveFileAs: CANCEL_OPTION");
+		}
+		else if(code == JFileChooser.ERROR_OPTION)
+		{
+			System.err.println("saveFileAs: ERROR_OPTION");
+		}
 	}
 
 	public static boolean closeFile()

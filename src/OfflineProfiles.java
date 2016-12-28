@@ -45,6 +45,16 @@ class OfflineProfiles
 		this.reload();
 	}
 
+	public void updateFile(File xmlfile) throws Exception
+	{
+		if(this.file == null)
+		{
+			throw new Exception("OfflineProfiles not initialized with File; updateFile() not possible");
+		}
+
+		this.file = xmlfile;
+	}
+
 	public void reload() throws Exception
 	{
 		if(this.file == null)
