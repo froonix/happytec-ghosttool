@@ -166,4 +166,22 @@ public class GhostElement
 		// System.out.printf("\n%s\n", DataRaw);
 		System.out.printf("--------------------------------\n");
 	}
+
+	public String toString()
+	{
+		try
+		{
+			return FNX.getStringFromDOM(this.XML, false);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public void delete()
+	{
+		this.XML.getParentNode().removeChild(this.XML);
+	}
 }

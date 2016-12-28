@@ -1,11 +1,14 @@
 import java.io.*;
 import java.util.prefs.*;
 import java.util.regex.*;
+import java.util.ArrayList;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.*;
+import javax.swing.plaf.*;
+import javax.swing.plaf.basic.*;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.KeyEvent;
@@ -14,7 +17,6 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.Toolkit;
 import java.awt.datatransfer.*;
-
 
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
@@ -35,211 +37,278 @@ public class HTGT
 	private static Dimension WINDOW_SIZE_START = new Dimension(800, 400);
 	private static Dimension WINDOW_SIZE_MIN   = new Dimension(400, 200);
 
+	// --- Standardpfade (oder über Registry auslesen?) ---
+	// LINUX: ~/.wine/drive_c/Games/Ski Challenge 16/Game_Data
+	// WINDOWS: C:\\Games\\Ski Challenge 16\\Game_Data
+	// MAC: ...
+
 	// Konfigurationsnamen für java.util.prefs
 	private static String CFG_CWD   = "last-directory";
 	private static String CFG_TOKEN = "esports-token";
 
-	private static Preferences cfg;                                     // Konfiguration
-	private static boolean     fileChanged;                             // XML-Daten geändert?
-	private static String      filename;                                // Aktuell geladene Datei
-	private static Document    xml;                                     // Aktuelles XML-Dokument
+	private static Preferences          cfg;
+	private static String               inputfilename;
+	private static String               outputfilename;
+	private static OfflineProfiles      OfflineProfiles;
+	private static int                  activeprofile;
 
-	private static int         selectedProfile;                         // Aktuell gewähltes Profil
-	private static NodeList    TrainingGhosts;                          // Geister des aktuellen Profiles
+	private static JFrame               mainwindow;
+	private static JTable               maintable;
+	private static DefaultTableModel    mainmodel;
 
-	private static DefaultTableModel TableModel;
-	private static JFrame            mainwindow;
-	private static JTable            maintable;
+	private static ArrayList<JMenuItem> menuitems;
 
 	public static void main(String[] args) throws Exception
 	{
+		// Aktuell gibt es nur eine Konfiguration für den ganzen User-
+		// account. Das heißt, dass mehrere unterschiedliche Bewerbe und
+		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
 
-
-		JMenuBar menuBar = new JMenuBar();
-
-		JMenu menuFile = new JMenu("Datei");
-		JMenuItem menuItemFileOpen = new JMenuItem(new AbstractAction("Öffnen") { public void actionPerformed(ActionEvent e) { return; }});
-		JMenuItem menuItemFileSave = new JMenuItem(new AbstractAction("Speichern") { public void actionPerformed(ActionEvent e) { HTGT.saveFile(); }});
-		JMenuItem menuItemFileSaveAs = new JMenuItem(new AbstractAction("Speichern unter") { public void actionPerformed(ActionEvent e) { return; }});
-		JMenuItem menuItemFileQuit = new JMenuItem(new AbstractAction("Beenden") { public void actionPerformed(ActionEvent e) { HTGT.quit(); }});
-		// menuFile.add(menuItemFileOpen);
-		// menuFile.addSeparator();
-		menuFile.add(menuItemFileSave);
-		// menuFile.add(menuItemFileSaveAs);
-		menuFile.addSeparator();
-		menuFile.add(menuItemFileQuit);
-		menuBar.add(menuFile);
-
-		/*
-		JRadioButtonMenuItem profile;
-		JMenu menuProfile = new JMenu("Profil");
-		ButtonGroup group = new ButtonGroup();
-		JRadioButtonMenuItem rbMenuItem1 = new JRadioButtonMenuItem("1...");
-		JRadioButtonMenuItem rbMenuItem2 = new JRadioButtonMenuItem("2...");
-		JRadioButtonMenuItem rbMenuItem3 = new JRadioButtonMenuItem("3...");
-		JRadioButtonMenuItem rbMenuItem4 = new JRadioButtonMenuItem("4...");
-		rbMenuItem2.setSelected(true);
-		group.add(rbMenuItem1);
-		group.add(rbMenuItem2);
-		group.add(rbMenuItem3);
-		group.add(rbMenuItem4);
-		menuProfile.add(rbMenuItem1);
-		menuProfile.add(rbMenuItem2);
-		menuProfile.add(rbMenuItem3);
-		menuProfile.add(rbMenuItem4);
-		menuBar.add(menuProfile);
-		*/
-
-		JMenu menuEdit = new JMenu("Bearbeiten");
-		JMenuItem menuItemEditInsert = new JMenuItem(new AbstractAction("Einfügen (aus Zwischenablage)") { public void actionPerformed(ActionEvent e) { HTGT.importFromClipboard(); }});
-		JMenuItem menuItemEditCopy = new JMenuItem(new AbstractAction("Kopieren (in Zwischenablage)") { public void actionPerformed(ActionEvent e) { HTGT.test(); }});
-		JMenuItem menuItemEditDelete = new JMenuItem(new AbstractAction("Markierte löschen") { public void actionPerformed(ActionEvent e) { HTGT.deleteGhost(); }});
-		menuEdit.add(menuItemEditInsert);
-		menuEdit.add(menuItemEditCopy);
-		menuEdit.addSeparator();
-		menuEdit.add(menuItemEditDelete);
-		menuBar.add(menuEdit);
-
-		// todo: einfügen/kopieren über zwischenablage!
-		// ...
-
-		JMenu menuGhost = new JMenu("Geister");
-		JMenuItem menuItemSelectProfile = new JMenuItem(new AbstractAction("Profil auswählen") { public void actionPerformed(ActionEvent e) { HTGT.selectProfile(); }});
-		JMenuItem menuItemGhostInput = new JMenuItem(new AbstractAction("Geist einfügen") { public void actionPerformed(ActionEvent e) { HTGT.ghostInput(); }});
-		// JMenuItem menuItemGhostDelete = new JMenuItem(new AbstractAction("Geist löschen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDelete(); }});
-		JMenuItem menuItemGhostDownload = new JMenuItem(new AbstractAction("Geist herunterladen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDownload(); }});
-		menuGhost.add(menuItemSelectProfile);
-		menuGhost.addSeparator();
-		menuGhost.add(menuItemGhostInput);
-		// menuGhost.add(menuItemGhostDelete);
-		menuGhost.addSeparator();
-		menuGhost.add(menuItemGhostDownload);
-		menuBar.add(menuGhost);
-
-		JMenu menuAPI = new JMenu("API");
-		JMenuItem menuItemAPITokenChange = new JMenuItem(new AbstractAction("Token ändern") { public void actionPerformed(ActionEvent e) { HTGT.setupToken(); }});
-		JMenuItem menuItemAPITokenClean = new JMenuItem(new AbstractAction("Token löschen") { public void actionPerformed(ActionEvent e) { HTGT.deleteToken(); }});
-		menuAPI.add(menuItemAPITokenChange);
-		menuAPI.add(menuItemAPITokenClean);
-		menuBar.add(menuAPI);
-
-		// JMenu menuHelp = new JMenu("Hilfe");
-		// menuBar.add(menuHelp);
-
 		mainwindow = new JFrame(APPLICATION_TITLE);
-		// mainwindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		mainwindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		mainwindow.setJMenuBar(menuBar);
+		mainwindow.setJMenuBar(getMenubar());
 
 		mainwindow.addWindowListener(new java.awt.event.WindowAdapter()
 		{
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent windowEvent)
 			{
-				quit();
+				HTGT.quit();
 			}
 		});
 
+		Object rowData[][] = {};
+		Object columnNames[] = { "Spieler", "Strecke", "Wetter", "Ergebnis"};
 
-		updateMainWindow();
+		mainmodel = new DefaultTableModel(rowData, columnNames);
+		maintable = new JTable(mainmodel)
+		{
+			// Die Tabellenzellen dürfen nicht editierbar sein!
+			public boolean isCellEditable(int row, int column)
+			{
+				return false;
+			};
+		};
 
-		// mainwindow.setLocation(0, 0);
+		// Nur ganze Zeilen dürfen markiert werden!
+		maintable.setColumnSelectionAllowed(false);
+		maintable.setFocusable(false);
+
+		// Spalten dürfen nicht verschoben oder verkleinert werden!
+		maintable.getTableHeader().setReorderingAllowed(false);
+		maintable.getTableHeader().setResizingAllowed(false);
+
+		maintable.addComponentListener(new ComponentAdapter()
+		{
+			public void componentResized(ComponentEvent e)
+			{
+				int lastIndex = maintable.getRowCount() - 1;
+				maintable.changeSelection(lastIndex, 0, false, false);
+			}
+		});
+
+		JScrollPane scrollPane = new JScrollPane(maintable);
+		mainwindow.add(scrollPane, BorderLayout.CENTER);
+
+		reset();
+
 		mainwindow.setSize(WINDOW_SIZE_START);
 		mainwindow.setMinimumSize(WINDOW_SIZE_MIN);
 		mainwindow.setVisible(true);
-
-
-
-
-		try
-		{
-			chooseFile();
-			selectProfile(0);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-
-
 	}
 
-	public static void test()
+	private static void reset()
+	{
+		clearTable();
+		hideTableHeader();
+
+		inputfilename   = null;
+		outputfilename  = null;
+		OfflineProfiles = null;
+		activeprofile   = 0;
+	}
+
+	private static void hideTableHeader()
+	{
+		// Das ist ein sehr schmutziger Hack...
+		maintable.getTableHeader().setUI(null);
+	}
+
+	private static void showTableHeader()
+	{
+		// Und das ist eine noch viel unschönere Lösung...
+		maintable.getTableHeader().setUI(new BasicTableHeaderUI());
+	}
+
+	private static JMenuBar getMenubar() throws Exception
+	{
+		JMenuBar menu = new JMenuBar();
+
+		menu.add(getMenu("file"));
+		menu.add(getMenu("edit"));
+		menu.add(getMenu("view"));
+		menu.add(getMenu("api"));
+		disableMenuItems();
+
+		return menu;
+	}
+
+	private static JMenu getMenu(String key) throws Exception
+	{
+		String title;
+		switch(key)
+		{
+			case "file": title = "Datei";      break;
+			case "edit": title = "Bearbeiten"; break;
+			case "view": title = "Ansicht";    break;
+			case "api":  title = "Server";     break;
+
+			default: throw new Exception(String.format("Unknown menu »%s«", key));
+		}
+
+		JMenu menu = new JMenu(title);
+
+		switch(key)
+		{
+			case "file":
+				menu.add(   new JMenuItem(new AbstractAction("Öffnen")              { public void actionPerformed(ActionEvent e) { HTGT.openFile();            }}));
+				menu.addSeparator(); // -------------------------------------------
+				menu.add(registerMenuItem(new AbstractAction("Speichern")           { public void actionPerformed(ActionEvent e) { HTGT.saveFile();            }}));
+				menu.add(registerMenuItem(new AbstractAction("Speichern unter")     { public void actionPerformed(ActionEvent e) { HTGT.saveFileAs();          }}));
+				menu.addSeparator(); // -------------------------------------------
+				menu.add(registerMenuItem(new AbstractAction("Schließen")           { public void actionPerformed(ActionEvent e) { HTGT.closeFile();           }}));
+				menu.add(   new JMenuItem(new AbstractAction("Beenden")             { public void actionPerformed(ActionEvent e) { HTGT.quit();                }}));
+				break;
+
+			case "edit":
+				menu.add(registerMenuItem(new AbstractAction("Ausschneiden")        { public void actionPerformed(ActionEvent e) { HTGT.cutToClipboard();      }}));
+				menu.add(registerMenuItem(new AbstractAction("Kopieren")            { public void actionPerformed(ActionEvent e) { HTGT.copyToClipboard();     }}));
+				menu.add(registerMenuItem(new AbstractAction("Einfügen")            { public void actionPerformed(ActionEvent e) { HTGT.importFromClipboard(); }}));
+				menu.add(registerMenuItem(new AbstractAction("Löschen")             { public void actionPerformed(ActionEvent e) { HTGT.deleteRows();          }}));
+				break;
+
+			case "view":
+				menu.add(registerMenuItem(new AbstractAction("Profil auswählen")    { public void actionPerformed(ActionEvent e) { HTGT.selectProfile();       }}));
+				menu.addSeparator(); // -------------------------------------------
+				menu.add(registerMenuItem(new AbstractAction("Aktualisieren")       { public void actionPerformed(ActionEvent e) { return;                     }}));
+				break;
+
+			case "api":
+				menu.add(registerMenuItem(new AbstractAction("Geist hochladen")     { public void actionPerformed(ActionEvent e) { HTGT.ghostUpload();         }}));
+				menu.add(registerMenuItem(new AbstractAction("Geist herunterladen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDownload();       }}));
+				menu.addSeparator(); // -------------------------------------------
+				menu.add(   new JMenuItem(new AbstractAction("API-Token ändern")    { public void actionPerformed(ActionEvent e) { HTGT.setupToken();          }}));
+				menu.add(   new JMenuItem(new AbstractAction("API-Token löschen")   { public void actionPerformed(ActionEvent e) { HTGT.deleteToken();         }}));
+				break;
+		}
+
+		return menu;
+	}
+
+	private static JMenuItem registerMenuItem(AbstractAction aa)
+	{
+		if(menuitems == null)
+		{
+			menuitems = new ArrayList<JMenuItem>();
+		}
+
+		JMenuItem jmi = new JMenuItem(aa);
+		menuitems.add(jmi); return jmi;
+	}
+
+	private static void disableMenuItems()
+	{
+		changeMenuItems(false);
+	}
+
+	private static void enableMenuItems()
+	{
+		changeMenuItems(true);
+	}
+
+	private static void changeMenuItems(boolean e)
+	{
+		if(menuitems != null)
+		{
+			for(int i = 0; i < menuitems.size(); i++)
+			{
+				menuitems.get(i).setEnabled(e);
+			}
+		}
+	}
+
+	public static void deleteRows()
+	{
+		rowsAction(false, true);
+	}
+
+	public static void cutToClipboard()
+	{
+		rowsAction(true, true);
+	}
+
+	public static void copyToClipboard()
+	{
+		rowsAction(true, false);
+	}
+
+	private static void rowsAction(boolean copy, boolean delete)
 	{
 		StringBuilder data = new StringBuilder();
 		int[] selection = maintable.getSelectedRows();
 
-		for (int i = selection.length - 1; i > -1; i--)
+		for(int i = selection.length - 1; i > -1; i--)
 		{
 			int row = selection[i];
 
-			Node ghost = TrainingGhosts.item(row);
-			Element ghostElement = (Element) ghost;
-
-			try
+			if(copy)
 			{
-				TransformerFactory tf = TransformerFactory.newInstance();
-				Transformer transformer = tf.newTransformer();
-				transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-				transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-				transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-				transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-				// transformer.setOutputProperty(OutputKeys.STANDALONE, "yes");
-				transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-
-				StreamResult result = new StreamResult(new StringWriter());
-				transformer.transform(new DOMSource(ghostElement), result);
-				data.insert(0, result.getWriter().toString());
+				data.insert(0, OfflineProfiles.getGhost(row).toString());
 			}
-			catch(Exception e)
+
+			if(delete)
 			{
-				e.printStackTrace();
+				deleteGhost(row);
 			}
 		}
 
 		System.out.println(data.toString());
 
-		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(data.toString()), null);
+		if(copy)
+		{
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(data.toString()), null);
+		}
+
+		if(delete)
+		{
+			updateWindowTitle();
+		}
 	}
 
-	public static void deleteGhost()
+	public static void ghostUpload()
 	{
-		int[] selection = maintable.getSelectedRows();
-
-		// confirm!
 		// ...
-
-		for (int i = selection.length - 1; i > -1; i--)
-		{
-			int row = selection[i];
-
-
-
-			deleteGhost(row);
-		}
+		// ...
 	}
 
-	public static void deleteGhost(int i)
+	public static void deleteGhost(int index)
 	{
-		if(i > (TrainingGhosts.getLength() - 1))
+		if(index >= OfflineProfiles.getGhostCount())
 		{
-			throw new IndexOutOfBoundsException(String.format("Ghost #%d", i));
+			throw new IndexOutOfBoundsException(String.format("Ghost #%d", index));
 		}
 
-		Node ghost = TrainingGhosts.item(i);
-		Element ghostElement = (Element) ghost;
-
-		fileChanged();
-		ghost.getParentNode().removeChild(ghostElement);
-		TableModel.removeRow(i);
-
-		System.out.println("Row " + i + " deleted!");
-	}
-
-	public static void ghostDelete()
-	{
-		JOptionPane.showMessageDialog(null, "Geister können direkt über die Schaltfläche in jeder Zeile gelöscht werden.");
+		try
+		{
+			OfflineProfiles.deleteGhost(index);
+			mainmodel.removeRow(index);
+			updateWindowTitle();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	public static void ghostDownload()
@@ -302,47 +371,7 @@ public class HTGT
 				addGhost(new GhostElement(ghostdata), true);
 				JOptionPane.showMessageDialog(null, "Erledigt!");
 
-				int row = TableModel.getRowCount() - 1;
-				maintable.clearSelection();
-				maintable.addRowSelectionInterval(row, row);
-
-				return;
-			}
-		}
-	}
-
-	public static void ghostInput()
-	{
-		while(true)
-		{
-			Object input = JOptionPane.showInputDialog(
-				mainwindow,
-				"Um einen Geist hinzuzufügen, kopiere die XML-Daten (<GhostDataPair ... />) in das Eingabefeld:",
-				"Geist einfügen",
-				JOptionPane.PLAIN_MESSAGE,
-				null,
-				null,
-				""
-			);
-
-			if(input == null)
-			{
-				System.out.println("ghostInput: CANCEL");
-				return;
-			}
-
-			String xmlstring = String.format("%s", input);
-
-			if(xmlstring.length() == 0)
-			{
-				System.out.println("ghostInput: EMPTY");
-				continue;
-			}
-			else
-			{
-				System.out.printf("ghostInput: VALUE (%d)\n", xmlstring.length());
-
-				ghostImport(xmlstring);
+				highlightLastRow();
 
 				return;
 			}
@@ -376,9 +405,32 @@ public class HTGT
 
 		JOptionPane.showMessageDialog(null, "Importierte Geister: " + i);
 
-		int row = TableModel.getRowCount();
+		if(i > 0)
+		{
+			highlightLastRows(i);
+		}
+	}
+
+	private static void highlightLastRow()
+	{
+		highlightLastRows(1);
+	}
+
+	private static void highlightLastRows(int num)
+	{
+		if(num < 1)
+		{
+			throw new IndexOutOfBoundsException(String.format("%d < 1", num));
+		}
+
+		int row = mainmodel.getRowCount();
+		highlightRows(row - num, row - 1);
+	}
+
+	private static void highlightRows(int start, int end)
+	{
 		maintable.clearSelection();
-		maintable.addRowSelectionInterval(row - i, row - 1);
+		maintable.addRowSelectionInterval(start, end);
 	}
 
 	public static void importFromClipboard()
@@ -455,7 +507,19 @@ public class HTGT
 		}
 	}
 
-	public static void chooseFile()
+	public static boolean closeFile()
+	{
+		// check if saved! (return false if confirm dialog canceled)
+		// reset OfflineProfiles
+		// reset inputfilename
+		// disableMenuItems
+		// clearTable
+		// reset?
+
+		return true;
+	}
+
+	public static void openFile()
 	{
 		JFileChooser chooser = new JFileChooser(cfg(CFG_CWD));
 
@@ -469,14 +533,30 @@ public class HTGT
 			if(code == JFileChooser.APPROVE_OPTION)
 			{
 				System.err.println("JFileChooser: APPROVE_OPTION");
-				filename = chooser.getSelectedFile().getAbsolutePath();
+				inputfilename = chooser.getSelectedFile().getAbsolutePath();
 
-				if(filename != "")
+				if(inputfilename != "")
 				{
-					System.err.println("XML filename: " + filename);
+					System.err.println("XML inputfilename: " + inputfilename);
 					cfg(CFG_CWD, String.format("%s", chooser.getCurrentDirectory()));
 
-					loadXML();
+					try
+					{
+						OfflineProfiles = new OfflineProfiles(new File(inputfilename));
+
+						selectProfile(0);
+						updateWindowTitle();
+						enableMenuItems();
+					}
+					catch(Exception e)
+					{
+						reset();
+
+						e.printStackTrace();
+						JOptionPane.showMessageDialog(mainwindow, "Fehler beim Laden der XML-Datei!", null, JOptionPane.ERROR_MESSAGE);
+						continue;
+					}
+
 					return;
 				}
 			}
@@ -493,57 +573,39 @@ public class HTGT
 		}
 	}
 
-	public static void loadXML()
+	public static void selectProfile()
 	{
-		fileChanged = false;
-		File input = new File(filename);
+		//if(!fileLoaded())
+		//{
+		//	return;
+		//}
+
+		// TODO: Zuletzt genutzes Profil in CFG abspeichern und auslesen
+		// ...
+
+		String selection = null;
+		String[] profiles;
+		String[] values;
 
 		try
 		{
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-
-			xml = dBuilder.parse(input);
-			xml.setXmlStandalone(true);
+			profiles = OfflineProfiles.getProfiles();
+			values = new String[profiles.length];
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
-		}
-	}
-
-	private static String formatProfileSelection(int i, String nick)
-	{
-		return String.format("[%02d] %s", i + 1, nick);
-	}
-
-	public static void selectProfile()
-	{
-		if(!fileLoaded())
-		{
+			JOptionPane.showMessageDialog(mainwindow, "Eines der Profile enthält Fehler.", null, JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
-		// TODO: Zuletzt genutzes Profile in CFG abspeichern und auslesen
-		// ...
-
-		NodeList OfflineProfiles = xml.getElementsByTagName("OfflineProfile");
-		Object[] availableProfiles = new Object[OfflineProfiles.getLength()];
-
-		String currentSelection = null;
-		for(int i = 0; i < OfflineProfiles.getLength(); i++)
+		for(int i = 0; i < profiles.length; i++)
 		{
-			Node ProfileNode = OfflineProfiles.item(i);
-			Element ProfileElement = (Element) ProfileNode;
+			values[i] = String.format("[%02d] %s", i + 1, profiles[i]);
 
-			Element NickElement = (Element) ProfileElement.getElementsByTagName("Nickname").item(0);
-			String option = formatProfileSelection(i, NickElement.getTextContent());
-
-			availableProfiles[i] = option;
-
-			if(i == selectedProfile)
+			if(activeprofile == i)
 			{
-				currentSelection = option;
+				selection = values[i];
 			}
 		}
 
@@ -553,8 +615,8 @@ public class HTGT
 			"Profilauswahl",
 			JOptionPane.PLAIN_MESSAGE,
 			null,
-			availableProfiles,
-			currentSelection
+			values,
+			selection
 		);
 
 		if(input == null)
@@ -564,182 +626,77 @@ public class HTGT
 		}
 		else
 		{
-			String inputstring = (String) input;
+			int selected = 0;
+			String value = (String) input;
 
-			int selection = 0;
-
-
-
-			for(int i = 0; i < availableProfiles.length; i++)
+			for(int i = 0; i < values.length; i++)
 			{
-				if(inputstring.equals(availableProfiles[i]))
+				if(values[i].equals(value))
 				{
-					selection = i;
+					selected = i;
 					break;
 				}
 			}
 
-			System.out.println("selection: " + inputstring);
-			System.out.println("profile: " + selection);
-
-			clearTable();
-			selectProfile(selection);
-
-
+			selectProfile(selected);
 		}
 	}
 
-	public static void selectProfile(int i)
+	public static void selectProfile(int index)
 	{
-		if(!fileLoaded())
-		{
-			return;
-		}
-
-		selectedProfile = i;
-
-		NodeList OfflineProfiles = xml.getElementsByTagName("OfflineProfile");
-		Element test = (Element) OfflineProfiles.item(i);
-		TrainingGhosts = test.getElementsByTagName("GhostDataPair");
-
-		for(int h = 0; h < TrainingGhosts.getLength(); h++)
-			{
-				Node ghost = TrainingGhosts.item(h);
-				Element ghostElement = (Element) ghost;
-
-				GhostElement ge = new GhostElement(ghostElement);
-				ge.printDetails();
-				addGhost(ge, false);
-			}
-	}
-
-	public static void updateMainWindow()
-	{
-
-		Object rowData[][] = {};
-		Object columnNames[] = { "Spieler", "Strecke", "Wetter", "Ergebnis" /*, ""*/ };
-		TableModel = new DefaultTableModel(rowData, columnNames);
-		maintable = new JTable(TableModel)
-		{
-			// private static final long serialVersionUID = 1L;
-			public boolean isCellEditable(int row, int column)
-			{
-//				if(column == 4)
-//				{
-//					return true;
-//				}
-//				else
-//				{
-					return false;
-//				}
-			};
-		};
-
-		maintable.setFocusable(false);
-		// maintable.setRowSelectionAllowed(true);
-		maintable.setColumnSelectionAllowed(false);
-		//maintable.setCellSelectionEnabled(false);
-
-		maintable.addComponentListener(new ComponentAdapter()
-		{
-			public void componentResized(ComponentEvent e)
-			{
-				int lastIndex = maintable.getRowCount() - 1;
-				maintable.changeSelection(lastIndex, 0, false, false);
-			}
-		});
-
-		//Action delete = new AbstractAction()
+		//if(!fileLoaded())
 		//{
-			//public void actionPerformed(ActionEvent e)
-			//{
-				//// todo: auslagern!
-				//fileChanged();
+		//	return;
+		//}
 
-				//JTable table = (JTable)e.getSource();
-				//int modelRow = Integer.valueOf( e.getActionCommand() );
+		activeprofile = index;
+		OfflineProfiles.selectProfile(index);
+		clearTable();
 
-				//// confirm!
-				//// ...
+		if(OfflineProfiles.getGhostCount() > 0)
+		{
+			showTableHeader();
 
-				//Node ghost = TrainingGhosts.item(modelRow);
-				//Element ghostElement = (Element) ghost;
-				//ghost.getParentNode().removeChild(ghostElement);
+			for(int i = 0; i < OfflineProfiles.getGhostCount(); i++)
+			{
+				addGhost(OfflineProfiles.getGhost(i), false);
+			}
+		}
+	}
 
-				///*
-				//try
-				//{
-					//saveDocument(xml);
-				//}
-				//catch(Exception ex)
-				//{
-					//ex.printStackTrace();
-				//}
-				//*/
-
-				//((DefaultTableModel)table.getModel()).removeRow(modelRow);
-				//System.out.println("Row " + modelRow + " deleted!");
-			//}
-		//};
-
-		//ButtonColumn buttonColumn = new ButtonColumn(maintable, delete, 4);
-		//// buttonColumn.setMnemonic(KeyEvent.VK_D);
-
-		// todo: zeile löschen über DEL key?
+	public static void saveFileAs()
+	{
+		// dialog!
 		// ...
 
-		/*
-		for(int i = 0; i < TrainingGhosts.getLength(); i++)
-		{
-			Node ghost = TrainingGhosts.item(i);
-			Element ghostElement = (Element) ghost;
+		// ...
+		// ...
 
-			GhostElement test = new GhostElement(ghostElement);
-			test.printDetails();
-			addGhost(test, false);
-		}
-		*/
-
-		selectProfile(0);
-
-		JScrollPane scrollPane = new JScrollPane(maintable);
-		mainwindow.add(scrollPane, BorderLayout.CENTER);
+		// falls sich inputfile von outputfile unterscheidet,
+		// müssen wir inputfile aktualisieren und OfflineProfiles
+		// darüber informieren. Ansonsten endet das in einem Chaos.
 	}
 
 	private static void clearTable()
 	{
-		TableModel.setRowCount(0);
-
-		/*
-		if(TableModel.getRowCount() > 0)
-		{
-			for(int i = TableModel.getRowCount() - 1; i > -1; i--)
-			{
-				TableModel.removeRow(i);
-			}
-		}
-		*/
+		mainmodel.setRowCount(0);
 	}
 
 	public static void addGhost(GhostElement ghost, boolean create)
 	{
-		// validate xml data?
-		// ...
-
 		if(create)
 		{
-			fileChanged();
-
-			// add to xml node
-			// ...
-
-			// todo: das funktioniert nur, wenn es bereits elemente gibt.
-			// für den anderen fall braucht es eine andere lösung!
-			Node ghostnode = TrainingGhosts.item(TrainingGhosts.getLength() - 1);
-			Element ghostElement = (Element) ghostnode;
-
-			Node newNode = xml.importNode(ghost.getElement(), true);
-			ghostElement.getParentNode().appendChild(newNode);
+			try
+			{
+				OfflineProfiles.addGhost(ghost);
+				updateWindowTitle();
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(mainwindow, "Fehler beim Hinzufügen des Geists!", null, JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 		}
 
 		displayGhost(ghost);
@@ -747,47 +704,17 @@ public class HTGT
 
 	private static void displayGhost(GhostElement ghost)
 	{
-		Object tmp[] = { ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult() /*, "Geist löschen"*/ };
-		TableModel.addRow(tmp);
-	}
-
-	public static void printDocument(Document doc, OutputStream out) throws IOException, TransformerException
-	{
-		TransformerFactory tf = TransformerFactory.newInstance();
-		Transformer transformer = tf.newTransformer();
-		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-		transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-		transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-		// transformer.setOutputProperty(OutputKeys.STANDALONE, "yes");
-		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-
-		transformer.transform(new DOMSource(doc),
-			 new StreamResult(new OutputStreamWriter(out, "UTF-8")));
-	}
-
-	public static void saveDocument(Document doc) throws IOException, TransformerException
-	{
-		TransformerFactory tf = TransformerFactory.newInstance();
-		Transformer transformer = tf.newTransformer();
-		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-		transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-		transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-		// transformer.setOutputProperty(OutputKeys.STANDALONE, "yes");
-		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-
-		transformer.transform(new DOMSource(doc),
-			 new StreamResult(new File(filename + ".new")));
+		Object tmp[] = { ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult() };
+		mainmodel.addRow(tmp);
 	}
 
 	public static void quit()
 	{
-		if(fileChanged)
+		if(OfflineProfiles != null && OfflineProfiles.changed())
 		{
 			int input = JOptionPane.showConfirmDialog(mainwindow,
-				"Die Änderungen wurden nicht gespeichert! Trotzdem beenden?",
-				"Es gibt nicht gespeicherte Änderungen",
+				"Die Änderungen wurden nicht gespeichert! Trotzdem fortfahren?",
+				"ACHTUNG – drohender Datenverlust",
 				JOptionPane.YES_NO_OPTION,
 				JOptionPane.QUESTION_MESSAGE
 			);
@@ -803,40 +730,56 @@ public class HTGT
 			}
 		}
 
-		System.exit(0);
+		if(closeFile())
+		{
+			System.exit(0);
+		}
 	}
 
 	public static boolean saveFile()
 	{
-		if(fileChanged)
+		if(OfflineProfiles != null && OfflineProfiles.changed())
 		{
+			if(outputfilename == null)
+			{
+				outputfilename = inputfilename;
+			}
+
 			try
 			{
-				saveDocument(xml);
-				fileSaved();
-
-				return true;
+				PrintWriter tmp = new PrintWriter(outputfilename);
+				tmp.printf("%s", OfflineProfiles.toString());
+				tmp.close();
 			}
 			catch(Exception e)
 			{
 				e.printStackTrace();
-				fileChanged();
+				return false;
+			}
+
+			OfflineProfiles.saved();
+			updateWindowTitle();
+		}
+
+		return true;
+	}
+
+	public static void updateWindowTitle()
+	{
+		String filename = "";
+		String suffix = "";
+
+		if(OfflineProfiles != null)
+		{
+			filename = " – " + inputfilename;
+
+			if(OfflineProfiles.changed())
+			{
+				suffix = " *";
 			}
 		}
 
-		return false;
-	}
-
-	private static void fileSaved()
-	{
-		fileChanged = false;
-		mainwindow.setTitle(APPLICATION_TITLE);
-	}
-
-	public static void fileChanged()
-	{
-		fileChanged = true;
-		mainwindow.setTitle(APPLICATION_TITLE + " *");
+		mainwindow.setTitle(APPLICATION_TITLE + filename + suffix);
 	}
 
 	// Konfiguration "key" auslesen.
@@ -859,15 +802,5 @@ public class HTGT
 
 		cfg.put(key, value);
 		return cfg(key);
-	}
-
-	public static boolean fileLoaded()
-	{
-		if(xml != null)
-		{
-			return true;
-		}
-
-		return false;
 	}
 }

@@ -2,6 +2,8 @@ example/*.xml
 example/*.xml.new
 manifest.mf
 HTGT
+HTGT.geany
 HTGT.jar
 HTGT.zip
 *.class
+*.swp
