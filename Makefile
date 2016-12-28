@@ -2,18 +2,18 @@ MFFILE = build/manifest.mf
 JARFILE = build/HTGT.jar
 ZIPFILE = build/HTGT.zip
 
-JFLAGS = -g -cp src -d classes
+JFLAGS = -g -sourcepath ./src -classpath ./classes -d ./classes
 JC = javac
 JAR = jar
 
 sources = $(wildcard src/*.java)
-classes = $(subst src/,classes/,$(sources:.java=.class))
+classes = $(sources:.java=.class)
 
 all: compile jar zip
 
 compile: $(classes)
 
-classes/%.class: src/%.java
+%.class: %.java
 	$(JC) $(JFLAGS) $<
 
 jar:
@@ -21,9 +21,9 @@ jar:
 	@echo "Class-Path: ." >> $(MFFILE)
 	@echo "Main-Class: HTGT" >> $(MFFILE)
 
-	$(JAR) -cmf $(MFFILE) $(JARFILE) $(classes) && \
-	chmod +x $(JARFILE) && \
-	$(RM) $(MFFILE)
+	cd ./classes && \
+	$(JAR) -cmf ../$(MFFILE) ../$(JARFILE) ./*.class && \
+	chmod +x ../$(JARFILE)
 
 zip:
 #	TODO: Add licence file and version string!
