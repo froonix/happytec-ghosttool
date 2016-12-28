@@ -38,9 +38,9 @@ public class HTGT
 	private static Dimension WINDOW_SIZE_MIN   = new Dimension(400, 200);
 
 	// --- Standardpfade (oder über Registry auslesen?) ---
+	// MAC: /Applications/SkiChallenge16.app/Contents/MacOS/SkiChallenge16.app/Contents/MacOS/Game_Data/OfflineProfiles.xml
 	// LINUX: ~/.wine/drive_c/Games/Ski Challenge 16/Game_Data
 	// WINDOWS: C:\\Games\\Ski Challenge 16\\Game_Data
-	// MAC: ...
 
 	// Konfigurationsnamen für java.util.prefs
 	private static String CFG_CWD   = "last-directory";
