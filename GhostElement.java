@@ -83,8 +83,8 @@ public class GhostElement
 
 		if(GhostPattern == null)
 		{
-			// this.GhostPattern = Pattern.compile("\062.\012.(.+)\022\016");
-			this.GhostPattern = Pattern.compile("\062.\012.(.{1,32})\022\016(.{1,32})\030.\100.$", Pattern.DOTALL);
+			// Der Ski wird an dieser Stelle absichtlich nicht mitextrahiert. Oder braucht den jemand unbedingt?
+			this.GhostPattern = Pattern.compile("\062.\012.(.{1,32})\022\016(.{1,32})\030(.)\100.$", Pattern.DOTALL);
 		}
 
 		this.Track = xml.getAttribute("Track");
@@ -99,21 +99,13 @@ public class GhostElement
 		{
 			// Normalerweise gehört das mit Google's Protocol Buffers extrahiert.
 			// Ich habe aber keine Lust das zu implementieren, wenn es auch so geht.
-			// Matcher m = this.GhostPattern.matcher(new ByteCharSequence(this.DataBinary));
 			Matcher m = this.GhostPattern.matcher(new String(this.DataBinary, "ISO-8859-1"));
 
 			if(m.find())
 			{
-				/*
-				StringBuilder str = new StringBuilder();
-				for(int h = m.start() + 4; h < m.end() - 2; h++)
-				{
-					str.append(Character.toString((char) DataBinary[h]));
-				}
-				this.Nickname = str.toString();
-				*/
-
 				this.Nickname = m.group(1);
+				// this.edition = m.group(2);
+				// this.flag = m.group(3);
 			}
 		}
 		catch(Exception e)
