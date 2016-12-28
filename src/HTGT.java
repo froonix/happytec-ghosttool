@@ -57,6 +57,11 @@ public class HTGT
 	private static DefaultTableModel    mainmodel;
 	private static ArrayList<JMenuItem> menuitems;
 
+	public static void about()
+	{
+		JOptionPane.showMessageDialog(mainwindow, "HTML content with link?", APPLICATION_TITLE, JOptionPane.PLAIN_MESSAGE);
+	}
+
 	public static void main(String[] args) throws Exception
 	{
 		// Aktuell gibt es nur eine Konfiguration für den ganzen User-
@@ -149,6 +154,7 @@ public class HTGT
 		menu.add(getMenu("edit"));
 		menu.add(getMenu("view"));
 		menu.add(getMenu("api"));
+		menu.add(getMenu("help"));
 		disableMenuItems();
 
 		return menu;
@@ -163,6 +169,7 @@ public class HTGT
 			case "edit": title = "Bearbeiten"; break;
 			case "view": title = "Ansicht";    break;
 			case "api":  title = "Server";     break;
+			case "help": title = "Hilfe";      break;
 
 			default: throw new Exception(String.format("Unknown menu »%s«", key));
 		}
@@ -200,6 +207,10 @@ public class HTGT
 				menu.addSeparator(); // -------------------------------------------
 				menu.add(   new JMenuItem(new AbstractAction("API-Token ändern")    { public void actionPerformed(ActionEvent e) { HTGT.setupToken();          }}));
 				menu.add(   new JMenuItem(new AbstractAction("API-Token löschen")   { public void actionPerformed(ActionEvent e) { HTGT.deleteToken();         }}));
+				break;
+
+			case "help":
+				menu.add(   new JMenuItem(new AbstractAction("Über")                { public void actionPerformed(ActionEvent e) { HTGT.about();               }}));
 				break;
 		}
 
