@@ -1,9 +1,6 @@
-example/*.xml
-example/*.xml.new
-manifest.mf
-HTGT
+build/*
+example/*
+classes/*.class
+src/*.class
 HTGT.geany
-HTGT.jar
-HTGT.zip
-*.class
 *.swp

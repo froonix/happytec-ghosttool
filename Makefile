@@ -1,30 +1,34 @@
-JFLAGS = -g
+MFFILE = build/manifest.mf
+JARFILE = build/HTGT.jar
+ZIPFILE = build/HTGT.zip
+
+JFLAGS = -g -cp src -d classes
 JC = javac
+JAR = jar
 
-sources = $(wildcard *.java)
-classes = $(sources:.java=.class)
+sources = $(wildcard src/*.java)
+classes = $(subst src/,classes/,$(sources:.java=.class))
 
-all: HTGT jar zip
+all: compile jar zip
 
-HTGT: $(classes)
+compile: $(classes)
 
-%.class: %.java
+classes/%.class: src/%.java
 	$(JC) $(JFLAGS) $<
 
 jar:
-	@echo "Manifest-Version: 1.0" > manifest.mf
-	@echo "Class-Path: ." >> manifest.mf
-	@echo "Main-Class: HTGT" >> manifest.mf
-	@echo "" >> manifest.mf
+	@echo "Manifest-Version: 1.0" > $(MFFILE)
+	@echo "Class-Path: ." >> $(MFFILE)
+	@echo "Main-Class: HTGT" >> $(MFFILE)
 
-	jar -cmf manifest.mf HTGT.jar $(classes) && \
-	chmod +x HTGT.jar
+	$(JAR) -cmf $(MFFILE) $(JARFILE) $(classes) && \
+	chmod +x $(JARFILE) && \
+	$(RM) $(MFFILE)
 
 zip:
-	# Add licence file and version string!
-	zip HTGT.zip HTGT.jar HTGT.sh HTGT.bat
+#	TODO: Add licence file and version string!
+	zip -j $(ZIPFILE) $(JARFILE) HTGT.bat HTGT.sh
 
 clean:
-	$(RM) *.class
-	$(RM) manifest.txt
-	$(RM) HTGT.jar HTGT.zip HTGT
+	$(RM) $(MFFILE) $(JARFILE) $(ZIPFILE)
+	$(RM) classes/*.class src/*.class
