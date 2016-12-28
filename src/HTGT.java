@@ -47,15 +47,14 @@ public class HTGT
 	private static String CFG_TOKEN = "esports-token";
 
 	private static Preferences          cfg;
-	private static String               inputfilename;
-	private static String               outputfilename;
+	private static File                 file;
+	private static int                  profile;
+
 	private static OfflineProfiles      OfflineProfiles;
-	private static int                  activeprofile;
 
 	private static JFrame               mainwindow;
 	private static JTable               maintable;
 	private static DefaultTableModel    mainmodel;
-
 	private static ArrayList<JMenuItem> menuitems;
 
 	public static void main(String[] args) throws Exception
@@ -121,6 +120,7 @@ public class HTGT
 		maintable.getTableHeader().setReorderingAllowed(false);
 		maintable.getTableHeader().setResizingAllowed(false);
 
+		/*
 		maintable.addComponentListener(new ComponentAdapter()
 		{
 			public void componentResized(ComponentEvent e)
@@ -129,6 +129,7 @@ public class HTGT
 				maintable.changeSelection(lastIndex, 0, false, false);
 			}
 		});
+		*/
 
 		JScrollPane scrollPane = new JScrollPane(maintable);
 		mainwindow.add(scrollPane, BorderLayout.CENTER);
@@ -239,13 +240,10 @@ public class HTGT
 
 	private static void reset()
 	{
-		clearTable();
-		hideTableHeader();
-
-		inputfilename   = null;
-		outputfilename  = null;
+		profile = 0; file = null;
 		OfflineProfiles = null;
-		activeprofile   = 0;
+
+		syncGUI();
 	}
 
 	private static void clearTable()
@@ -294,7 +292,7 @@ public class HTGT
 
 		if(OfflineProfiles != null)
 		{
-			filename = " – " + inputfilename;
+			filename = " – " + file.getAbsolutePath();
 
 			if(OfflineProfiles.changed())
 			{
@@ -368,7 +366,7 @@ public class HTGT
 		{
 			values[i] = String.format("[%02d] %s", i + 1, profiles[i]);
 
-			if(activeprofile == i)
+			if(profile == i)
 			{
 				selection = values[i];
 			}
@@ -409,23 +407,32 @@ public class HTGT
 
 	public static void selectProfile(int index)
 	{
-		//if(!fileLoaded())
-		//{
-		//	return;
-		//}
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
 
-		activeprofile = index;
-		OfflineProfiles.selectProfile(index);
+		if(index >= OfflineProfiles.getProfileCount())
+		{
+			index = 0;
+		}
 
+		if(OfflineProfiles.getProfileCount() > 0)
+		{
+			OfflineProfiles.selectProfile(index);
+		}
+
+		profile = index;
 		syncGUI();
 	}
 
 	public static void syncGUI()
 	{
+		updateWindowTitle();
 		hideTableHeader();
 		clearTable();
 
-		if(OfflineProfiles.getGhostCount() > 0)
+		if(OfflineProfiles != null && OfflineProfiles.getGhostCount() > 0)
 		{
 			showTableHeader();
 
@@ -700,16 +707,17 @@ public class HTGT
 		if(code == JFileChooser.APPROVE_OPTION)
 		{
 			System.err.println("JFileChooser: APPROVE_OPTION");
-			inputfilename = chooser.getSelectedFile().getAbsolutePath();
+			File tmp = chooser.getSelectedFile();
 
-			if(inputfilename != "")
+			if(tmp.exists())
 			{
-				System.err.println("XML inputfilename: " + inputfilename);
-				cfg(CFG_CWD, String.format("%s", chooser.getCurrentDirectory()));
+				System.err.println("XML inputfilename: " + tmp.getAbsolutePath());
+				cfg(CFG_CWD, String.format("%s", tmp.getParent()));
 
 				try
 				{
-					OfflineProfiles = new OfflineProfiles(new File(inputfilename));
+					OfflineProfiles = new OfflineProfiles(tmp);
+					file = tmp;
 
 					selectProfile(0);
 					updateWindowTitle();
@@ -739,14 +747,22 @@ public class HTGT
 
 	public static void reloadFile()
 	{
-		// changed? (dialog!)
-		// ...
+		if(unsavedChanges())
+		{
+			return;
+		}
 
-		// send notification to OfflineProfiles
-		// ...
+		try
+		{
+			OfflineProfiles.reload();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 
-		// syncGUI()
-		// ...
+		selectProfile(profile);
+		syncGUI();
 	}
 
 	public static boolean saveFile()
@@ -763,14 +779,9 @@ public class HTGT
 
 		if(force || OfflineProfiles.changed())
 		{
-			if(outputfilename == null)
-			{
-				outputfilename = inputfilename;
-			}
-
 			try
 			{
-				PrintWriter tmp = new PrintWriter(outputfilename);
+				PrintWriter tmp = new PrintWriter(file);
 				tmp.printf("%s", OfflineProfiles.toString());
 				tmp.close();
 			}
@@ -796,15 +807,10 @@ public class HTGT
 			return;
 		}
 
-		if(outputfilename == null)
-		{
-			outputfilename = inputfilename;
-		}
 
 
 
-
-		JFileChooser chooser = new JFileChooser(cfg(CFG_CWD))
+		JFileChooser chooser = new JFileChooser(file.getParent())
 		{
 			public void approveSelection()
 			{
@@ -831,34 +837,30 @@ public class HTGT
 
 		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
 		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
-		chooser.setSelectedFile(new File(outputfilename));
+		chooser.setSelectedFile(file);
 
 		int code = chooser.showSaveDialog(null);
 
 		if(code == JFileChooser.APPROVE_OPTION)
 		{
 			System.err.println("saveFileAs: APPROVE_OPTION");
-			String tmp = chooser.getSelectedFile().getAbsolutePath();
+			File tmp = chooser.getSelectedFile();
 
-			if(tmp != "")
+			if(tmp != null)
 			{
-				System.err.println("XML outputfilename: " + tmp);
-				// cfg(CFG_CWD, String.format("%s", chooser.getCurrentDirectory()));
-
-				String oldfile = outputfilename;
+				System.err.println("XML outputfilename: " + tmp.getAbsolutePath());
+				cfg(CFG_CWD, String.format("%s", tmp.getAbsolutePath()));
 
 				try
 				{
-					OfflineProfiles.updateFile(new File(tmp));
-					outputfilename = tmp;
-					inputfilename = tmp;
+					file = tmp;
 					saveFile(true);
+					OfflineProfiles.updateFile(file);
 					return;
 				}
 				catch(Exception e)
 				{
 					e.printStackTrace();
-					outputfilename = oldfile;
 					// OfflineProfiles File?
 				}
 			}
@@ -875,6 +877,19 @@ public class HTGT
 
 	public static boolean closeFile()
 	{
+		if(unsavedChanges())
+		{
+			return false;
+		}
+
+		disableMenuItems();
+		reset();
+
+		return true;
+	}
+
+	public static boolean unsavedChanges()
+	{
 		if(OfflineProfiles != null && OfflineProfiles.changed())
 		{
 			int input = JOptionPane.showConfirmDialog(mainwindow,
@@ -887,7 +902,7 @@ public class HTGT
 			if(input == JOptionPane.NO_OPTION)
 			{
 				System.out.println("quit: NO");
-				return false;
+				return true;
 			}
 			else
 			{
@@ -895,13 +910,7 @@ public class HTGT
 			}
 		}
 
-		// reset OfflineProfiles
-		// reset inputfilename
-		// disableMenuItems
-		// clearTable
-		// reset?
-
-		return true;
+		return false;
 	}
 
 	public static void quit()

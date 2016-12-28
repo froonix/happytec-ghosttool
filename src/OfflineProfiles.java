@@ -41,8 +41,17 @@ class OfflineProfiles
 
 	public OfflineProfiles(File xmlfile) throws Exception
 	{
+		this.checkFile(xmlfile);
 		this.file = xmlfile;
 		this.reload();
+	}
+
+	private void checkFile(File xmlfile) throws Exception
+	{
+		if(xmlfile == null || !xmlfile.exists() || !xmlfile.isFile())
+		{
+			throw new FileNotFoundException(xmlfile.getAbsolutePath());
+		}
 	}
 
 	public void updateFile(File xmlfile) throws Exception
@@ -52,6 +61,7 @@ class OfflineProfiles
 			throw new Exception("OfflineProfiles not initialized with File; updateFile() not possible");
 		}
 
+		this.checkFile(xmlfile);
 		this.file = xmlfile;
 	}
 
@@ -62,6 +72,7 @@ class OfflineProfiles
 			throw new Exception("OfflineProfiles not initialized with File; reload() not possible");
 		}
 
+		this.changed = false;
 		this.document = getParser().parse(this.file);
 		this.postParsing();
 	}
