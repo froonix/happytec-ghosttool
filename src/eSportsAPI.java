@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -15,6 +16,7 @@ public class eSportsAPI
 
 	private String token;
 	private String useragent;
+	private String errmsg;
 
 	public eSportsAPI(String token)
 	{
@@ -83,16 +85,18 @@ public class eSportsAPI
 			System.out.println("Post parameters : " + postdata);
 			System.out.println("Response Code : " + responseCode);
 
-			if(responseCode != 200)
+			InputStream _is;
+			if(responseCode < 400)
 			{
-				// errmsg speichern
-				// ...
-
-				return null;
+				_is = con.getInputStream();
+			}
+			else
+			{
+				_is = con.getErrorStream();
 			}
 
 			BufferedReader in = new BufferedReader(
-					new InputStreamReader(con.getInputStream()));
+					new InputStreamReader(_is));
 			String inputLine;
 			StringBuffer response = new StringBuffer();
 
@@ -102,14 +106,52 @@ public class eSportsAPI
 			}
 			in.close();
 
+			if(responseCode != 200)
+			{
+				String body = response.toString().trim();
+				if(body.matches("^[a-zA-Z0-9_]{1,32}$"))
+				{
+					this.errmsg = body.toUpperCase();
+				}
+				else
+				{
+					this.errmsg = null;
+				}
+
+				return null;
+			}
+
 			return response.toString();
 		}
 		catch(Exception e)
 		{
-			// ...
-			// ...
+			e.printStackTrace();
+			this.errmsg = "INTERNAL_CLIENT_EXCEPTION";
 		}
 
-		return "";
+		return null;
+	}
+
+	public String getErrorCode()
+	{
+		return this.errmsg;
+	}
+
+	public String getErrorMessage()
+	{
+		if(this.errmsg != null)
+		{
+			switch(this.errmsg)
+			{
+				case "GHOST_UNKNOWN": return "Es wurden keine Geister gefunden.";
+				case "GHOST_PRIVATE": return "Dieser Geist ist nicht öffentlich.";
+				case "PLAYER_SUSPENDED": return "Dein Spieler wurde suspendiert!";
+				case "TOKEN_UNKNOWN": return "Unbekannter API-Token!\n\nBitte kontrolliere den API-Token.";
+				case "TOKEN_INVALID": return "Ungültiges Format des API-Tokens!\n\nBitte kontrolliere den API-Token.";
+				case "INTERNAL_CLIENT_EXCEPTION": return "Interne Exception im Java-Programm.\n\nSiehe Stacktrace in der Konsolenausgabe.";
+			}
+		}
+
+		return "Unbekannter Fehler, siehe Fehlercode.";
 	}
 }

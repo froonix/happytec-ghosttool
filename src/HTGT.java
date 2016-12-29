@@ -636,8 +636,7 @@ public class HTGT
 
 				if(ghostdata == null)
 				{
-					// TODO: Get errmsg from API!
-					JOptionPane.showMessageDialog(null, "Download fehlgeschlagen...");
+					JOptionPane.showMessageDialog(mainwindow, String.format("Download fehlgeschlagen...\n\nFehlercode: %s\n%s", api.getErrorCode(), api.getErrorMessage()).trim(), APPLICATION_API, JOptionPane.ERROR_MESSAGE);
 					continue;
 				}
 
