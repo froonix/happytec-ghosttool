@@ -73,49 +73,13 @@ public class HTGT
 		mainwindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		mainwindow.setJMenuBar(getMenubar());
 
-		mainwindow.addWindowListener(new java.awt.event.WindowAdapter()
-		{
-			@Override
-			public void windowClosing(java.awt.event.WindowEvent windowEvent)
-			{
-				HTGT.quit();
-			}
-		});
+		mainwindow.addWindowListener(new HTGT_WindowAdapter());
 
 		Object rowData[][] = {};
 		Object columnNames[] = {"Spieler", "Strecke", "Wetter", "Ergebnis"};
 
 		mainmodel = new DefaultTableModel(rowData, columnNames);
-		maintable = new JTable(mainmodel)
-		{
-			DefaultTableCellRenderer renderLeft   = new DefaultTableCellRenderer();
-			DefaultTableCellRenderer renderCenter = new DefaultTableCellRenderer();
-			DefaultTableCellRenderer renderRight  = new DefaultTableCellRenderer();
-			{
-				  renderLeft.setHorizontalAlignment(SwingConstants.LEFT);
-				renderCenter.setHorizontalAlignment(SwingConstants.CENTER);
-				 renderRight.setHorizontalAlignment(SwingConstants.RIGHT);
-			}
-
-			// Einige Spalten gehören anders ausgerichtet...
-			public TableCellRenderer getCellRenderer(int row, int column)
-			{
-				if(column > 0)
-				{
-					return renderRight;
-				}
-				else
-				{
-					return renderLeft;
-				}
-			}
-
-			// Die Tabellenzellen dürfen nicht editierbar sein!
-			public boolean isCellEditable(int row, int column)
-			{
-				return false;
-			};
-		};
+		maintable = new HTGT_JTable(mainmodel);
 
 		// Nur ganze Zeilen dürfen markiert werden!
 		maintable.setColumnSelectionAllowed(false);
@@ -124,17 +88,6 @@ public class HTGT
 		// Spalten dürfen nicht verschoben oder verkleinert werden!
 		maintable.getTableHeader().setReorderingAllowed(false);
 		maintable.getTableHeader().setResizingAllowed(false);
-
-		/*
-		maintable.addComponentListener(new ComponentAdapter()
-		{
-			public void componentResized(ComponentEvent e)
-			{
-				int lastIndex = maintable.getRowCount() - 1;
-				maintable.changeSelection(lastIndex, 0, false, false);
-			}
-		});
-		*/
 
 		JScrollPane scrollPane = new JScrollPane(maintable);
 		mainwindow.add(scrollPane, BorderLayout.CENTER);
@@ -822,30 +775,7 @@ public class HTGT
 
 
 
-		JFileChooser chooser = new JFileChooser(file.getParent())
-		{
-			public void approveSelection()
-			{
-				File f = getSelectedFile();
-				if(f.exists() && getDialogType() == SAVE_DIALOG)
-				{
-					int result = JOptionPane.showConfirmDialog(this, "The file exists, overwrite?", "Existing file", JOptionPane.YES_NO_OPTION);
-
-					switch(result)
-					{
-						case JOptionPane.YES_OPTION:
-							super.approveSelection();
-							return;
-
-						default:
-							cancelSelection();
-							return;
-					}
-				}
-
-				super.approveSelection();
-			}
-		};
+		JFileChooser chooser = new ImprovedFileChooser(file.getParent());
 
 		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
 		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
@@ -957,6 +887,52 @@ public class HTGT
 
 		cfg.put(key, value);
 		return cfg(key);
+	}
+}
+
+class HTGT_JTable extends JTable
+{
+	DefaultTableCellRenderer renderLeft;
+	DefaultTableCellRenderer renderCenter;
+	DefaultTableCellRenderer renderRight;
+
+	public HTGT_JTable(TableModel dm)
+	{
+		super(dm);
+
+		this.renderLeft = new DefaultTableCellRenderer();
+		renderLeft.setHorizontalAlignment(SwingConstants.LEFT);
+
+		this.renderCenter = new DefaultTableCellRenderer();
+		renderCenter.setHorizontalAlignment(SwingConstants.CENTER);
+
+		this.renderRight = new DefaultTableCellRenderer();
+		renderRight.setHorizontalAlignment(SwingConstants.RIGHT);
+	}
+
+	public TableCellRenderer getCellRenderer(int row, int column)
+	{
+		if(column > 0)
+		{
+			return renderRight;
+		}
+		else
+		{
+			return renderLeft;
+		}
+	}
+
+	public boolean isCellEditable(int row, int column)
+	{
+		return false;
+	};
+}
+
+class HTGT_WindowAdapter extends java.awt.event.WindowAdapter
+{
+	public void windowClosing(java.awt.event.WindowEvent windowEvent)
+	{
+		HTGT.quit();
 	}
 }
 
