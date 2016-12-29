@@ -1,2 +1,2 @@
 @ECHO OFF
-%JAVA_HOME%\bin\java -jar "HTGT.jar"
+java -jar "HTGT.jar"
