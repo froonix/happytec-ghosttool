@@ -232,15 +232,24 @@ class OfflineProfiles
 
 	public String toString()
 	{
+		String XML;
+
 		try
 		{
-			return FNX.getStringFromDOM(this.document, true);
+			XML = FNX.getStringFromDOM(this.document, true);
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
 			return null;
 		}
+
+		if(!System.lineSeparator().equals("\r\n"))
+		{
+			XML = XML.replace(System.lineSeparator(), "\r\n");
+		}
+
+		return XML;
 	}
 
 	public boolean changed()
