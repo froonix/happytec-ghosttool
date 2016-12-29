@@ -46,16 +46,16 @@ public class HTGT
 	private static String CFG_CWD   = "last-directory";
 	private static String CFG_TOKEN = "esports-token";
 
-	private static Preferences          cfg;
-	private static File                 file;
-	private static int                  profile;
+	private static Preferences                cfg;
+	private static File                       file;
+	private static int                        profile;
 
-	private static OfflineProfiles      OfflineProfiles;
+	private static OfflineProfiles            OfflineProfiles;
 
-	private static JFrame               mainwindow;
-	private static JTable               maintable;
-	private static DefaultTableModel    mainmodel;
-	private static ArrayList<JMenuItem> menuitems;
+	private static JFrame                     mainwindow;
+	private static JTable                     maintable;
+	private static DefaultTableModel          mainmodel;
+	private static ArrayList<DynamicMenuItem> menuitems;
 
 	public static void about()
 	{
@@ -179,53 +179,54 @@ public class HTGT
 		switch(key)
 		{
 			case "file":
-				menu.add(   new JMenuItem(new AbstractAction("Öffnen")              { public void actionPerformed(ActionEvent e) { HTGT.openFile();            }}));
-				menu.addSeparator(); // -------------------------------------------
-				menu.add(registerMenuItem(new AbstractAction("Speichern")           { public void actionPerformed(ActionEvent e) { HTGT.saveFile();            }}));
-				menu.add(registerMenuItem(new AbstractAction("Speichern unter")     { public void actionPerformed(ActionEvent e) { HTGT.saveFileAs();          }}));
-				menu.addSeparator(); // -------------------------------------------
-				menu.add(registerMenuItem(new AbstractAction("Schließen")           { public void actionPerformed(ActionEvent e) { HTGT.closeFile();           }}));
-				menu.add(   new JMenuItem(new AbstractAction("Beenden")             { public void actionPerformed(ActionEvent e) { HTGT.quit();                }}));
+				menu.add(new DynamicMenuItem("Öffnen",                  HTGT.class.getName(), "openFile"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(registerDynMenuItem("Speichern",               HTGT.class.getName(), "saveFile"));
+				menu.add(registerDynMenuItem("Speichern unter",         HTGT.class.getName(), "saveFileAs"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(registerDynMenuItem("Schließen",               HTGT.class.getName(), "closeFile"));
+				menu.add(new DynamicMenuItem("Beenden",                 HTGT.class.getName(), "quit"));
 				break;
 
 			case "edit":
-				menu.add(registerMenuItem(new AbstractAction("Ausschneiden")        { public void actionPerformed(ActionEvent e) { HTGT.cutToClipboard();      }}));
-				menu.add(registerMenuItem(new AbstractAction("Kopieren")            { public void actionPerformed(ActionEvent e) { HTGT.copyToClipboard();     }}));
-				menu.add(registerMenuItem(new AbstractAction("Einfügen")            { public void actionPerformed(ActionEvent e) { HTGT.copyFromClipboard();   }}));
-				menu.add(registerMenuItem(new AbstractAction("Löschen")             { public void actionPerformed(ActionEvent e) { HTGT.deleteRows();          }}));
+				menu.add(registerDynMenuItem("Ausschneiden",            HTGT.class.getName(), "cutToClipboard"));
+				menu.add(registerDynMenuItem("Kopieren",                HTGT.class.getName(), "copyToClipboard"));
+				menu.add(registerDynMenuItem("Einfügen",                HTGT.class.getName(), "copyFromClipboard"));
+				menu.add(registerDynMenuItem("Löschen",                 HTGT.class.getName(), "deleteRows"));
 				break;
 
 			case "view":
-				menu.add(registerMenuItem(new AbstractAction("Profil auswählen")    { public void actionPerformed(ActionEvent e) { HTGT.selectProfile();       }}));
-				menu.addSeparator(); // -------------------------------------------
-				menu.add(registerMenuItem(new AbstractAction("Aktualisieren")       { public void actionPerformed(ActionEvent e) { HTGT.reloadFile();          }}));
+				menu.add(registerDynMenuItem("Profil auswählen",        HTGT.class.getName(), "selectProfile"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(registerDynMenuItem("Aktualisieren",           HTGT.class.getName(), "reloadFile"));
 				break;
 
 			case "api":
-				menu.add(registerMenuItem(new AbstractAction("Geist hochladen")     { public void actionPerformed(ActionEvent e) { HTGT.ghostUpload();         }}));
-				menu.add(registerMenuItem(new AbstractAction("Geist herunterladen") { public void actionPerformed(ActionEvent e) { HTGT.ghostDownload();       }}));
-				menu.addSeparator(); // -------------------------------------------
-				menu.add(   new JMenuItem(new AbstractAction("API-Token ändern")    { public void actionPerformed(ActionEvent e) { HTGT.setupToken();          }}));
-				menu.add(   new JMenuItem(new AbstractAction("API-Token löschen")   { public void actionPerformed(ActionEvent e) { HTGT.deleteToken();         }}));
+				menu.add(registerDynMenuItem("Geist hochladen",         HTGT.class.getName(), "ghostUpload"));
+				menu.add(registerDynMenuItem("Geist herunterladen",     HTGT.class.getName(), "ghostDownload"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(new DynamicMenuItem("API-Token ändern",        HTGT.class.getName(), "setupToken"));
+				menu.add(new DynamicMenuItem("API-Token löschen",       HTGT.class.getName(), "deleteToken"));
 				break;
 
 			case "help":
-				menu.add(   new JMenuItem(new AbstractAction("Über")                { public void actionPerformed(ActionEvent e) { HTGT.about();               }}));
+				menu.add(new DynamicMenuItem("Über",                    HTGT.class.getName(), "about"));
 				break;
 		}
 
 		return menu;
 	}
 
-	private static JMenuItem registerMenuItem(AbstractAction aa)
+	private static JMenuItem registerDynMenuItem(String t, String c, String m)
 	{
 		if(menuitems == null)
 		{
-			menuitems = new ArrayList<JMenuItem>();
+			menuitems = new ArrayList<DynamicMenuItem>();
 		}
 
-		JMenuItem jmi = new JMenuItem(aa);
-		menuitems.add(jmi); return jmi;
+		DynamicMenuItem DMI = new DynamicMenuItem(t, c, m);
+		menuitems.add(DMI);
+		return DMI;
 	}
 
 	private static void disableMenuItems()
