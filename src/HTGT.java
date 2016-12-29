@@ -892,22 +892,18 @@ public class HTGT
 
 class HTGT_JTable extends JTable
 {
-	DefaultTableCellRenderer renderLeft;
-	DefaultTableCellRenderer renderCenter;
-	DefaultTableCellRenderer renderRight;
+	DefaultTableCellRenderer renderLeft = new DefaultTableCellRenderer();
+	DefaultTableCellRenderer renderCenter = new DefaultTableCellRenderer();
+	DefaultTableCellRenderer renderRight = new DefaultTableCellRenderer();
+	{
+		renderLeft.setHorizontalAlignment(SwingConstants.LEFT);
+		renderCenter.setHorizontalAlignment(SwingConstants.CENTER);
+		renderRight.setHorizontalAlignment(SwingConstants.RIGHT);
+	}
 
 	public HTGT_JTable(TableModel dm)
 	{
 		super(dm);
-
-		this.renderLeft = new DefaultTableCellRenderer();
-		renderLeft.setHorizontalAlignment(SwingConstants.LEFT);
-
-		this.renderCenter = new DefaultTableCellRenderer();
-		renderCenter.setHorizontalAlignment(SwingConstants.CENTER);
-
-		this.renderRight = new DefaultTableCellRenderer();
-		renderRight.setHorizontalAlignment(SwingConstants.RIGHT);
 	}
 
 	public TableCellRenderer getCellRenderer(int row, int column)
