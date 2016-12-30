@@ -175,13 +175,14 @@ public class GhostElement
 	{
 		try
 		{
-			return FNX.getStringFromDOM(this.XML, false);
+			return FNX.getWinNL(FNX.getStringFromDOM(this.XML, false));
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			return null;
 		}
+
+		return null;
 	}
 
 	public void delete()

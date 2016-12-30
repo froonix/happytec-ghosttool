@@ -143,11 +143,14 @@ public class eSportsAPI
 		{
 			switch(this.errmsg)
 			{
-				case "GHOST_UNKNOWN": return "Es wurden keine Geister gefunden.";
-				case "GHOST_PRIVATE": return "Dieser Geist ist nicht öffentlich.";
-				case "PLAYER_SUSPENDED": return "Dein Spieler wurde suspendiert!";
-				case "TOKEN_UNKNOWN": return "Unbekannter API-Token!\n\nBitte kontrolliere den API-Token.";
-				case "TOKEN_INVALID": return "Ungültiges Format des API-Tokens!\n\nBitte kontrolliere den API-Token.";
+				// Es gibt noch deutlich mehr Fehlercodes, die haben aber
+				// keine reale Bedeutung, wenn die API korrekt benutzt wird.
+				case "PLAYER_SUSPENDED":          return "Dein Spieler wurde suspendiert!";
+				case "GHOST_UNKNOWN":             return "Es wurden keine Geister gefunden.";
+				case "GHOST_PRIVATE":             return "Dieser Geist ist nicht öffentlich.";
+				case "TOKEN_UNKNOWN":             return "Unbekannter API-Token!\n\nBitte kontrolliere den API-Token.";
+				case "TOKEN_INVALID":             return "Ungültiges Format des API-Tokens!\n\nBitte kontrolliere den API-Token.";
+				case "SEASON_OVER":               return "Die Saison ist schon beendet.\n\nSchau ins Forum, wann es wieder los geht!";
 				case "INTERNAL_CLIENT_EXCEPTION": return "Interne Exception im Java-Programm.\n\nSiehe Stacktrace in der Konsolenausgabe.";
 			}
 		}

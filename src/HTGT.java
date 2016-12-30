@@ -329,7 +329,7 @@ public class HTGT
 
 		for(int i = 0; i < profiles.length; i++)
 		{
-			values[i] = String.format("[%02d] %s", i + 1, profiles[i]);
+			values[i] = String.format("[%0" + Integer.toString(FNX.strlen(profiles.length)) + "d] %s", i + 1, profiles[i]);
 
 			if(profile == i)
 			{

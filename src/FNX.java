@@ -10,6 +10,12 @@ import java.io.UnsupportedEncodingException;
 
 abstract class FNX
 {
+	// return string length of int
+	public static int strlen(int i)
+	{
+		return Integer.toString(i).length();
+	}
+
 	// return signed int from string
 	public static int intval(String s)
 	{
@@ -97,5 +103,15 @@ abstract class FNX
 		t.transform(input, output);
 
 		return output.getWriter().toString();
+	}
+
+	public static String getWinNL(String string)
+	{
+		if(!System.lineSeparator().equals("\r\n"))
+		{
+			string = string.replace(System.lineSeparator(), "\r\n");
+		}
+
+		return string;
 	}
 }

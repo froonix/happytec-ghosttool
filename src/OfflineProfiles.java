@@ -236,20 +236,15 @@ class OfflineProfiles
 
 		try
 		{
-			XML = FNX.getStringFromDOM(this.document, true);
+			return FNX.getWinNL(FNX.getStringFromDOM(this.document, true));
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			return null;
+
 		}
 
-		if(!System.lineSeparator().equals("\r\n"))
-		{
-			XML = XML.replace(System.lineSeparator(), "\r\n");
-		}
-
-		return XML;
+		return null;
 	}
 
 	public boolean changed()
