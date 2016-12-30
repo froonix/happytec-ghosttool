@@ -617,36 +617,51 @@ public class HTGT
 				return;
 			}
 
-			int id = FNX.intval(input.toString());
-			last_input = Integer.toString(id);
+			ArrayList<Integer> ids = new ArrayList<Integer>(0);
+			String[] parts = input.toString().split("[^0-9]+");
 
-			if(id <= 0)
+			for(int i = 0; i < parts.length; i++)
+			{
+				int id = FNX.intval(parts[i].trim());
+
+				if(id > 0)
+				{
+					ids.add(id);
+				}
+			}
+
+			Integer[] id;
+			String ghostdata;
+
+			// ladegrafik? oder wenigstens ein ladedialog?
+			// ...
+
+			if(ids.size() == 0)
 			{
 				System.out.println("ghostDownload: NULL");
 				continue;
 			}
+			else if(ids.size() == 1)
+			{
+				System.out.println("ghostDownload: single ID");
+				ghostdata = api.getGhostByID(ids.get(0));
+			}
 			else
 			{
-				System.out.printf("ghostDownload: ID (%d)\n", id);
-
-				// ladegrafik? oder wenigstens ein ladedialog?
-				// ...
-
-				String ghostdata = api.getGhostByID(id);
-
-				if(ghostdata == null)
-				{
-					JOptionPane.showMessageDialog(mainwindow, String.format("Download fehlgeschlagen...\n\nFehlercode: %s\n%s", api.getErrorCode(), api.getErrorMessage()).trim(), APPLICATION_API, JOptionPane.ERROR_MESSAGE);
-					continue;
-				}
-
-				addGhost(new GhostElement(ghostdata), true);
-				JOptionPane.showMessageDialog(null, "Erledigt!");
-
-				highlightLastRow();
-
-				return;
+				System.out.printf("ghostDownload: IDs (%d)", ids.size());
+				id = ids.stream().toArray(Integer[]::new);
+				ghostdata = api.getGhostsByIDs(id);
 			}
+
+			if(ghostdata == null)
+			{
+				JOptionPane.showMessageDialog(mainwindow, String.format("Download fehlgeschlagen...\n\nFehlercode: %s\n%s", api.getErrorCode(), api.getErrorMessage()).trim(), APPLICATION_API, JOptionPane.ERROR_MESSAGE);
+				continue;
+			}
+
+			ghostImport(ghostdata);
+
+			return;
 		}
 	}
 

@@ -47,6 +47,31 @@ public class eSportsAPI
 		return this.request("OFFLINE", "ghost.get", args);
 	}
 
+	public String getGhostsByIDs(int[] ids)
+	{
+		Map<String,Object> args = new HashMap<String,Object>();
+		StringBuilder value = new StringBuilder();
+
+		for(int i = 0; i < ids.length; i++)
+		{
+			if(i > 0)
+			{
+				value.append(",");
+			}
+
+			value.append(String.format("%d", ids[i]));
+		}
+
+		args.put("byIDs", value.toString());
+		return this.request("OFFLINE", "ghost.get", args);
+	}
+
+	public String getGhostsByIDs(Integer[] ids)
+	{
+		int[] values = Arrays.stream(ids).mapToInt(Integer::intValue).toArray();
+		return getGhostsByIDs(values);
+	}
+
 	private String request(String module, String method, Map<?,?> data)
 	{
 		module = module.toLowerCase();

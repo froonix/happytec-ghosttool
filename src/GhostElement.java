@@ -184,9 +184,4 @@ public class GhostElement
 
 		return null;
 	}
-
-	public void delete()
-	{
-		this.XML.getParentNode().removeChild(this.XML);
-	}
 }

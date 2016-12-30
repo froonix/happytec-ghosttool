@@ -143,8 +143,9 @@ class OfflineProfiles
 	public void deleteGhost(int index) throws Exception
 	{
 		this.changed = true;
-		this.getGhost(index).delete();
 		this.GhostElements.remove(index);
+		Element GhostElement = (Element) this.TrainingGhosts.item(index);
+		GhostNode.getParentNode().removeChild(GhostElement);
 
 		if(this.GhostElements.size() != this.TrainingGhosts.getLength())
 		{
