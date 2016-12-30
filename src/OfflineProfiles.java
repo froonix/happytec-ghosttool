@@ -145,7 +145,7 @@ class OfflineProfiles
 		this.changed = true;
 		this.GhostElements.remove(index);
 		Element GhostElement = (Element) this.TrainingGhosts.item(index);
-		GhostNode.getParentNode().removeChild(GhostElement);
+		GhostElement.getParentNode().removeChild(GhostElement);
 
 		if(this.GhostElements.size() != this.TrainingGhosts.getLength())
 		{
