@@ -5,6 +5,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import org.w3c.dom.*;
+
+
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -70,6 +73,78 @@ public class eSportsAPI
 	{
 		int[] values = Arrays.stream(ids).mapToInt(Integer::intValue).toArray();
 		return getGhostsByIDs(values);
+	}
+
+	public int[] getGhostIDs(GhostElement[] ghosts)
+	{
+		Map<String,Object> args = new HashMap<String,Object>();
+		StringBuilder data = new StringBuilder();
+
+		for(int i = 0; i < ghosts.length; i++)
+		{
+			data.append(ghosts[i].toString());
+		}
+
+		args.put("XML", data.toString());
+		String result = this.request("OFFLINE", "ghost.put", args);
+
+		if(result != null)
+		{
+			try
+			{
+				Document doc = FNX.getDOMDocument(result);
+				NodeList GhostNodes = doc.getElementsByTagName("Ghost");
+				int[] ghostIDs = new int[GhostNodes.getLength()];
+
+				for(int i = 0; i < GhostNodes.getLength(); i++)
+				{
+					Element ghost = (Element) GhostNodes.item(i);
+					ghostIDs[i] = Integer.parseInt(ghost.getAttribute("ID"));
+				}
+
+				return ghostIDs;
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return null;
+	}
+
+	public boolean applyResultByGhostID(int ghostID)
+	{
+		Map<String,Object> args = new HashMap<String,Object>();
+
+		args.put("ghostID", Integer.toString(ghostID));
+		String result = this.request("OFFLINE", "result.apply", args);
+
+		if(result != null)
+		{
+			try
+			{
+				Document doc = FNX.getDOMDocument(result);
+				NodeList GhostNodes = doc.getElementsByTagName("Ghost");
+
+				if(GhostNodes.getLength() > 0)
+				{
+					Element ghost = (Element) GhostNodes.item(0);
+					int id = Integer.parseInt(ghost.getAttribute("ID"));
+
+					if(id == ghostID)
+					{
+						return true;
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return false;
 	}
 
 	private String request(String module, String method, Map<?,?> data)

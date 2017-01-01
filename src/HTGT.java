@@ -600,13 +600,7 @@ public class HTGT
 		}
 	}
 
-	public static void ghostUpload()
-	{
-		// ...
-		// ...
-	}
-
-	public static void ghostDownload()
+	private static String getToken()
 	{
 		String token = cfg(CFG_TOKEN);
 		if(token == null || token.equals(""))
@@ -614,8 +608,57 @@ public class HTGT
 			setupToken(); token = cfg(CFG_TOKEN);
 			if(token == null || token.equals(""))
 			{
-				return;
+				return null;
 			}
+		}
+
+		return token;
+	}
+
+	public static void ghostUpload()
+	{
+		int[] selection = maintable.getSelectedRows();
+		GhostElement[] ghosts = new GhostElement[selection.length];
+
+		for(int i = 0; i < selection.length; i++)
+		{
+			ghosts[i] = OfflineProfiles.getGhost(selection[i]);
+		}
+
+		String token = getToken();
+		if(token == null)
+		{
+			return;
+		}
+
+		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
+		int[] ghostIDs = api.getGhostIDs(ghosts);
+
+		// !!! confirm !!!
+		// ...
+
+		for(int i = 0; i < ghostIDs.length; i++)
+		{
+			if(!api.applyResultByGhostID(ghostIDs[i]))
+			{
+				System.out.printf("Hochgeladener Geist: ID %d (Übernahme fehlgeschlagen)\n", ghostIDs[i]);
+			}
+			else
+			{
+				System.out.printf("Hochgeladener Geist: ID %d (erfolgreich übernommen)\n", ghostIDs[i]);
+			}
+		}
+
+		// ...
+		// ...
+	}
+
+	public static void ghostDownload()
+	{
+		String token = getToken();
+		if(token == null)
+		{
+			return;
 		}
 
 		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);

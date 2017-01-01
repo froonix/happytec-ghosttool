@@ -1,15 +1,20 @@
 import java.io.*;
 import java.util.*;
 import java.net.URLEncoder;
+import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
+import org.xml.sax.InputSource;
 import org.w3c.dom.*;
 
 import java.io.UnsupportedEncodingException;
 
 abstract class FNX
 {
+	private static DocumentBuilderFactory dbFactory;
+	private static DocumentBuilder        dBuilder;
+
 	// return string length of int
 	public static int strlen(int i)
 	{
@@ -68,6 +73,31 @@ abstract class FNX
 		}
 
 		return qs.toString();
+	}
+
+	private static void setupDOMParser() throws Exception
+	{
+		if(dbFactory == null)
+		{
+			dbFactory = DocumentBuilderFactory.newInstance();
+		}
+
+		if(dBuilder == null)
+		{
+			dBuilder = dbFactory.newDocumentBuilder();
+		}
+	}
+
+	public static Document getDOMDocument(String xml) throws Exception
+	{
+		setupDOMParser();
+		return dBuilder.parse(new InputSource(new StringReader(xml)));
+	}
+
+	public static Document getDOMDocument(File file) throws Exception
+	{
+		setupDOMParser();
+		return dBuilder.parse(file);
 	}
 
 	public static String getStringFromDOM(Document input, boolean full) throws Exception

@@ -18,9 +18,6 @@ class OfflineProfiles
 	final private static String XML_TAG_GHOST   = "GhostDataPair";
 	final private static String XML_TAG_NICK    = "Nickname";
 
-	private static DocumentBuilderFactory dbFactory;
-	private static DocumentBuilder        dBuilder;
-
 	private File     file     = null;
 	private Document document = null;
 	private boolean  changed  = false;
@@ -37,7 +34,7 @@ class OfflineProfiles
 	public OfflineProfiles(String xmlstring) throws Exception
 	{
 		this.file = null;
-		this.document = getParser().parse(new InputSource(new StringReader(xmlstring)));
+		this.document = FNX.getDOMDocument(xmlstring);
 		this.postParsing();
 	}
 
@@ -75,23 +72,8 @@ class OfflineProfiles
 		}
 
 		this.changed = false;
-		this.document = getParser().parse(this.file);
+		this.document = FNX.getDOMDocument(this.file);
 		this.postParsing();
-	}
-
-	private static DocumentBuilder getParser() throws Exception
-	{
-		if(dbFactory == null)
-		{
-			dbFactory = DocumentBuilderFactory.newInstance();
-		}
-
-		if(dBuilder == null)
-		{
-			dBuilder = dbFactory.newDocumentBuilder();
-		}
-
-		return dBuilder;
 	}
 
 	private void postParsing() throws Exception
@@ -334,7 +316,3 @@ class OfflineProfiles
 		this.changed = false;
 	}
 }
-
-// TODO: Und was ist mit dem DefaultProfile?
-//       Das sollte als -1 verarbeitet werden!
-// ...
