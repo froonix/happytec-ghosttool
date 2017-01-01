@@ -60,11 +60,11 @@ public class HTGT
 	/*
 	public static void test()
 	{
-		GhostElement[] ghosts = OfflineProfiles.getGhostsByCondition(OfflineProfiles.getGhost(maintable.getSelectedRow()));
+		int[] ghosts = OfflineProfiles.getGhostsByCondition(OfflineProfiles.getGhost(maintable.getSelectedRow()));
 
 		for(int i = 0; i < ghosts.length; i++)
 		{
-			ghosts[i].printDetails();
+			OfflineProfiles.getGhost(ghosts[i]).printDetails();
 		}
 	}
 	*/
