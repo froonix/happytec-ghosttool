@@ -298,6 +298,15 @@ public class HTGT
 				addGhost(ghostElement, true);
 				ghostElement.printDetails();
 
+				// confirm deletion!
+				// ...
+
+				int[] ghosts = OfflineProfiles.getGhostsByCondition(ghostElement);
+				for(int h = ghosts.length - 2; h > -1; h--)
+				{
+					deleteGhost(ghosts[h]);
+				}
+
 				i++;
 			}
 		}
