@@ -2,6 +2,8 @@ import java.io.*;
 import java.util.prefs.*;
 import java.util.regex.*;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Objects;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -30,12 +32,14 @@ import java.lang.IndexOutOfBoundsException;
 public class HTGT
 {
 	// Diverse fixe Konstanten für die Anwendung
-	private static String    APPLICATION_NAME  = "HTGT"; // u.a. für cfg!
-	private static String    APPLICATION_TITLE = "HTGT (HAPPYTEC Ghosttool)";
-	private static String    APPLICATION_API   = "HAPPYTEC-eSports-API";
-	private static String    APPLICATION_IDENT = "HTGT <https://github.com/froonix/happytec-ghosttool>";
-	private static Dimension WINDOW_SIZE_START = new Dimension(800, 400);
-	private static Dimension WINDOW_SIZE_MIN   = new Dimension(400, 200);
+	final private static String    APPLICATION_VERSION = "0.0.0"; // stable release
+	final private static String    APPLICATION_NAME    = "HTGT"; // cfg, updatex, …
+	final private static String    APPLICATION_TITLE   = "HTGT (HAPPYTEC Ghosttool)";
+	final private static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
+	final private static String    APPLICATION_IDENT   = "HTGT <https://github.com/froonix/happytec-ghosttool>";
+	final private static Dimension WINDOW_SIZE_START   = new Dimension(800, 400);
+	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(400, 200);
+	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
 
 	// --- Standardpfade (oder über Registry auslesen?) ---
 	// MAC: /Applications/SkiChallenge16.app/Contents/MacOS/SkiChallenge16.app/Contents/MacOS/Game_Data/OfflineProfiles.xml
@@ -43,6 +47,7 @@ public class HTGT
 	// WINDOWS: C:\\Games\\Ski Challenge 16\\Game_Data
 
 	// Konfigurationsnamen für java.util.prefs
+	private static String CFG_UC    = "update-check";
 	private static String CFG_CWD   = "last-directory";
 	private static String CFG_TOKEN = "esports-token";
 
@@ -72,6 +77,47 @@ public class HTGT
 	public static void about()
 	{
 		JOptionPane.showMessageDialog(mainwindow, "HTML content with link?", APPLICATION_TITLE, JOptionPane.PLAIN_MESSAGE);
+	}
+
+	public static void updateCheck()
+	{
+		updateCheck(true, true);
+	}
+
+	public static void updateCheck(boolean force, boolean msg)
+	{
+		long lastUpdateCheck;
+		Date date = new Date();
+
+		if(cfg(CFG_UC) == null)
+		{
+			lastUpdateCheck = 0L;
+		}
+		else
+		{
+			lastUpdateCheck = Long.parseLong(cfg(CFG_UC));
+		}
+
+		System.out.printf("Last update check: %d\n", lastUpdateCheck);
+		if(lastUpdateCheck <= 0 || date.getTime() > (lastUpdateCheck + UPDATE_INTERVAL))
+		{
+			cfg(CFG_UC, Objects.toString(date.getTime(), null));
+			force = true;
+		}
+
+		if(force)
+		{
+			eSportsAPI api = new eSportsAPI(null, APPLICATION_IDENT);
+			if(api.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION))
+			{
+				JOptionPane.showMessageDialog(null, "Es ist ein Update verfügbar!\n\nBitte besuche die Website, um es herunterzuladen.", APPLICATION_TITLE, JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+
+		if(msg)
+		{
+			JOptionPane.showMessageDialog(null, "Es gibt keine Updates!\n\nDu verwendest bereits die aktuellste Version.", APPLICATION_TITLE, JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 
 	public static void main(String[] args) throws Exception
@@ -114,6 +160,9 @@ public class HTGT
 		mainwindow.setSize(WINDOW_SIZE_START);
 		mainwindow.setMinimumSize(WINDOW_SIZE_MIN);
 		mainwindow.setVisible(true);
+
+		// ...
+		updateCheck(false, false);
 	}
 
 	private static JMenuBar getMenubar() throws Exception
@@ -181,7 +230,8 @@ public class HTGT
 
 			case "help":
 //				menu.add(new DynamicMenuItem("Test",                    HTGT.class.getName(), "test"));
-				menu.add(new DynamicMenuItem("Über",                    HTGT.class.getName(), "about"));
+				menu.add(new DynamicMenuItem("Updateprüfung",           HTGT.class.getName(), "updateCheck"));
+				menu.add(new DynamicMenuItem("Über diese App",          HTGT.class.getName(), "about"));
 				break;
 		}
 

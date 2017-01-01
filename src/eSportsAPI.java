@@ -147,6 +147,40 @@ public class eSportsAPI
 		return false;
 	}
 
+	// Das gehört eigentlich nicht hier her!
+	// Aber so ist es deutlich einfacher...
+	public boolean updateAvailable(String app, String version)
+	{
+		Map<String,Object> args = new HashMap<String,Object>();
+		args.put("application", app); args.put("version", version);
+		String result = this.request("OFFLINE", "update.check", args);
+
+		if(result != null)
+		{
+			try
+			{
+				Document doc = FNX.getDOMDocument(result);
+				NodeList ResultNodeList = doc.getElementsByTagName("Result");
+
+				if(ResultNodeList.getLength() > 0)
+				{
+					Element ResultElement = (Element) ResultNodeList.item(0);
+
+					if(!ResultElement.getTextContent().equals("NO_UPDATES"))
+					{
+						return true;
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return false;
+	}
+
 	private String request(String module, String method, Map<?,?> data)
 	{
 		module = module.toLowerCase();
@@ -168,7 +202,7 @@ public class eSportsAPI
 			con.setRequestMethod("POST");
 			con.setRequestProperty("User-Agent", this.useragent);
 
-			if(module.equals("offline"))
+			if(module.equals("offline") && this.token != null)
 			{
 				con.setRequestProperty("X-Auth-Token", this.token);
 			}
