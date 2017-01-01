@@ -26,8 +26,10 @@ public class ImprovedFileChooser extends JFileChooser
 				case JOptionPane.CLOSED_OPTION:
 					return;
 			}
+
+			super.cancelSelection();
 		}
 
-		super.cancelSelection();
+		super.approveSelection();
 	}
 }
