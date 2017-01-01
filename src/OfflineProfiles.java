@@ -12,6 +12,7 @@ import java.lang.IndexOutOfBoundsException;
 // OfflineProfiles.xml
 class OfflineProfiles
 {
+	final private static String XML_TAG_DEFAULT = "DefaultProfile";
 	final private static String XML_TAG_PROFILE = "OfflineProfile";
 	final private static String XML_TAG_GHOSTS  = "TrainingGhosts";
 	final private static String XML_TAG_GHOST   = "GhostDataPair";
@@ -27,6 +28,7 @@ class OfflineProfiles
 
 	private NodeList                OfflineProfiles;
 	private Element                 OfflineProfile;
+	private Element                 DefaultProfile;
 	private Node                    TrainingNode;
 	private Element                 TrainingElement;
 	private NodeList                TrainingGhosts;
@@ -98,16 +100,47 @@ class OfflineProfiles
 
 		this.TrainingElement  = null;
 		this.OfflineProfile  = null;
-		this.OfflineProfiles = document.getElementsByTagName(this.XML_TAG_PROFILE);
 
+		// xsi:type="GameOfflineProfile"
+		this.OfflineProfiles = document.getElementsByTagName(this.XML_TAG_PROFILE);
+		NodeList DefaultProfiles = document.getElementsByTagName(this.XML_TAG_DEFAULT);
+
+		/*
 		if(this.getProfileCount() == 0)
 		{
 			throw new Exception(String.format("Missing <%s> tag", XML_TAG_PROFILE));
 		}
+
+		if(DefaultProfiles.getLength() > 1)
+		{
+			throw new Exception(String.format("Too many <%s> tags", XML_TAG_DEFAULT));
+		}
+		*/
+
+		if(DefaultProfiles.getLength() > 0)
+		{
+			this.DefaultProfile = (Element) DefaultProfiles.item(0);
+		}
 		else
 		{
-			this.selectProfile(0);
+			this.DefaultProfile = null;
 		}
+
+		this.selectProfile(0);
+	}
+
+	public int defaultProfile()
+	{
+		if(this.DefaultProfile == null)
+		{
+			return -1;
+		}
+		else if(this.getProfileCount() == 0)
+		{
+			return 0;
+		}
+
+		return this.getProfileCount() - 1;
 	}
 
 	public int getProfileCount()
@@ -117,7 +150,7 @@ class OfflineProfiles
 			throw new IndexOutOfBoundsException("OfflineProfiles == null");
 		}
 
-		return this.OfflineProfiles.getLength();
+		return this.OfflineProfiles.getLength() + ((this.DefaultProfile != null) ? 1 : 0);
 	}
 
 	public int getGhostCount()
@@ -199,11 +232,21 @@ class OfflineProfiles
 
 	public String[] getProfiles() throws Exception
 	{
-		String[] profiles = new String[OfflineProfiles.getLength()];
+		String[] profiles = new String[this.getProfileCount()];
 
-		for(int i = 0; i < OfflineProfiles.getLength(); i++)
+		for(int i = 0; i < this.getProfileCount(); i++)
 		{
-			Element profile = (Element) OfflineProfiles.item(i);
+			Element profile;
+
+			if(i == this.defaultProfile())
+			{
+				profile = (Element) DefaultProfile;
+			}
+			else
+			{
+				profile = (Element) OfflineProfiles.item(i);
+			}
+
 			NodeList nick = profile.getElementsByTagName(this.XML_TAG_NICK);
 
 			if(nick.getLength() > 0)
@@ -231,7 +274,15 @@ class OfflineProfiles
 		this.GhostElements = null;
 		this.TrainingElement = null;
 
-		this.OfflineProfile = (Element) OfflineProfiles.item(this.profile);
+		if(this.profile == this.defaultProfile())
+		{
+			this.OfflineProfile = (Element) DefaultProfile;
+		}
+		else
+		{
+			this.OfflineProfile = (Element) OfflineProfiles.item(this.profile);
+		}
+
 		NodeList GhostNodes = this.OfflineProfile.getElementsByTagName(this.XML_TAG_GHOSTS);
 		this.GhostElements = new ArrayList<GhostElement>(0);
 
