@@ -184,8 +184,10 @@ class OfflineProfiles
 	public int addGhost(GhostElement ghost) throws Exception
 	{
 		this.changed = true;
+		Node importedNode = this.document.importNode(ghost.getElement(), false);
+		this.TrainingNode.appendChild(importedNode);
+		ghost = new GhostElement(importedNode);
 		this.GhostElements.add(ghost);
-		this.TrainingNode.appendChild(this.document.importNode(ghost.getElement(), false));
 
 		if(this.GhostElements.size() != this.TrainingGhosts.getLength())
 		{

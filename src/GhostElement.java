@@ -41,14 +41,19 @@ public class GhostElement
 
 	}
 
+	GhostElement(Node xml)
+	{
+		this.importGhost(xml);
+	}
+
 	GhostElement(Element xml)
 	{
-		importGhost(xml);
+		this.importGhost(xml);
 	}
 
 	GhostElement(String xml)
 	{
-		importGhost(xml);
+		this.importGhost(xml);
 	}
 
 	public Element getElement()
@@ -115,6 +120,11 @@ public class GhostElement
 
 		// TODO: Fehlerüberprüfung!
 		// ...
+	}
+
+	public void importGhost(Node xml)
+	{
+		this.importGhost((Element) xml);
 	}
 
 	public String getNickname()
