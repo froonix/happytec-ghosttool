@@ -76,6 +76,11 @@ public class HTGT
 
 	public static void main(String[] args) throws Exception
 	{
+		if(JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(mainwindow, "Dieses Programm befindet sich noch in der Entwicklungs-/Testphase! Die Verwendung erfolgt auf eigene Gefahr.\n\nDer Autor übernimmt keine Haftung für Schäden, die direkt oder indirekt durch dieses Programm verursacht wurden.\nBitte erstelle selbst Backups deiner OfflineProfiles.xml XML-Datei(en), bevor du diese in diesem Programm öffnest.\n\nWillst du wirklich fortfahren?", null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE))
+		{
+			System.exit(0);
+		}
+
 		// Aktuell gibt es nur eine Konfiguration für den ganzen User-
 		// account. Das heißt, dass mehrere unterschiedliche Bewerbe und
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
