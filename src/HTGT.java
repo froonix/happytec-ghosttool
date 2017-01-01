@@ -623,8 +623,12 @@ public class HTGT
 	public static void ghostUpload()
 	{
 		int[] selection = maintable.getSelectedRows();
-		GhostElement[] ghosts = new GhostElement[selection.length];
+		if(selection.length == 0 || OfflineProfiles == null)
+		{
+			return;
+		}
 
+		GhostElement[] ghosts = new GhostElement[selection.length];
 		for(int i = 0; i < selection.length; i++)
 		{
 			ghosts[i] = OfflineProfiles.getGhost(selection[i]);
@@ -638,6 +642,14 @@ public class HTGT
 
 		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
 		int[] ghostIDs = api.getGhostIDs(ghosts);
+
+		if(ghostIDs == null)
+		{
+			// error msg
+			// ...
+
+			return;
+		}
 
 		// !!! confirm !!!
 		// ...

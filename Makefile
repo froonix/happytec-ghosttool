@@ -20,6 +20,7 @@ jar:
 	@echo "Manifest-Version: 1.0" > $(MFFILE)
 	@echo "Class-Path: ." >> $(MFFILE)
 	@echo "Main-Class: HTGT" >> $(MFFILE)
+	@echo "Permissions: all-permissions" >> $(MFFILE)
 
 	cd ./classes && \
 	$(JAR) -cmf ../$(MFFILE) ../$(JARFILE) ./*.class && \
