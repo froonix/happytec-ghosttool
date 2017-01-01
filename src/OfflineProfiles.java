@@ -140,6 +140,29 @@ class OfflineProfiles
 		return this.GhostElements.get(index);
 	}
 
+	public GhostElement[] getGhostsByCondition(String track, int weather)
+	{
+		track = track.toLowerCase();
+		ArrayList<GhostElement> ghosts = new ArrayList<GhostElement>();
+
+		for(int i = 0; i < this.getGhostCount(); i++)
+		{
+			GhostElement ghost = this.getGhost(i);
+
+			if(ghost.getTrack().toLowerCase().equals(track) && ghost.getWeather() == weather)
+			{
+				ghosts.add(ghost);
+			}
+		}
+
+		return ghosts.stream().toArray(GhostElement[]::new);
+	}
+
+	public GhostElement[] getGhostsByCondition(GhostElement ghost)
+	{
+		return this.getGhostsByCondition(ghost.getTrack(), ghost.getWeather());
+	}
+
 	public void deleteGhost(int index) throws Exception
 	{
 		this.changed = true;

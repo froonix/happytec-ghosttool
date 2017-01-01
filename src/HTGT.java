@@ -57,6 +57,18 @@ public class HTGT
 	private static DefaultTableModel          mainmodel;
 	private static ArrayList<DynamicMenuItem> menuitems;
 
+	/*
+	public static void test()
+	{
+		GhostElement[] ghosts = OfflineProfiles.getGhostsByCondition(OfflineProfiles.getGhost(maintable.getSelectedRow()));
+
+		for(int i = 0; i < ghosts.length; i++)
+		{
+			ghosts[i].printDetails();
+		}
+	}
+	*/
+
 	public static void about()
 	{
 		JOptionPane.showMessageDialog(mainwindow, "HTML content with link?", APPLICATION_TITLE, JOptionPane.PLAIN_MESSAGE);
@@ -163,6 +175,7 @@ public class HTGT
 				break;
 
 			case "help":
+//				menu.add(new DynamicMenuItem("Test",                    HTGT.class.getName(), "test"));
 				menu.add(new DynamicMenuItem("Über",                    HTGT.class.getName(), "about"));
 				break;
 		}
