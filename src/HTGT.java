@@ -1,9 +1,7 @@
 import java.io.*;
+import java.util.*;
 import java.util.prefs.*;
 import java.util.regex.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Objects;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -252,12 +250,15 @@ public class HTGT
 				menu.add(registerDynMenuItem("Geister hochladen",       HTGT.class.getName(), "ghostUpload"));
 				menu.add(registerDynMenuItem("Geister herunterladen",   HTGT.class.getName(), "ghostDownload"));
 				menu.addSeparator(); // --------------------------------
+				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails", HTGT.class.getName(), "playerInfo"));
+				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("API-Token ändern",        HTGT.class.getName(), "setupToken"));
 				menu.add(new DynamicMenuItem("API-Token löschen",       HTGT.class.getName(), "deleteToken"));
 				break;
 
 			case "help":
 				menu.add(new DynamicMenuItem("Updateprüfung",           HTGT.class.getName(), "updateCheck"));
+				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("Über diese App",          HTGT.class.getName(), "about"));
 				break;
 		}
@@ -906,6 +907,26 @@ public class HTGT
 
 			return;
 		}
+	}
+
+	public static void playerInfo()
+	{
+		String token = getToken();
+		if(token == null)
+		{
+			return;
+		}
+
+		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
+		Map<String,Object> data = api.getPlayerInfo();
+
+		if(data == null)
+		{
+			APIError(api, "Da ging etwas schief...");
+			return;
+		}
+
+		messageDialog(APPLICATION_API, String.format("Nachfolgend alle Details des angegebenen API-Tokens.%n%nBewerb: %3$s%nTeilnehmer: %2$s%n%nHAPPYTEC-Account: %1$s", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
 	}
 
 /***********************************************************************

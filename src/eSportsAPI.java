@@ -147,6 +147,40 @@ public class eSportsAPI
 		return false;
 	}
 
+	public Map<String,Object> getPlayerInfo()
+	{
+		Map<String,Object> values = new HashMap<String,Object>();
+		String result = this.request("OFFLINE", "player.info", null);
+
+		if(result != null)
+		{
+			try
+			{
+				Document doc = FNX.getDOMDocument(result);
+				NodeList OfflinePlayer = doc.getElementsByTagName("OfflinePlayer");
+
+				if(OfflinePlayer.getLength() > 0)
+				{
+					Element OfflinePlayerElement = (Element) OfflinePlayer.item(0);
+					// int id = Integer.parseInt(OfflinePlayerElement.getAttribute("ID"));
+
+					values.put("Nickname", OfflinePlayerElement.getElementsByTagName("Nickname").item(0).getTextContent());
+					values.put("Useraccount", OfflinePlayerElement.getElementsByTagName("Username").item(0).getTextContent());
+					// values.put("CompetitionKey", OfflinePlayerElement.getElementsByTagName("Key").item(0).getTextContent());
+					values.put("CompetitionName", OfflinePlayerElement.getElementsByTagName("Title").item(0).getTextContent());
+				}
+
+				return values;
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return null;
+	}
+
 	// Das gehört eigentlich nicht hier her!
 	// Aber so ist es deutlich einfacher...
 	public int updateAvailable(String app, String version)
@@ -191,7 +225,7 @@ public class eSportsAPI
 		method = method.toLowerCase();
 
 		String url = String.format(API_REQUEST, API_MAINURL, API_VERSION, module, method);
-		String postdata = FNX.buildQueryString(data);
+		String postdata = (data != null) ? FNX.buildQueryString(data) : "";
 
 		// System.out.println(url);
 		// System.out.println(postdata);
