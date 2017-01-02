@@ -171,14 +171,14 @@ public class GhostElement
 
 	public void printDetails()
 	{
-		System.out.printf("--------------------------------\n");
-		System.out.printf(" Nick:    %s\n", this.getNickname());
-		// System.out.printf(" Mode:    %s\n", this.GameMode);
-		System.out.printf(" Time:    %s (%d)\n", this.getResult(), this.getTime());
-		System.out.printf(" Track:   [%s] %s\n", this.getTrack().toUpperCase(), this.getTrackName());
-		System.out.printf(" Weather: [%s] %s (%d)\n", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
-		// System.out.printf("\n%s\n", DataRaw);
-		System.out.printf("--------------------------------\n");
+		System.out.printf("--------------------------------%n");
+		System.out.printf(" Nick:    %s%n", this.getNickname());
+		// System.out.printf(" Mode:    %s%n", this.GameMode);
+		System.out.printf(" Time:    %s (%d)%n", this.getResult(), this.getTime());
+		System.out.printf(" Track:   [%s] %s%n", this.getTrack().toUpperCase(), this.getTrackName());
+		System.out.printf(" Weather: [%s] %s (%d)%n", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
+		// System.out.printf("%n%s%n", DataRaw);
+		System.out.printf("--------------------------------%n");
 	}
 
 	public String toString()

@@ -43,7 +43,7 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid weather type: %d\n", weatherType);
+				System.err.printf("Invalid weather type: %d%n", weatherType);
 				break;
 		}
 
@@ -69,7 +69,7 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid weather type: %d\n", weatherType);
+				System.err.printf("Invalid weather type: %d%n", weatherType);
 				break;
 		}
 
@@ -95,7 +95,7 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid weather string: %s\n", weatherString);
+				System.err.printf("Invalid weather string: %s%n", weatherString);
 				break;
 		}
 
@@ -155,7 +155,7 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid track key: %s\n", trackKey);
+				System.err.printf("Invalid track key: %s%n", trackKey);
 				break;
 		}
 

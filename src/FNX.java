@@ -128,7 +128,7 @@ abstract class FNX
 		t.setOutputProperty(OutputKeys.INDENT, "yes");
 		t.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
 		// t.setOutputProperty(OutputKeys.STANDALONE, "yes");
-		t.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+		t.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
 		t.transform(input, output);
 

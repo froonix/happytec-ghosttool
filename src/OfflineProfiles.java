@@ -5,6 +5,7 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 import org.xml.sax.InputSource;
+import javax.xml.xpath.*;
 import org.w3c.dom.*;
 
 import java.lang.IndexOutOfBoundsException;
@@ -295,6 +296,15 @@ class OfflineProfiles
 
 		try
 		{
+			this.document.getDocumentElement().normalize();
+			XPathExpression xpath = XPathFactory.newInstance().newXPath().compile("//text()[normalize-space(.) = '']");
+			NodeList blankTextNodes = (NodeList) xpath.evaluate(this.document, XPathConstants.NODESET);
+
+			for(int i = 0; i < blankTextNodes.getLength(); i++)
+			{
+				blankTextNodes.item(i).getParentNode().removeChild(blankTextNodes.item(i));
+			}
+
 			return FNX.getWinNL(FNX.getStringFromDOM(this.document, true));
 		}
 		catch(Exception e)

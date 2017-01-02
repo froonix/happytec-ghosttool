@@ -62,21 +62,9 @@ public class HTGT
 	private static DefaultTableModel          mainmodel;
 	private static ArrayList<DynamicMenuItem> menuitems;
 
-	/*
-	public static void test()
-	{
-		int[] ghosts = OfflineProfiles.getGhostsByCondition(OfflineProfiles.getGhost(maintable.getSelectedRow()));
-
-		for(int i = 0; i < ghosts.length; i++)
-		{
-			OfflineProfiles.getGhost(ghosts[i]).printDetails();
-		}
-	}
-	*/
-
 	public static void about()
 	{
-		JOptionPane.showMessageDialog(mainwindow, "HTML content with link?", APPLICATION_TITLE, JOptionPane.PLAIN_MESSAGE);
+		messageDialog(APPLICATION_TITLE, "HTML content with link?");
 	}
 
 	public static void updateCheck()
@@ -98,7 +86,7 @@ public class HTGT
 			lastUpdateCheck = Long.parseLong(cfg(CFG_UC));
 		}
 
-		System.out.printf("Last update check: %d\n", lastUpdateCheck);
+		System.out.printf("Last update check: %d%n", lastUpdateCheck);
 		if(lastUpdateCheck <= 0 || date.getTime() > (lastUpdateCheck + UPDATE_INTERVAL))
 		{
 			cfg(CFG_UC, Objects.toString(date.getTime(), null));
@@ -108,21 +96,29 @@ public class HTGT
 		if(force)
 		{
 			eSportsAPI api = new eSportsAPI(null, APPLICATION_IDENT);
-			if(api.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION))
-			{
-				JOptionPane.showMessageDialog(null, "Es ist ein Update verfügbar!\n\nBitte besuche die Website, um es herunterzuladen.", APPLICATION_TITLE, JOptionPane.INFORMATION_MESSAGE);
-			}
-		}
+			int updates = api.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION);
 
-		if(msg)
-		{
-			JOptionPane.showMessageDialog(null, "Es gibt keine Updates!\n\nDu verwendest bereits die aktuellste Version.", APPLICATION_TITLE, JOptionPane.INFORMATION_MESSAGE);
+			if(updates == 1)
+			{
+				messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_TITLE, String.format("Es ist ein Update verfügbar!%n%nBitte besuche die Website, um es herunterzuladen."));
+			}
+			else if(updates == 0)
+			{
+				if(msg)
+				{
+					messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_TITLE, "Es gibt keine Updates, du verwendest bereits die aktuellste Version.");
+				}
+			}
+			else
+			{
+				APIError(api, "Updateprüfung fehlgeschlagen!");
+			}
 		}
 	}
 
 	public static void main(String[] args) throws Exception
 	{
-		if(JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(mainwindow, "Dieses Programm befindet sich noch in der Entwicklungs-/Testphase! Die Verwendung erfolgt auf eigene Gefahr.\n\nDer Autor übernimmt keine Haftung für Schäden, die direkt oder indirekt durch dieses Programm verursacht wurden.\nBitte erstelle selbst Backups deiner OfflineProfiles.xml XML-Datei(en), bevor du diese in diesem Programm öffnest.\n\nWillst du wirklich fortfahren?", null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE))
+		if(!confirmDialog(JOptionPane.PLAIN_MESSAGE, APPLICATION_TITLE, String.format("Dieses Programm befindet sich noch in der Entwicklungs-/Testphase! Die Verwendung erfolgt auf eigene Gefahr.%n%nDer Autor übernimmt keine Haftung für Schäden, die direkt oder indirekt durch dieses Programm verursacht wurden.%nBitte erstelle selbst Backups deiner OfflineProfiles.xml XML-Datei(en), bevor du diese in diesem Programm öffnest.%n%nWillst du wirklich fortfahren?")))
 		{
 			System.exit(0);
 		}
@@ -370,7 +366,7 @@ public class HTGT
 			e.printStackTrace();
 		}
 
-		JOptionPane.showMessageDialog(null, "Importierte Geister: " + i);
+		messageDialog(null, "Importierte Geister: " + i);
 
 		if(i > 0)
 		{
@@ -400,7 +396,7 @@ public class HTGT
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(mainwindow, "Eines der Profile enthält Fehler.", null, JOptionPane.ERROR_MESSAGE);
+			errorMessage("Eines der Profile enthält Fehler.");
 			return;
 		}
 
@@ -497,7 +493,7 @@ public class HTGT
 			catch(Exception e)
 			{
 				e.printStackTrace();
-				JOptionPane.showMessageDialog(mainwindow, "Fehler beim Hinzufügen des Geists!", null, JOptionPane.ERROR_MESSAGE);
+				errorMessage("Fehler beim Hinzufügen des Geists!");
 				return;
 			}
 		}
@@ -523,6 +519,41 @@ public class HTGT
 		{
 			e.printStackTrace();
 		}
+	}
+
+	private static boolean confirmDialog(String title, String msg)
+	{
+		return confirmDialog(JOptionPane.QUESTION_MESSAGE, title, msg);
+	}
+
+	private static boolean confirmDialog(int type, String title, String msg)
+	{
+		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainwindow, msg, title, JOptionPane.YES_NO_OPTION, type))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	private static void errorMessage(String msg)
+	{
+		errorMessage("Fehler", msg);
+	}
+
+	private static void errorMessage(String title, String msg)
+	{
+		messageDialog(JOptionPane.ERROR_MESSAGE, title, msg);
+	}
+
+	private static void messageDialog(String title, String msg)
+	{
+		messageDialog(JOptionPane.PLAIN_MESSAGE, title, msg);
+	}
+
+	private static void messageDialog(int type, String title, String msg)
+	{
+		JOptionPane.showMessageDialog(mainwindow, msg, title, type);
 	}
 
 /***********************************************************************
@@ -605,10 +636,15 @@ public class HTGT
  *                             API ACTIONS                             *
  ***********************************************************************/
 
+	private static void APIError(eSportsAPI api, String msg)
+	{
+		errorMessage(APPLICATION_API, String.format("%s%n%nFehlercode: %s%n%s", msg, api.getErrorCode(), api.getErrorMessage()).trim());
+	}
+
 	public static void deleteToken()
 	{
 		cfg(CFG_TOKEN, null);
-		JOptionPane.showMessageDialog(mainwindow, "Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!\n\nDu kannst ihn über das Menü jederzeit erneut eintragen.", APPLICATION_API, JOptionPane.INFORMATION_MESSAGE);
+		messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_API, String.format("Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!%n%nDu kannst ihn über das Menü jederzeit erneut eintragen."));
 	}
 
 	public static void setupToken()
@@ -647,8 +683,8 @@ public class HTGT
 			}
 			else
 			{
-				System.out.printf("setupToken: VALUE (%d)\n", token.length());
-				System.out.printf("New API token: %s\n", token);
+				System.out.printf("setupToken: VALUE (%d)%n", token.length());
+				System.out.printf("New API token: %s%n", token);
 				cfg(CFG_TOKEN, token);
 				return;
 			}
@@ -708,11 +744,11 @@ public class HTGT
 		{
 			if(!api.applyResultByGhostID(ghostIDs[i]))
 			{
-				System.out.printf("Hochgeladener Geist: ID %d (Übernahme fehlgeschlagen)\n", ghostIDs[i]);
+				System.out.printf("Hochgeladener Geist: ID %d (Übernahme fehlgeschlagen)%n", ghostIDs[i]);
 			}
 			else
 			{
-				System.out.printf("Hochgeladener Geist: ID %d (erfolgreich übernommen)\n", ghostIDs[i]);
+				System.out.printf("Hochgeladener Geist: ID %d (erfolgreich übernommen)%n", ghostIDs[i]);
 			}
 		}
 
@@ -787,7 +823,7 @@ public class HTGT
 
 			if(ghostdata == null)
 			{
-				JOptionPane.showMessageDialog(mainwindow, String.format("Download fehlgeschlagen...\n\nFehlercode: %s\n%s", api.getErrorCode(), api.getErrorMessage()).trim(), APPLICATION_API, JOptionPane.ERROR_MESSAGE);
+				APIError(api, "Download fehlgeschlagen...");
 				continue;
 			}
 
@@ -839,7 +875,7 @@ public class HTGT
 					reset();
 
 					e.printStackTrace();
-					JOptionPane.showMessageDialog(mainwindow, "Fehler beim Laden der XML-Datei!", null, JOptionPane.ERROR_MESSAGE);
+					errorMessage("Fehler beim Laden der XML-Datei!");
 				}
 			}
 		}
@@ -980,21 +1016,10 @@ public class HTGT
 	{
 		if(OfflineProfiles != null && OfflineProfiles.changed())
 		{
-			int input = JOptionPane.showConfirmDialog(mainwindow,
-				"Die Änderungen wurden nicht gespeichert! Trotzdem fortfahren?",
-				"Änderungen verwerfen?",
-				JOptionPane.YES_NO_OPTION,
-				JOptionPane.QUESTION_MESSAGE
-			);
-
-			if(input == JOptionPane.NO_OPTION)
+			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, "Ungesicherte Dateiänderungen verwerfen?", String.format("Deine Bearbeitungen wurden noch nicht gespeichert.%nWenn du fortfährst, gehen die Änderungen verloren!%n%nTrotzdem ohne Speichern fortfahren?")))
 			{
 				System.out.println("quit: NO");
 				return true;
-			}
-			else
-			{
-				System.out.println("quit: YES");
 			}
 		}
 

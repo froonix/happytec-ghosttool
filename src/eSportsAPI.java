@@ -149,7 +149,7 @@ public class eSportsAPI
 
 	// Das gehört eigentlich nicht hier her!
 	// Aber so ist es deutlich einfacher...
-	public boolean updateAvailable(String app, String version)
+	public int updateAvailable(String app, String version)
 	{
 		Map<String,Object> args = new HashMap<String,Object>();
 		args.put("application", app); args.put("version", version);
@@ -166,9 +166,13 @@ public class eSportsAPI
 				{
 					Element ResultElement = (Element) ResultNodeList.item(0);
 
-					if(!ResultElement.getTextContent().equals("NO_UPDATES"))
+					if(ResultElement.getTextContent().equals("NO_UPDATES"))
 					{
-						return true;
+						return 0;
+					}
+					else if(ResultElement.getTextContent().equals("UPDATE_AVAILABLE"))
+					{
+						return 1;
 					}
 				}
 			}
@@ -178,7 +182,7 @@ public class eSportsAPI
 			}
 		}
 
-		return false;
+		return -1;
 	}
 
 	private String request(String module, String method, Map<?,?> data)
@@ -215,9 +219,9 @@ public class eSportsAPI
 			wr.close();
 
 			int responseCode = con.getResponseCode();
-			System.out.println("\nSending 'POST' request to URL : " + url);
-			System.out.println("Post parameters : " + postdata);
-			System.out.println("Response Code : " + responseCode);
+			System.out.printf("%nSending 'POST' request to URL: %s", url);
+			System.out.println("Post parameters: " + postdata);
+			System.out.println("Response Code: " + responseCode);
 
 			InputStream _is;
 			if(responseCode < 400)
@@ -282,10 +286,10 @@ public class eSportsAPI
 				case "PLAYER_SUSPENDED":          return "Dein Spieler wurde suspendiert!";
 				case "GHOST_UNKNOWN":             return "Es wurden keine Geister gefunden.";
 				case "GHOST_PRIVATE":             return "Dieser Geist ist nicht öffentlich.";
-				case "TOKEN_UNKNOWN":             return "Unbekannter API-Token!\n\nBitte kontrolliere den API-Token.";
-				case "TOKEN_INVALID":             return "Ungültiges Format des API-Tokens!\n\nBitte kontrolliere den API-Token.";
-				case "SEASON_OVER":               return "Die Saison ist schon beendet.\n\nSchau ins Forum, wann es wieder los geht!";
-				case "INTERNAL_CLIENT_EXCEPTION": return "Interne Exception im Java-Programm.\n\nSiehe Stacktrace in der Konsolenausgabe.";
+				case "TOKEN_UNKNOWN":             return String.format("Unbekannter API-Token!%n%nBitte kontrolliere den API-Token.");
+				case "TOKEN_INVALID":             return String.format("Ungültiges Format des API-Tokens!%n%nBitte kontrolliere den API-Token.");
+				case "SEASON_OVER":               return String.format("Die Saison ist schon beendet.%n%nSchau ins Forum, wann es wieder los geht!");
+				case "INTERNAL_CLIENT_EXCEPTION": return String.format("Interne Exception im Java-Programm.%n%nSiehe Stacktrace in der Konsolenausgabe.");
 			}
 		}
 
