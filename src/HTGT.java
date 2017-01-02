@@ -586,6 +586,11 @@ public class HTGT
 		JOptionPane.showMessageDialog(mainwindow, msg, title, type);
 	}
 
+	private static void noSelection()
+	{
+		messageDialog(null, String.format("Die gewünschte Aktion funktioniert nur, wenn bereits Geister ausgewählt wurden.%n%nMarkiere eine Zeile mit der Maus, eine Mehrfachauswahl ist durch Halten der Strg/Ctrl Taste möglich."));
+	}
+
 /***********************************************************************
  *                          CLIPBOARD ACTIONS                          *
  ***********************************************************************/
@@ -614,6 +619,12 @@ public class HTGT
 
 		StringBuilder data = new StringBuilder();
 		int[] selection = maintable.getSelectedRows();
+
+		if(selection.length == 0)
+		{
+			noSelection();
+			return;
+		}
 
 		for(int i = selection.length - 1; i > -1; i--)
 		{
@@ -754,8 +765,10 @@ public class HTGT
 		}
 
 		int[] selection = maintable.getSelectedRows();
-		if(selection.length == 0 || OfflineProfiles == null)
+
+		if(selection.length == 0)
 		{
+			noSelection();
 			return;
 		}
 
