@@ -30,7 +30,7 @@ import java.lang.IndexOutOfBoundsException;
 public class HTGT
 {
 	// Diverse fixe Konstanten für die Anwendung
-	final private static String    APPLICATION_VERSION = "git-master";
+	final private static String    APPLICATION_VERSION = "0.0.0-alpha1";
 	final private static String    APPLICATION_NAME    = "HTGT"; // cfg, updates, …
 	final private static String    APPLICATION_TITLE   = "HTGT (HAPPYTEC Ghosttool)";
 	final private static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
