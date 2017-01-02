@@ -286,6 +286,7 @@ public class eSportsAPI
 				case "PLAYER_SUSPENDED":          return "Dein Spieler wurde suspendiert!";
 				case "GHOST_UNKNOWN":             return "Es wurden keine Geister gefunden.";
 				case "GHOST_PRIVATE":             return "Dieser Geist ist nicht öffentlich.";
+				case "RESULT_WORSE":              return String.format("Die neue Zeit ist nicht schneller.%n%nDu kannst nur Ergebnisse übernehmen, die besser als dein existierendes sind.");
 				case "TOKEN_UNKNOWN":             return String.format("Unbekannter API-Token!%n%nBitte kontrolliere den API-Token.");
 				case "TOKEN_INVALID":             return String.format("Ungültiges Format des API-Tokens!%n%nBitte kontrolliere den API-Token.");
 				case "SEASON_OVER":               return String.format("Die Saison ist schon beendet.%n%nSchau ins Forum, wann es wieder los geht!");

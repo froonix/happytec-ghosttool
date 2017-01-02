@@ -94,7 +94,7 @@ public class HTGT
 		{
 			if(msg)
 			{
-				messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_TITLE, "Du verwendest eine Entwicklerversion, da macht eine Updateprüfung keinen Sinn.");
+				messageDialog(JOptionPane.INFORMATION_MESSAGE, null, "Du verwendest eine Entwicklerversion, da macht eine Updateprüfung keinen Sinn.");
 			}
 
 			return;
@@ -126,13 +126,13 @@ public class HTGT
 
 			if(updates == 1)
 			{
-				messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_TITLE, String.format("Es ist ein Update verfügbar!%n%nBitte besuche die Website, um es herunterzuladen."));
+				messageDialog(JOptionPane.INFORMATION_MESSAGE, null, String.format("Es ist ein Update verfügbar!%n%nBitte besuche die Website, um es herunterzuladen."));
 			}
 			else if(updates == 0)
 			{
 				if(msg)
 				{
-					messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_TITLE, "Es gibt keine Updates, du verwendest bereits die aktuellste Version.");
+					messageDialog(JOptionPane.INFORMATION_MESSAGE, null, "Es gibt keine Updates, du verwendest bereits die aktuellste Version.");
 				}
 			}
 			else
@@ -249,15 +249,14 @@ public class HTGT
 				break;
 
 			case "api":
-				menu.add(registerDynMenuItem("Geist hochladen",         HTGT.class.getName(), "ghostUpload"));
-				menu.add(registerDynMenuItem("Geist herunterladen",     HTGT.class.getName(), "ghostDownload"));
+				menu.add(registerDynMenuItem("Geister hochladen",       HTGT.class.getName(), "ghostUpload"));
+				menu.add(registerDynMenuItem("Geister herunterladen",   HTGT.class.getName(), "ghostDownload"));
 				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("API-Token ändern",        HTGT.class.getName(), "setupToken"));
 				menu.add(new DynamicMenuItem("API-Token löschen",       HTGT.class.getName(), "deleteToken"));
 				break;
 
 			case "help":
-//				menu.add(new DynamicMenuItem("Test",                    HTGT.class.getName(), "test"));
 				menu.add(new DynamicMenuItem("Updateprüfung",           HTGT.class.getName(), "updateCheck"));
 				menu.add(new DynamicMenuItem("Über diese App",          HTGT.class.getName(), "about"));
 				break;
@@ -366,6 +365,11 @@ public class HTGT
 
 	public static void ghostImport(String xmlstring)
 	{
+		if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
+		{
+			return;
+		}
+
 		int i = 0;
 		try
 		{
@@ -380,9 +384,6 @@ public class HTGT
 				GhostElement ghostElement = new GhostElement(xmltag);
 				addGhost(ghostElement, true);
 				ghostElement.printDetails();
-
-				// confirm deletion!
-				// ...
 
 				int[] ghosts = OfflineProfiles.getGhostsByCondition(ghostElement);
 				for(int h = ghosts.length - 2; h > -1; h--)
@@ -400,19 +401,16 @@ public class HTGT
 
 		messageDialog(null, "Importierte Geister: " + i);
 
+		/*
 		if(i > 0)
 		{
 			highlightLastRows(i);
 		}
+		*/
 	}
 
 	public static void selectProfile()
 	{
-		//if(!fileLoaded())
-		//{
-		//	return;
-		//}
-
 		// TODO: Zuletzt genutzes Profil in CFG abspeichern und auslesen
 		// ...
 
@@ -609,6 +607,11 @@ public class HTGT
 
 	private static void rowsAction(boolean copy, boolean delete)
 	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
 		StringBuilder data = new StringBuilder();
 		int[] selection = maintable.getSelectedRows();
 
@@ -642,6 +645,11 @@ public class HTGT
 
 	public static void copyFromClipboard()
 	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
 		try
 		{
 			Clipboard systemClipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -740,11 +748,23 @@ public class HTGT
 
 	public static void ghostUpload()
 	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
 		int[] selection = maintable.getSelectedRows();
 		if(selection.length == 0 || OfflineProfiles == null)
 		{
 			return;
 		}
+
+		/*
+		if(!confirmDialog(APPLICATION_API, String.format("Sollen die markierten Geister (%d) wirklich zum Server hochgeladen werden?%n%nDie Ergebnisse werden bei dieser Aktion automatisch für deinen Spieler übernommen!", selection.length)))
+		{
+			return;
+		}
+		*/
 
 		GhostElement[] ghosts = new GhostElement[selection.length];
 		for(int i = 0; i < selection.length; i++)
@@ -763,33 +783,43 @@ public class HTGT
 
 		if(ghostIDs == null)
 		{
-			// error msg
-			// ...
-
+			APIError(api, "Upload fehlgeschlagen...");
+			return;
+		}
+		else if(ghostIDs.length != selection.length)
+		{
+			errorMessage("ghostIDs.length != selection.length");
 			return;
 		}
 
-		// !!! confirm !!!
-		// ...
-
 		for(int i = 0; i < ghostIDs.length; i++)
 		{
+			GhostElement ghost = ghosts[i];
+			if(!confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
+			{
+				continue;
+			}
+
 			if(!api.applyResultByGhostID(ghostIDs[i]))
 			{
 				System.out.printf("Hochgeladener Geist: ID %d (Übernahme fehlgeschlagen)%n", ghostIDs[i]);
+				APIError(api, String.format("Der Geist mit der ID %d konnte nicht übernommen werden!", ghostIDs[i]));
 			}
 			else
 			{
 				System.out.printf("Hochgeladener Geist: ID %d (erfolgreich übernommen)%n", ghostIDs[i]);
+				messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_API, String.format("Der Geist mit der ID %d wurde erfolgreich eingetragen!%n%nEs wird jedoch einige Minuten dauern, bis die Rangliste aktualisiert wird.", ghostIDs[i]));
 			}
 		}
-
-		// ...
-		// ...
 	}
 
 	public static void ghostDownload()
 	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
 		String token = getToken();
 		if(token == null)
 		{
@@ -876,7 +906,13 @@ public class HTGT
 			return;
 		}
 
+		// TODO: Wenn Config leer ist, Standardpfade je nach OS anbieten?
+		// ...
+
 		JFileChooser chooser = new JFileChooser(cfg(CFG_CWD));
+
+		// TODO: XML-Filter auslagern, wird auch beim Speichern genutzt.
+		// ...
 
 		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
 		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
@@ -926,7 +962,7 @@ public class HTGT
 
 	public static void reloadFile()
 	{
-		if(unsavedChanges())
+		if(OfflineProfiles == null || unsavedChanges())
 		{
 			return;
 		}
@@ -1033,7 +1069,11 @@ public class HTGT
 
 	public static boolean closeFile()
 	{
-		if(unsavedChanges())
+		if(OfflineProfiles == null)
+		{
+			return true;
+		}
+		else if(unsavedChanges())
 		{
 			return false;
 		}
@@ -1048,7 +1088,7 @@ public class HTGT
 	{
 		if(OfflineProfiles != null && OfflineProfiles.changed())
 		{
-			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, "Ungesicherte Dateiänderungen verwerfen?", String.format("Deine Bearbeitungen wurden noch nicht gespeichert.%nWenn du fortfährst, gehen die Änderungen verloren!%n%nTrotzdem ohne Speichern fortfahren?")))
+			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Deine Bearbeitungen wurden noch nicht gespeichert.%nWenn du fortfährst, gehen die Änderungen verloren!%n%nTrotzdem ohne Speichern fortfahren?")))
 			{
 				System.out.println("quit: NO");
 				return true;
@@ -1135,6 +1175,6 @@ class HTGT_WindowAdapter extends java.awt.event.WindowAdapter
 	}
 }
 
-// TODO: Alle Funktionen, die normalerweise ausgegraut werden,
-//       müssen prüfen, ob OfflineProfiles gerade geladen ist!
+// TODO: Sinnvollere und einheitliche Konsolenausgaben,
+//       die einen echten Mehrwert für den User haben.
 // ...

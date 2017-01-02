@@ -14,7 +14,7 @@ public class ImprovedFileChooser extends JFileChooser
 		File f = getSelectedFile();
 		if(f.exists() && getDialogType() == SAVE_DIALOG)
 		{
-			int result = JOptionPane.showConfirmDialog(null, "Soll die existierende Datei überschrieben werden?", "Datei überschreiben?", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			int result = JOptionPane.showConfirmDialog(null, "Soll die existierende Datei überschrieben werden?", null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
 			switch(result)
 			{
