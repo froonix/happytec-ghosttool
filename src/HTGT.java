@@ -32,8 +32,8 @@ import java.lang.IndexOutOfBoundsException;
 public class HTGT
 {
 	// Diverse fixe Konstanten für die Anwendung
-	final private static String    APPLICATION_VERSION = "0.0.0"; // stable release
-	final private static String    APPLICATION_NAME    = "HTGT"; // cfg, updatex, …
+	final private static String    APPLICATION_VERSION = "git-master";
+	final private static String    APPLICATION_NAME    = "HTGT"; // cfg, updates, …
 	final private static String    APPLICATION_TITLE   = "HTGT (HAPPYTEC Ghosttool)";
 	final private static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
 	final private static String    APPLICATION_IDENT   = "HTGT <https://github.com/froonix/happytec-ghosttool>";
@@ -64,7 +64,23 @@ public class HTGT
 
 	public static void about()
 	{
-		messageDialog(APPLICATION_TITLE, "HTML content with link?");
+		String licence = String.format(
+			  "    Copyright (C) 2017 Christian Schrötter <cs@fnx.li>%n%n"
+			+ "    This program is free software; you can redistribute it and/or modify%n"
+			+ "    it under the terms of the GNU General Public License as published by%n"
+			+ "    the Free Software Foundation; either version 3 of the License, or%n"
+			+ "    (at your option) any later version.%n%n"
+			+ "    This program is distributed in the hope that it will be useful,%n"
+			+ "    but WITHOUT ANY WARRANTY; without even the implied warranty of%n"
+			+ "    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the%n"
+			+ "    GNU General Public License for more details.%n%n"
+			+ "    You should have received a copy of the GNU General Public License%n"
+			+ "    along with this program; if not, write to the Free Software Foundation,%n"
+			+ "    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA"
+		);
+
+		String line = ""; // "----------------------------------------------------------------------------------------------------"
+		messageDialog(APPLICATION_TITLE, String.format("Application: %s%nVersion: %s%n%nWebsite: https://github.com/froonix/happytec-ghosttool%n%s by www.esports.happytec.at%n%n%s%n%n%s%n%n%s%n%n", APPLICATION_NAME, APPLICATION_VERSION, APPLICATION_API, line, licence, line));
 	}
 
 	public static void updateCheck()
@@ -74,6 +90,16 @@ public class HTGT
 
 	public static void updateCheck(boolean force, boolean msg)
 	{
+		if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
+		{
+			if(msg)
+			{
+				messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_TITLE, "Du verwendest eine Entwicklerversion, da macht eine Updateprüfung keinen Sinn.");
+			}
+
+			return;
+		}
+
 		long lastUpdateCheck;
 		Date date = new Date();
 
@@ -118,6 +144,12 @@ public class HTGT
 
 	public static void main(String[] args) throws Exception
 	{
+		if(args.length > 0 && args[0].equals("-v"))
+		{
+			System.out.println(APPLICATION_VERSION);
+			System.exit(0);
+		}
+
 		if(!confirmDialog(JOptionPane.PLAIN_MESSAGE, APPLICATION_TITLE, String.format("Dieses Programm befindet sich noch in der Entwicklungs-/Testphase! Die Verwendung erfolgt auf eigene Gefahr.%n%nDer Autor übernimmt keine Haftung für Schäden, die direkt oder indirekt durch dieses Programm verursacht wurden.%nBitte erstelle selbst Backups deiner OfflineProfiles.xml XML-Datei(en), bevor du diese in diesem Programm öffnest.%n%nWillst du wirklich fortfahren?")))
 		{
 			System.exit(0);
