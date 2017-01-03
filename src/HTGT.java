@@ -135,7 +135,10 @@ public class HTGT
 			}
 			else
 			{
-				APIError(api, "Updateprüfung fehlgeschlagen!");
+				if(msg)
+				{
+					APIError(api, "Updateprüfung fehlgeschlagen!");
+				}
 			}
 		}
 	}
