@@ -9,6 +9,25 @@ Schritte für eine neue Veröffentlichung:
 
 ----
 
+```bash
+# Example commands...
+git branch v0.0.0-alpha2
+git checkout v0.0.0-alpha2
+nano src/HTGT.java
+
+git commit -S -m 'Prepare v0.0.0-alpha2 release'
+git push origin v0.0.0-alpha2
+
+git tag release-0.0.0-alpha2
+git push origin release-0.0.0-alpha2
+
+make clean && make && make sig
+# edit new release/tag on github
+# upload binary files to github
+```
+
+----
+
 * HAPPYTEC-Downloads: ZIP/JAR/GPG-Dateien aktualisieren.
 * HAPPYTEC-Forum: Ersten Beitrag des Threads aktualisieren.
 * HAPPYTEC-Forum: Neuen Beitrag als Hinweis veröffentlichen.
