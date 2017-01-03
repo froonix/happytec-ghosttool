@@ -362,6 +362,7 @@ public class eSportsAPI
 			{
 				// Es gibt noch deutlich mehr Fehlercodes, die haben aber
 				// keine reale Bedeutung, wenn die API korrekt benutzt wird.
+				case "RESULT_EMPTY":              return "Die Rangliste ist (noch) leer.";
 				case "PLAYER_SUSPENDED":          return "Dein Spieler wurde suspendiert!";
 				case "GHOST_UNKNOWN":             return "Es wurden keine Geister gefunden.";
 				case "GHOST_PRIVATE":             return "Dieser Geist ist nicht öffentlich.";
