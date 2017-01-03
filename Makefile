@@ -40,16 +40,23 @@ jar:
 zip:
 	@echo Zipping version $(version)
 
-	cp -af HTGT.sh $(SHFILE) && cp -af HTGT.bat $(BATFILE) && \
-	cp -af LICENCE $(LICENCEFILE) && unix2dos $(LICENCEFILE)  && \
-	zip -j $(ZIPFILE) $(LICENCEFILE) $(JARFILE) $(SHFILE) $(BATFILE) && \
+	cp -af HTGT.sh $(SHFILE)
+	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(SHFILE)
+
+	cp -af HTGT.bat $(BATFILE)
+	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(BATFILE)
+
+	cp -af LICENCE $(LICENCEFILE)
+	unix2dos $(LICENCEFILE)
+
+	zip -j $(ZIPFILE) $(LICENCEFILE) $(JARFILE) $(SHFILE) $(BATFILE)
 	$(RM) $(LICENCEFILE) $(SHFILE) $(BATFILE)
 
 sig:
 	@echo Signing version $(version)
 
-	sha512sum $(JARFILE) $(ZIPFILE) > $(CSUMFILE) && \
-	sed -i 's#build/##' $(CSUMFILE) && $(RM) $(SIGFILE) && \
+	sha512sum $(JARFILE) $(ZIPFILE) > $(CSUMFILE)
+	sed -i 's#build/##' $(CSUMFILE) && $(RM) $(SIGFILE)
 	gpg -u $(GPGKEY) --armor --output $(SIGFILE) --detach-sig $(CSUMFILE)
 
 clean:
