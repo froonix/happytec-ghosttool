@@ -406,7 +406,7 @@ public class HTGT
 			e.printStackTrace();
 		}
 
-		messageDialog(null, "Importierte Geister: " + i);
+		// messageDialog(null, "Importierte Geister: " + i);
 
 		/*
 		if(i > 0)
