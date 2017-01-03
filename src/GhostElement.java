@@ -13,16 +13,11 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.nio.charset.StandardCharsets;
 
-import java.util.Date;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-
 import org.w3c.dom.Element;
 
 public class GhostElement
 {
 	private static Pattern GhostPattern;
-	private static DateFormat ResultFormat;
 
 	private Element XML;
 	private String  Track;
@@ -159,14 +154,7 @@ public class GhostElement
 
 	public String getResult()
 	{
-		if(this.ResultFormat == null)
-		{
-			// Das HAPPYTEC-Format nutzt einen Beistrich.
-			// Andere Implementierungen nutzen einen Punkt.
-			this.ResultFormat = new SimpleDateFormat("mm:ss,SSS");
-		}
-
-		return this.ResultFormat.format(new Date(this.Time));
+		return gmHelper.getResult(this.Time);
 	}
 
 	public void printDetails()

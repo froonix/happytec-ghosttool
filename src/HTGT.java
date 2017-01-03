@@ -45,9 +45,11 @@ public class HTGT
 	// WINDOWS: C:\\Games\\Ski Challenge 16\\Game_Data
 
 	// Konfigurationsnamen für java.util.prefs
-	private static String CFG_UC    = "update-check";
-	private static String CFG_CWD   = "last-directory";
-	private static String CFG_TOKEN = "esports-token";
+	private static String CFG_UC      = "update-check";
+	private static String CFG_TOKEN   = "esports-token";
+	private static String CFG_CWD     = "last-directory";
+	private static String CFG_WEATHER = "last-weather";
+	private static String CFG_TRACK   = "last-track";
 
 	private static Preferences                cfg;
 	private static File                       file;
@@ -227,42 +229,43 @@ public class HTGT
 		switch(key)
 		{
 			case "file":
-				menu.add(new DynamicMenuItem("Öffnen",                  HTGT.class.getName(), "openFile"));
+				menu.add(new DynamicMenuItem("Öffnen",                            HTGT.class.getName(), "openFile"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Speichern",               HTGT.class.getName(), "saveFile"));
-				menu.add(registerDynMenuItem("Speichern unter",         HTGT.class.getName(), "saveFileAs"));
+				menu.add(registerDynMenuItem("Speichern",                         HTGT.class.getName(), "saveFile"));
+				menu.add(registerDynMenuItem("Speichern unter",                   HTGT.class.getName(), "saveFileAs"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Schließen",               HTGT.class.getName(), "closeFile"));
-				menu.add(new DynamicMenuItem("Beenden",                 HTGT.class.getName(), "quit"));
+				menu.add(registerDynMenuItem("Schließen",                         HTGT.class.getName(), "closeFile"));
+				menu.add(new DynamicMenuItem("Beenden",                           HTGT.class.getName(), "quit"));
 				break;
 
 			case "edit":
-				menu.add(registerDynMenuItem("Ausschneiden",            HTGT.class.getName(), "cutToClipboard"));
-				menu.add(registerDynMenuItem("Kopieren",                HTGT.class.getName(), "copyToClipboard"));
-				menu.add(registerDynMenuItem("Einfügen",                HTGT.class.getName(), "copyFromClipboard"));
-				menu.add(registerDynMenuItem("Löschen",                 HTGT.class.getName(), "deleteRows"));
+				menu.add(registerDynMenuItem("Ausschneiden",                      HTGT.class.getName(), "cutToClipboard"));
+				menu.add(registerDynMenuItem("Kopieren",                          HTGT.class.getName(), "copyToClipboard"));
+				menu.add(registerDynMenuItem("Einfügen",                          HTGT.class.getName(), "copyFromClipboard"));
+				menu.add(registerDynMenuItem("Löschen",                           HTGT.class.getName(), "deleteRows"));
 				break;
 
 			case "view":
-				menu.add(registerDynMenuItem("Profil auswählen",        HTGT.class.getName(), "selectProfile"));
+				menu.add(registerDynMenuItem("Profil auswählen",                  HTGT.class.getName(), "selectProfile"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aktualisieren",           HTGT.class.getName(), "reloadFile"));
+				menu.add(registerDynMenuItem("Aktualisieren",                     HTGT.class.getName(), "reloadFile"));
 				break;
 
 			case "api":
-				menu.add(registerDynMenuItem("Geister hochladen",       HTGT.class.getName(), "ghostUpload"));
-				menu.add(registerDynMenuItem("Geister herunterladen",   HTGT.class.getName(), "ghostDownload"));
+				menu.add(registerDynMenuItem("Geister hochladen",                 HTGT.class.getName(), "ghostUpload"));
+				menu.add(registerDynMenuItem("Geister durch ID(s) herunterladen", HTGT.class.getName(), "ghostDownload"));
+				menu.add(registerDynMenuItem("Geist auswählen und herunterladen", HTGT.class.getName(), "ghostSelect"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails", HTGT.class.getName(), "playerInfo"));
+				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails",           HTGT.class.getName(), "playerInfo"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("API-Token ändern",        HTGT.class.getName(), "setupToken"));
-				menu.add(new DynamicMenuItem("API-Token löschen",       HTGT.class.getName(), "deleteToken"));
+				menu.add(new DynamicMenuItem("API-Token ändern",                  HTGT.class.getName(), "setupToken"));
+				menu.add(new DynamicMenuItem("API-Token löschen",                 HTGT.class.getName(), "deleteToken"));
 				break;
 
 			case "help":
-				menu.add(new DynamicMenuItem("Updateprüfung",           HTGT.class.getName(), "updateCheck"));
+				menu.add(new DynamicMenuItem("Updateprüfung",                     HTGT.class.getName(), "updateCheck"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Über diese App",          HTGT.class.getName(), "about"));
+				menu.add(new DynamicMenuItem("Über diese App",                    HTGT.class.getName(), "about"));
 				break;
 		}
 
@@ -843,7 +846,6 @@ public class HTGT
 			return;
 		}
 
-		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
 		String last_input = "";
 
 		while(true)
@@ -851,7 +853,7 @@ public class HTGT
 			Object input = JOptionPane.showInputDialog(
 				mainwindow,
 				"Um einen Geist vom Server herunterzuladen, trage einfach die Ghost-ID ein:",
-				"Geist herunterladen",
+				APPLICATION_API,
 				JOptionPane.PLAIN_MESSAGE,
 				null,
 				null,
@@ -877,39 +879,220 @@ public class HTGT
 				}
 			}
 
-			Integer[] id;
-			String ghostdata;
-
 			// ladegrafik? oder wenigstens ein ladedialog?
 			// ...
 
-			if(ids.size() == 0)
+			if(!ghostDownload(ids.stream().mapToInt(i -> i).toArray()))
 			{
-				System.out.println("ghostDownload: NULL");
 				continue;
 			}
-			else if(ids.size() == 1)
-			{
-				System.out.println("ghostDownload: single ID");
-				ghostdata = api.getGhostByID(ids.get(0));
-			}
-			else
-			{
-				System.out.printf("ghostDownload: IDs (%d)", ids.size());
-				id = ids.stream().toArray(Integer[]::new);
-				ghostdata = api.getGhostsByIDs(id);
-			}
-
-			if(ghostdata == null)
-			{
-				APIError(api, "Download fehlgeschlagen...");
-				continue;
-			}
-
-			ghostImport(ghostdata);
 
 			return;
 		}
+	}
+
+	public static boolean ghostDownload(int id)
+	{
+		int[] ids = new int[1];
+		ids[0] = id;
+
+		return ghostDownload(ids);
+	}
+
+	public static boolean ghostDownload(int[] ids)
+	{
+		String token = getToken();
+		if(token == null)
+		{
+			return false;
+		}
+
+		Integer[] id;
+		String ghostdata;
+
+		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
+
+		if(ids.length == 0)
+		{
+			System.out.println("ghostDownload: NULL");
+			return false;
+		}
+		else if(ids.length == 1)
+		{
+			System.out.println("ghostDownload: single ID");
+			ghostdata = api.getGhostByID(ids[0]);
+		}
+		else
+		{
+			System.out.printf("ghostDownload: IDs (%d)", ids.length);
+			ghostdata = api.getGhostsByIDs(ids);
+		}
+
+		if(ghostdata == null)
+		{
+			APIError(api, "Download fehlgeschlagen...");
+			return false;
+		}
+
+		ghostImport(ghostdata);
+
+		return true;
+	}
+
+	public static void ghostSelect()
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
+		String token = getToken();
+		if(token == null)
+		{
+			return;
+		}
+
+		String selection   = null;
+		String lastTrack   = cfg(CFG_TRACK);
+		String lastWeather = cfg(CFG_WEATHER);
+
+		String[]   tracks     = gmHelper.getTracks();
+		int[]      weathers   = gmHelper.getWeatherIDs();
+		String[]   values     = new String[tracks.length * weathers.length];
+		String[][] conditions = new String[tracks.length * weathers.length][3];
+
+		for(int i = 0; i < tracks.length; i++)
+		{
+			for(int h = 0; h < weathers.length; h++)
+			{
+				int key = (i * weathers.length) + h;
+				values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+
+				conditions[key][0] = values[key];
+				conditions[key][1] = tracks[i];
+				conditions[key][2] = Integer.toString(weathers[h]);
+
+				// TODO: Eigentlich nicht ganz korrekt, da das Wetter als "int" verglichen werden müsste.
+				if(lastTrack != null && lastTrack.toLowerCase().equals(tracks[i].toLowerCase()) && lastWeather != null && lastWeather.equals(Integer.toString(weathers[h])))
+				{
+					selection = values[key];
+				}
+			}
+		}
+
+		String input = (String)JOptionPane.showInputDialog(
+			mainwindow,
+			"Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst die gewünschte Strecke aus:",
+			APPLICATION_API,
+			JOptionPane.PLAIN_MESSAGE,
+			null,
+			values,
+			selection
+		);
+
+		if(input == null)
+		{
+			System.out.println("...: CANCEL");
+			return;
+		}
+
+		String selectedTrack   = null;
+		String selectedWeather = null;
+		String value = (String) input;
+
+		for(int i = 0; i < conditions.length; i++)
+		{
+			if(conditions[i][0].equals(value))
+			{
+				selectedTrack = conditions[i][1];
+				selectedWeather = conditions[i][2];
+				break;
+			}
+		}
+
+		if(selectedTrack == null || selectedWeather == null)
+		{
+			Exception e = new Exception();
+			e.printStackTrace(); return;
+		}
+
+		System.out.printf("SELECTED: %s (%s)%n", selectedTrack, selectedWeather);
+
+		cfg(CFG_TRACK, selectedTrack);
+		cfg(CFG_WEATHER, selectedWeather);
+
+		ghostSelect(selectedTrack, Integer.parseInt(selectedWeather));
+	}
+
+	public static void ghostSelect(String track, int weather)
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
+		String token = getToken();
+		if(token == null)
+		{
+			return;
+		}
+
+		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
+		List<Map<String,Object>> results = api.getResultsByCondition(track, weather);
+
+		if(results == null)
+		{
+			APIError(api, "Die Rangliste konnte nicht geladen werden...");
+			return;
+		}
+
+		String selection = null;
+		String[] values = new String[results.size()];
+		Integer[] ghosts = new Integer[results.size()];
+
+		for(int i = 0; i < results.size(); i++)
+		{
+			Map<String,Object> result = results.get(i);
+			ghosts[i] = Integer.parseInt(result.get("GhostID").toString());
+			values[i] = String.format("%0" + Integer.toString(FNX.strlen(results.size())) + "d. %s – %s", result.get("Position"), gmHelper.getResult(Integer.parseInt(result.get("Result").toString())), result.get("Nickname"));
+		}
+
+		String input = (String)JOptionPane.showInputDialog(
+			mainwindow,
+			"Nachfolgend alle verfügbaren Geister der gewählten Strecke:",
+			APPLICATION_API,
+			JOptionPane.PLAIN_MESSAGE,
+			null,
+			values,
+			null
+		);
+
+		if(input == null)
+		{
+			System.out.println("...: CANCEL");
+			return;
+		}
+
+		String value = (String) input;
+		Integer ghost = null;
+
+		for(int i = 0; i < values.length; i++)
+		{
+			if(values[i].equals(value))
+			{
+				ghost = ghosts[i];
+				break;
+			}
+		}
+
+		if(ghost == null)
+		{
+			return;
+		}
+
+		System.out.printf("selected ghost: %d%n", ghost);
+
+		ghostDownload(ghost);
 	}
 
 	public static void playerInfo()

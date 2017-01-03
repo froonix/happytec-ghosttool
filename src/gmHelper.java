@@ -1,4 +1,6 @@
-
+import java.util.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 abstract class gmHelper
 {
@@ -11,6 +13,8 @@ abstract class gmHelper
 	public final static int WEATHER_ICE  = 4;
 	//                     QUALIFICATION = 1
 	//                     RACE          = 5
+
+	private static DateFormat ResultFormat;
 
 	public static String getWeather(int weatherType, boolean uppercase)
 	{
@@ -160,5 +164,34 @@ abstract class gmHelper
 		}
 
 		return trackName;
+	}
+
+	public static String getResult(int ms)
+	{
+		if(ResultFormat == null)
+		{
+			// Das HAPPYTEC-Format nutzt einen Beistrich.
+			// Andere Implementierungen nutzen einen Punkt.
+			ResultFormat = new SimpleDateFormat("mm:ss,SSS");
+		}
+
+		return ResultFormat.format(new Date(ms));
+	}
+
+	public static String[] getTracks()
+	{
+		String[] values = {
+			"Bcr", "Gro", "Bor", "Wen", "Kiz", "Gar", "Mor",
+			"Vdi", "Soc", "Schl"
+		};
+
+		return values;
+	}
+
+	public static int[] getWeatherIDs()
+	{
+		int[] values = {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE};
+
+		return values;
 	}
 }

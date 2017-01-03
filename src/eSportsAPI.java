@@ -116,7 +116,6 @@ public class eSportsAPI
 	public boolean applyResultByGhostID(int ghostID)
 	{
 		Map<String,Object> args = new HashMap<String,Object>();
-
 		args.put("ghostID", Integer.toString(ghostID));
 		String result = this.request("OFFLINE", "result.apply", args);
 
@@ -168,6 +167,52 @@ public class eSportsAPI
 					values.put("Useraccount", OfflinePlayerElement.getElementsByTagName("Username").item(0).getTextContent());
 					// values.put("CompetitionKey", OfflinePlayerElement.getElementsByTagName("Key").item(0).getTextContent());
 					values.put("CompetitionName", OfflinePlayerElement.getElementsByTagName("Title").item(0).getTextContent());
+				}
+
+				return values;
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return null;
+	}
+
+	public List<Map<String,Object>> getResultsByCondition(String track, String weather)
+	{
+		return this.getResultsByCondition(track, gmHelper.parseWeather(weather));
+	}
+
+	public List<Map<String,Object>> getResultsByCondition(String track, int weather)
+	{
+		Map<String,Object> args = new HashMap<String,Object>();
+		args.put("byTrack", track); args.put("byWeatherID", weather);
+		String result = this.request("OFFLINE", "result.get", args);
+
+		if(result != null)
+		{
+			try
+			{
+				Document doc = FNX.getDOMDocument(result);
+				NodeList OfflineResults = doc.getElementsByTagName("OfflineResult");
+				List<Map<String,Object>> values = new ArrayList<Map<String,Object>>(OfflineResults.getLength());
+
+				if(OfflineResults.getLength() > 0)
+				{
+					for(int i = 0; i < OfflineResults.getLength(); i++)
+					{
+						Element OfflineResult = (Element) OfflineResults.item(i);
+						Map<String,Object> hm = new HashMap<String,Object>(4);
+
+						hm.put("Nickname", OfflineResult.getElementsByTagName("Nickname").item(0).getTextContent());
+						hm.put("Result", Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent()));
+						hm.put("Position", Integer.parseInt(OfflineResult.getElementsByTagName("Position").item(0).getTextContent()));
+						hm.put("GhostID", Integer.parseInt(((Element) OfflineResult.getElementsByTagName("Ghost").item(0)).getAttribute("ID")));
+
+						values.add(i, hm);
+					}
 				}
 
 				return values;
@@ -253,7 +298,7 @@ public class eSportsAPI
 			wr.close();
 
 			int responseCode = con.getResponseCode();
-			System.out.printf("%nSending 'POST' request to URL: %s", url);
+			System.out.printf("%nSending 'POST' request to URL: %s%n", url);
 			System.out.println("Post parameters: " + postdata);
 			System.out.println("Response Code: " + responseCode);
 
