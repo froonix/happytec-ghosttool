@@ -2,6 +2,8 @@ import java.io.*;
 import java.util.*;
 import java.util.prefs.*;
 import java.util.regex.*;
+import java.nio.charset.*;
+import java.nio.file.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -48,6 +50,7 @@ public class HTGT
 	private static String CFG_UC      = "update-check";
 	private static String CFG_TOKEN   = "esports-token";
 	private static String CFG_CWD     = "last-directory";
+	private static String CFG_CWDPORT = "last-port-directory";
 	private static String CFG_WEATHER = "last-weather";
 	private static String CFG_TRACK   = "last-track";
 
@@ -243,6 +246,9 @@ public class HTGT
 				menu.add(registerDynMenuItem("Kopieren",                          HTGT.class.getName(), "copyToClipboard"));
 				menu.add(registerDynMenuItem("Einfügen",                          HTGT.class.getName(), "copyFromClipboard"));
 				menu.add(registerDynMenuItem("Löschen",                           HTGT.class.getName(), "deleteRows"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(registerDynMenuItem("Aus Datei importieren",             HTGT.class.getName(), "fileImport"));
+				menu.add(registerDynMenuItem("In Datei exportieren",              HTGT.class.getName(), "fileExport"));
 				break;
 
 			case "view":
@@ -368,6 +374,18 @@ public class HTGT
 		}
 
 		mainwindow.setTitle(APPLICATION_TITLE + filename + suffix);
+	}
+
+	public static void ghostImport(File file)
+	{
+		try
+		{
+			ghostImport(new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())), StandardCharsets.UTF_8));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	public static void ghostImport(String xmlstring)
@@ -1323,6 +1341,113 @@ public class HTGT
 		if(closeFile())
 		{
 			System.exit(0);
+		}
+	}
+
+	public static void fileExport()
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
+		StringBuilder data = new StringBuilder();
+		int[] selection = maintable.getSelectedRows();
+
+		if(selection.length == 0)
+		{
+			noSelection();
+			return;
+		}
+
+		// todo: insert xml header
+		// ...
+
+		for(int i = selection.length - 1; i > -1; i--)
+		{
+			// todo: insert comments
+			// ...
+
+			data.insert(0, OfflineProfiles.getGhost(selection[i]).toString());
+		}
+
+		JFileChooser chooser = new ImprovedFileChooser(cfg(CFG_CWDPORT));
+
+		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
+		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
+		chooser.setSelectedFile(new File("export.xml"));
+
+		int code = chooser.showSaveDialog(null);
+
+		if(code == JFileChooser.APPROVE_OPTION)
+		{
+			System.err.println("fileExport: APPROVE_OPTION");
+			File tmp = chooser.getSelectedFile();
+
+			if(tmp != null)
+			{
+				System.err.println("XML export filename: " + tmp.getAbsolutePath());
+				cfg(CFG_CWDPORT, String.format("%s", tmp.getParent()));
+
+				try
+				{
+					PrintWriter pw = new PrintWriter(tmp);
+					pw.printf("%s", data.toString());
+					pw.close();
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		else if(code == JFileChooser.CANCEL_OPTION)
+		{
+			System.err.println("fileExport: CANCEL_OPTION");
+		}
+		else if(code == JFileChooser.ERROR_OPTION)
+		{
+			System.err.println("fileExport: ERROR_OPTION");
+		}
+	}
+
+	public static void fileImport()
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
+		JFileChooser chooser = new JFileChooser(cfg(CFG_CWDPORT));
+
+		// TODO: XML-Filter auslagern, wird auch woanders genutzt.
+		// ...
+
+		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
+		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
+
+		int code = chooser.showOpenDialog(null);
+
+		if(code == JFileChooser.APPROVE_OPTION)
+		{
+			System.err.println("fileImport: APPROVE_OPTION");
+			File tmp = chooser.getSelectedFile();
+
+			if(tmp.exists())
+			{
+				System.err.println("XML import filename: " + tmp.getAbsolutePath());
+				cfg(CFG_CWDPORT, String.format("%s", tmp.getParent()));
+
+				ghostImport(tmp);
+			}
+		}
+		else if(code == JFileChooser.CANCEL_OPTION)
+		{
+			System.err.println("fileImport: CANCEL_OPTION");
+		}
+		else if(code == JFileChooser.ERROR_OPTION)
+		{
+			System.err.println("fileImport: ERROR_OPTION");
 		}
 	}
 
