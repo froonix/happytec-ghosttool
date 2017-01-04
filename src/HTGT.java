@@ -269,9 +269,8 @@ public class HTGT
 				break;
 
 			case "help":
-				menu.add(new DynamicMenuItem("Konfiguration löschen",             HTGT.class.getName(), "cfgClear"));
-				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("Prüfung auf Updates",               HTGT.class.getName(), "updateCheck"));
+				menu.add(new DynamicMenuItem("Konfiguration löschen",             HTGT.class.getName(), "cfgClear"));
 				menu.add(new DynamicMenuItem("Über diese App",                    HTGT.class.getName(), "about"));
 				break;
 		}
@@ -391,10 +390,8 @@ public class HTGT
 
 	public static void ghostImport(String xmlstring)
 	{
-		if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
-		{
-			return;
-		}
+		ArrayList<GhostElement> ghosts = new ArrayList<GhostElement>();
+		boolean delete = false;
 
 		int i = 0;
 		try
@@ -408,16 +405,36 @@ public class HTGT
 				xmltag = matcher.group(1);
 
 				GhostElement ghostElement = new GhostElement(xmltag);
-				addGhost(ghostElement, true);
-				ghostElement.printDetails();
+				ghosts.add(ghostElement);
 
-				int[] ghosts = OfflineProfiles.getGhostsByCondition(ghostElement);
-				for(int h = ghosts.length - 2; h > -1; h--)
+				if(OfflineProfiles.getGhostsByCondition(ghostElement).length > 0)
 				{
-					deleteGhost(ghosts[h]);
+					delete = true;
 				}
 
 				i++;
+			}
+
+			if(delete)
+			{
+				if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
+				{
+					return;
+				}
+			}
+
+			for(int j = 0; j < ghosts.size(); j++)
+			{
+				GhostElement ghostElement = ghosts.get(j);
+
+				addGhost(ghostElement, true);
+				ghostElement.printDetails();
+
+				int[] ghostDel = OfflineProfiles.getGhostsByCondition(ghostElement);
+				for(int h = ghostDel.length - 2; h > -1; h--)
+				{
+					deleteGhost(ghostDel[h]);
+				}
 			}
 		}
 		catch(Exception e)
