@@ -269,8 +269,9 @@ public class HTGT
 				break;
 
 			case "help":
-				menu.add(new DynamicMenuItem("Updateprüfung",                     HTGT.class.getName(), "updateCheck"));
+				menu.add(new DynamicMenuItem("Konfiguration löschen",             HTGT.class.getName(), "cfgClear"));
 				menu.addSeparator(); // --------------------------------
+				menu.add(new DynamicMenuItem("Prüfung auf Updates",               HTGT.class.getName(), "updateCheck"));
 				menu.add(new DynamicMenuItem("Über diese App",                    HTGT.class.getName(), "about"));
 				break;
 		}
@@ -1475,6 +1476,21 @@ public class HTGT
 
 		cfg.put(key, value);
 		return cfg(key);
+	}
+
+	// ALLE Konfiguration löschen.
+	public static void cfgClear()
+	{
+		try
+		{
+			cfg.clear();
+			messageDialog(JOptionPane.INFORMATION_MESSAGE, null, "Die Konfiguration dieser Anwendung wurde erfolgreich zurückgesetzt.");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			errorMessage(e.getMessage());
+		}
 	}
 }
 
