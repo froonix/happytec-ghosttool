@@ -1,6 +1,6 @@
 Schritte für eine neue Veröffentlichung:
 
-* Neuen Branch erstellen. (z.B. `v0.0.0`)
+* Neuen Branch erstellen und zu diesem wechseln. (z.B. `v0.0.0`)
 * `APPLICATION_VERSION` in HTGT.java aktualisieren.
 * Änderung mit `git` `commit`'en und `push`'en.
 * `make clean && make && make sig` (GPG-Sig!)
