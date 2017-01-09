@@ -1,25 +1,65 @@
+/**
+ * eSportsAPI.java: HAPPYTEC-eSports-API interface
+ * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.IOException;
+
+import java.lang.NullPointerException;
+import java.lang.RuntimeException;
+
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.net.URL;
-import java.util.*;
-import org.w3c.dom.*;
 
+import java.text.ParseException;
 
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import org.xml.sax.SAXException;
 
 public class eSportsAPI
 {
 	private final static String API_VERSION = "1.0";
 	private final static String API_REQUEST = "%s/%s/%s/%s";
 	private final static String API_MAINURL = "https://www.esports.happytec.at/api";
+	private final static int    API_TIMEOUT = 10000;
 
 	private String token;
 	private String useragent;
-	private String errmsg;
 
 	public eSportsAPI(String token)
 	{
@@ -42,338 +82,333 @@ public class eSportsAPI
 		this.useragent = useragent;
 	}
 
-	public String getGhostByID(int id)
+	public GhostElement getGhostByID(int id) throws eSportsAPIException
 	{
-		Map<String,Object> args = new HashMap<String,Object>();
-		args.put("byID", id);
-
-		return this.request("OFFLINE", "ghost.get", args);
-	}
-
-	public String getGhostsByIDs(int[] ids)
-	{
-		Map<String,Object> args = new HashMap<String,Object>();
-		StringBuilder value = new StringBuilder();
-
-		for(int i = 0; i < ids.length; i++)
-		{
-			if(i > 0)
-			{
-				value.append(",");
-			}
-
-			value.append(String.format("%d", ids[i]));
-		}
-
-		args.put("byIDs", value.toString());
-		return this.request("OFFLINE", "ghost.get", args);
-	}
-
-	public String getGhostsByIDs(Integer[] ids)
-	{
-		int[] values = Arrays.stream(ids).mapToInt(Integer::intValue).toArray();
-		return getGhostsByIDs(values);
-	}
-
-	public int[] getGhostIDs(GhostElement[] ghosts)
-	{
-		Map<String,Object> args = new HashMap<String,Object>();
-		StringBuilder data = new StringBuilder();
-
-		for(int i = 0; i < ghosts.length; i++)
-		{
-			data.append(ghosts[i].toString());
-		}
-
-		args.put("XML", data.toString());
-		String result = this.request("OFFLINE", "ghost.put", args);
-
-		if(result != null)
-		{
-			try
-			{
-				Document doc = FNX.getDOMDocument(result);
-				NodeList GhostNodes = doc.getElementsByTagName("Ghost");
-				int[] ghostIDs = new int[GhostNodes.getLength()];
-
-				for(int i = 0; i < GhostNodes.getLength(); i++)
-				{
-					Element ghost = (Element) GhostNodes.item(i);
-					ghostIDs[i] = Integer.parseInt(ghost.getAttribute("ID"));
-				}
-
-				return ghostIDs;
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		return null;
-	}
-
-	public boolean applyResultByGhostID(int ghostID)
-	{
-		Map<String,Object> args = new HashMap<String,Object>();
-		args.put("ghostID", Integer.toString(ghostID));
-		String result = this.request("OFFLINE", "result.apply", args);
-
-		if(result != null)
-		{
-			try
-			{
-				Document doc = FNX.getDOMDocument(result);
-				NodeList GhostNodes = doc.getElementsByTagName("Ghost");
-
-				if(GhostNodes.getLength() > 0)
-				{
-					Element ghost = (Element) GhostNodes.item(0);
-					int id = Integer.parseInt(ghost.getAttribute("ID"));
-
-					if(id == ghostID)
-					{
-						return true;
-					}
-				}
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		return false;
-	}
-
-	public Map<String,Object> getPlayerInfo()
-	{
-		Map<String,Object> values = new HashMap<String,Object>();
-		String result = this.request("OFFLINE", "player.info", null);
-
-		if(result != null)
-		{
-			try
-			{
-				Document doc = FNX.getDOMDocument(result);
-				NodeList OfflinePlayer = doc.getElementsByTagName("OfflinePlayer");
-
-				if(OfflinePlayer.getLength() > 0)
-				{
-					Element OfflinePlayerElement = (Element) OfflinePlayer.item(0);
-					// int id = Integer.parseInt(OfflinePlayerElement.getAttribute("ID"));
-
-					values.put("Nickname", OfflinePlayerElement.getElementsByTagName("Nickname").item(0).getTextContent());
-					values.put("Useraccount", OfflinePlayerElement.getElementsByTagName("Username").item(0).getTextContent());
-					// values.put("CompetitionKey", OfflinePlayerElement.getElementsByTagName("Key").item(0).getTextContent());
-					values.put("CompetitionName", OfflinePlayerElement.getElementsByTagName("Title").item(0).getTextContent());
-				}
-
-				return values;
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		return null;
-	}
-
-	public List<Map<String,Object>> getResultsByCondition(String track, String weather)
-	{
-		return this.getResultsByCondition(track, gmHelper.parseWeather(weather));
-	}
-
-	public List<Map<String,Object>> getResultsByCondition(String track, int weather)
-	{
-		Map<String,Object> args = new HashMap<String,Object>();
-		args.put("byTrack", track); args.put("byWeatherID", weather);
-		String result = this.request("OFFLINE", "result.get", args);
-
-		if(result != null)
-		{
-			try
-			{
-				Document doc = FNX.getDOMDocument(result);
-				NodeList OfflineResults = doc.getElementsByTagName("OfflineResult");
-				List<Map<String,Object>> values = new ArrayList<Map<String,Object>>(OfflineResults.getLength());
-
-				if(OfflineResults.getLength() > 0)
-				{
-					for(int i = 0; i < OfflineResults.getLength(); i++)
-					{
-						Element OfflineResult = (Element) OfflineResults.item(i);
-						Map<String,Object> hm = new HashMap<String,Object>(4);
-
-						hm.put("Nickname", OfflineResult.getElementsByTagName("Nickname").item(0).getTextContent());
-						hm.put("Result", Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent()));
-						hm.put("Position", Integer.parseInt(OfflineResult.getElementsByTagName("Position").item(0).getTextContent()));
-						hm.put("GhostID", Integer.parseInt(((Element) OfflineResult.getElementsByTagName("Ghost").item(0)).getAttribute("ID")));
-
-						values.add(i, hm);
-					}
-				}
-
-				return values;
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		return null;
-	}
-
-	// Das gehört eigentlich nicht hier her!
-	// Aber so ist es deutlich einfacher...
-	public int updateAvailable(String app, String version)
-	{
-		Map<String,Object> args = new HashMap<String,Object>();
-		args.put("application", app); args.put("version", version);
-		String result = this.request("OFFLINE", "update.check", args);
-
-		if(result != null)
-		{
-			try
-			{
-				Document doc = FNX.getDOMDocument(result);
-				NodeList ResultNodeList = doc.getElementsByTagName("Result");
-
-				if(ResultNodeList.getLength() > 0)
-				{
-					Element ResultElement = (Element) ResultNodeList.item(0);
-
-					if(ResultElement.getTextContent().equals("NO_UPDATES"))
-					{
-						return 0;
-					}
-					else if(ResultElement.getTextContent().equals("UPDATE_AVAILABLE"))
-					{
-						return 1;
-					}
-				}
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		return -1;
-	}
-
-	private String request(String module, String method, Map<?,?> data)
-	{
-		module = module.toLowerCase();
-		method = method.toLowerCase();
-
-		String url = String.format(API_REQUEST, API_MAINURL, API_VERSION, module, method);
-		String postdata = (data != null) ? FNX.buildQueryString(data) : "";
-
-		// System.out.println(url);
-		// System.out.println(postdata);
-
 		try
 		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			args.put("byID", id);
 
-			URL obj = new URL(url);
-			HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+			return new GhostElement(this.request("OFFLINE", "ghost.get", args));
+		}
+		catch(GhostException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
 
-			//add reuqest header
-			con.setRequestMethod("POST");
-			con.setRequestProperty("User-Agent", this.useragent);
+	public GhostElement[] getGhostsByIDs(int[] ids) throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			StringBuilder value = new StringBuilder();
 
-			if(module.equals("offline") && this.token != null)
+			for(int i = 0; i < ids.length; i++)
 			{
-				con.setRequestProperty("X-Auth-Token", this.token);
-			}
-
-			// Send post request
-			con.setDoOutput(true);
-			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-			wr.writeBytes(postdata);
-			wr.flush();
-			wr.close();
-
-			int responseCode = con.getResponseCode();
-			System.out.printf("%nSending 'POST' request to URL: %s%n", url);
-			System.out.println("Post parameters: " + postdata);
-			System.out.println("Response Code: " + responseCode);
-
-			InputStream _is;
-			if(responseCode < 400)
-			{
-				_is = con.getInputStream();
-			}
-			else
-			{
-				_is = con.getErrorStream();
-			}
-
-			BufferedReader in = new BufferedReader(
-					new InputStreamReader(_is));
-			String inputLine;
-			StringBuffer response = new StringBuffer();
-
-			while ((inputLine = in.readLine()) != null)
-			{
-				response.append(inputLine);
-			}
-			in.close();
-
-			if(responseCode != 200)
-			{
-				String body = response.toString().trim();
-				if(body.matches("^[a-zA-Z0-9_]{1,32}$"))
+				if(i > 0)
 				{
-					this.errmsg = body.toUpperCase();
+					// Die API erlaubt beliebige nicht-numerische Trennzeichen.
+					// Durch den Unterstrich (statt einem Beistrich o.ä.) werden
+					// zwei Byte pro Geist eingespart, da die Kodierung entfällt.
+					value.append("_");
+				}
+
+				value.append(String.format("%d", ids[i]));
+			}
+
+			args.put("byIDs", value.toString());
+			String result = this.request("OFFLINE", "ghost.get", args);
+
+			return GhostElement.parseGhosts(result);
+		}
+		catch(GhostException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
+	public GhostElement[] getGhostsByIDs(Integer[] ids) throws eSportsAPIException
+	{
+		return getGhostsByIDs(Arrays.stream(ids).mapToInt(Integer::intValue).toArray());
+	}
+
+	public int[] getGhostIDs(GhostElement[] ghosts) throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			StringBuilder data = new StringBuilder();
+
+			for(int i = 0; i < ghosts.length; i++)
+			{
+				data.append(ghosts[i].toString());
+			}
+
+			args.put("XML", data.toString());
+			String result = this.request("OFFLINE", "ghost.put", args);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList GhostNodes = doc.getElementsByTagName("Ghost");
+			int[] ghostIDs = new int[GhostNodes.getLength()];
+
+			for(int i = 0; i < GhostNodes.getLength(); i++)
+			{
+				Element ghost = (Element) GhostNodes.item(i);
+				ghostIDs[i] = Integer.parseInt(ghost.getAttribute("ID"));
+			}
+
+			return ghostIDs;
+		}
+		catch(SAXException|ParserConfigurationException|IOException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
+	public boolean applyResultByGhostID(int ghostID) throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			args.put("ghostID", Integer.toString(ghostID));
+			String result = this.request("OFFLINE", "result.apply", args);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList GhostNodes = doc.getElementsByTagName("Ghost");
+
+			if(GhostNodes.getLength() > 0)
+			{
+				Element ghost = (Element) GhostNodes.item(0);
+				int id = Integer.parseInt(ghost.getAttribute("ID"));
+
+				if(id == ghostID)
+				{
+					return true;
 				}
 				else
 				{
-					this.errmsg = null;
+					return false;
 				}
-
-				return null;
 			}
-
-			return response.toString();
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			this.errmsg = "INTERNAL_CLIENT_EXCEPTION";
-		}
-
-		return null;
-	}
-
-	public String getErrorCode()
-	{
-		return this.errmsg;
-	}
-
-	public String getErrorMessage()
-	{
-		if(this.errmsg != null)
-		{
-			switch(this.errmsg)
+			else
 			{
-				// Es gibt noch deutlich mehr Fehlercodes, die haben aber
-				// keine reale Bedeutung, wenn die API korrekt benutzt wird.
-				case "RESULT_EMPTY":              return "Die Rangliste ist (noch) leer.";
-				case "PLAYER_SUSPENDED":          return "Dein Spieler wurde suspendiert!";
-				case "GHOST_UNKNOWN":             return "Es wurden keine Geister gefunden.";
-				case "GHOST_PRIVATE":             return "Dieser Geist ist nicht öffentlich.";
-				case "RESULT_WORSE":              return String.format("Die neue Zeit ist nicht schneller.%n%nDu kannst nur Ergebnisse übernehmen, die besser als dein existierendes sind.");
-				case "TOKEN_UNKNOWN":             return String.format("Unbekannter API-Token!%n%nBitte kontrolliere den API-Token.");
-				case "TOKEN_INVALID":             return String.format("Ungültiges Format des API-Tokens!%n%nBitte kontrolliere den API-Token.");
-				case "SEASON_OVER":               return String.format("Die Saison ist schon beendet.%n%nSchau ins Forum, wann es wieder los geht!");
-				case "INTERNAL_CLIENT_EXCEPTION": return String.format("Interne Exception im Java-Programm.%n%nSiehe Stacktrace in der Konsolenausgabe.");
+				throw new ParserConfigurationException("Missing <Ghost> tag in reply");
 			}
 		}
+		catch(SAXException|ParserConfigurationException|IOException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
 
-		return "Unbekannter Fehler, siehe Fehlercode.";
+	public Map<String,Object> getPlayerInfo() throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> values = new HashMap<String,Object>();
+			String result = this.request("OFFLINE", "player.info", null);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList OfflinePlayer = doc.getElementsByTagName("OfflinePlayer");
+
+			if(OfflinePlayer.getLength() > 0)
+			{
+				Element OfflinePlayerElement = (Element) OfflinePlayer.item(0);
+				// int id = Integer.parseInt(OfflinePlayerElement.getAttribute("ID"));
+
+				values.put("Nickname", OfflinePlayerElement.getElementsByTagName("Nickname").item(0).getTextContent());
+				values.put("Useraccount", OfflinePlayerElement.getElementsByTagName("Username").item(0).getTextContent());
+				// values.put("CompetitionKey", OfflinePlayerElement.getElementsByTagName("Key").item(0).getTextContent());
+				values.put("CompetitionName", OfflinePlayerElement.getElementsByTagName("Title").item(0).getTextContent());
+
+				return values;
+			}
+			else
+			{
+				throw new ParserConfigurationException("Missing <OfflinePlayer> tag in reply");
+			}
+		}
+		catch(SAXException|ParserConfigurationException|IOException|NullPointerException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
+	public List<Map<String,Object>> getResultsByCondition(String track, String weather) throws eSportsAPIException
+	{
+		try
+		{
+			return this.getResultsByCondition(track, gmHelper.parseWeather(weather));
+		}
+		catch(gmException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
+	public List<Map<String,Object>> getResultsByCondition(String track, int weather) throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			args.put("byTrack", track); args.put("byWeatherID", weather);
+			String result = this.request("OFFLINE", "result.get", args);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList OfflineResults = doc.getElementsByTagName("OfflineResult");
+			List<Map<String,Object>> values = new ArrayList<Map<String,Object>>(OfflineResults.getLength());
+
+			if(OfflineResults.getLength() > 0)
+			{
+				for(int i = 0; i < OfflineResults.getLength(); i++)
+				{
+					Element OfflineResult = (Element) OfflineResults.item(i);
+					Map<String,Object> hm = new HashMap<String,Object>(4);
+
+					hm.put("Nickname", OfflineResult.getElementsByTagName("Nickname").item(0).getTextContent());
+					hm.put("Result", Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent()));
+					hm.put("Position", Integer.parseInt(OfflineResult.getElementsByTagName("Position").item(0).getTextContent()));
+					hm.put("GhostID", Integer.parseInt(((Element) OfflineResult.getElementsByTagName("Ghost").item(0)).getAttribute("ID")));
+
+					values.add(i, hm);
+				}
+			}
+
+			return values;
+		}
+		catch(SAXException|ParserConfigurationException|IOException|NullPointerException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
+	public boolean updateAvailable(String app, String version, boolean autocheck) throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			args.put("autocheck", ((autocheck) ? "true" : "false"));
+			args.put("application", app); args.put("version", version);
+			String result = this.request("OFFLINE", "update.check", args);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList ResultNodeList = doc.getElementsByTagName("Result");
+
+			if(ResultNodeList.getLength() > 0)
+			{
+				String ResultElement = ((Element) ResultNodeList.item(0)).getTextContent().toUpperCase().trim();
+
+				if(ResultElement.equals("NO_UPDATES"))
+				{
+					return false;
+				}
+				else if(ResultElement.equals("UPDATE_AVAILABLE"))
+				{
+					return true;
+				}
+				else
+				{
+					throw new ParserConfigurationException(String.format("Invalid reply: %s", ResultElement));
+				}
+			}
+			else
+			{
+				throw new ParserConfigurationException("Missing <Result> tag in reply");
+			}
+		}
+		catch(SAXException|ParserConfigurationException|IOException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
+	public boolean updateAvailable(String app, String version) throws eSportsAPIException
+	{
+		return this.updateAvailable(app, version, false);
+	}
+
+	private String request(String module, String method, Map<?,?> data) throws eSportsAPIException
+	{
+		HttpsURLConnection connection;
+		StringBuffer response;
+		DataOutputStream tx;
+		BufferedReader rx;
+		String line;
+
+		module = module.toLowerCase();
+		method = method.toLowerCase();
+
+		String postdata = (data != null) ? FNX.buildQueryString(data) : "";
+		String url = String.format(API_REQUEST, API_MAINURL, API_VERSION, module, method);
+		System.err.printf("HTTP POST: %s (%d byte)%n", url, postdata.length());
+
+		try
+		{
+			connection = (HttpsURLConnection) new URL(url).openConnection();
+			connection.setConnectTimeout(API_TIMEOUT);
+			connection.setReadTimeout(API_TIMEOUT);
+
+			if(this.useragent != null)
+			{
+				connection.setRequestProperty("User-Agent", this.useragent);
+			}
+
+			if(module.equals("offline") && this.token != null)
+			{
+				connection.setRequestProperty("X-Auth-Token", this.token);
+			}
+
+			connection.setRequestMethod("POST"); connection.setDoOutput(true);
+			tx = new DataOutputStream(connection.getOutputStream());
+			tx.writeBytes(postdata); tx.flush(); tx.close();
+
+			int code = connection.getResponseCode();
+			String msg = connection.getResponseMessage();
+
+			if(code < 400)
+			{
+				rx = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			}
+			else
+			{
+				rx = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+			}
+
+			response = new StringBuffer();
+			while((line = rx.readLine()) != null)
+			{
+				response.append(line);
+			}
+			rx.close();
+
+			String content = response.toString();
+			System.err.printf("HTTP %d: %s (%s; %d byte)%n", code, url, msg, content.length());
+
+			if(code != 200)
+			{
+				String body = content.trim();
+				if(body.matches("^[a-zA-Z0-9_]{1,32}$"))
+				{
+					throw new eSportsAPIException(body.toUpperCase());
+				}
+				else
+				{
+					throw new eSportsAPIException();
+				}
+			}
+			else
+			{
+				return content;
+			}
+		}
+		catch(UnknownHostException|SocketTimeoutException e)
+		{
+			throw new eSportsAPIException(e, "INTERNAL_NETWORK_ERROR");
+		}
+		catch(IOException e)
+		{
+			throw new eSportsAPIException(e);
+		}
 	}
 }

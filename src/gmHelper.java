@@ -1,8 +1,27 @@
-import java.util.Date;
+/**
+ * gmHelper.java: GentleMagic / Greentube / HAPPYTEC
+ * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
-abstract class gmHelper
+public abstract class gmHelper
 {
 	// Interne Wetter-IDs von HAPPYTEC.
 	// Die von GT waren immer schon anders!
@@ -16,7 +35,7 @@ abstract class gmHelper
 
 	private static DateFormat ResultFormat;
 
-	public static String getWeather(int weatherType, boolean uppercase)
+	public static String getWeather(int weatherType, boolean uppercase) throws gmException
 	{
 		String weatherString = getWeather(weatherType);
 
@@ -28,7 +47,7 @@ abstract class gmHelper
 		return weatherString;
 	}
 
-	public static String getWeather(int weatherType)
+	public static String getWeather(int weatherType) throws gmException
 	{
 		String weatherString = "";
 
@@ -47,14 +66,13 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid weather type: %d%n", weatherType);
-				break;
+				throw new gmException(String.format("Invalid weather type: %d", weatherType));
 		}
 
 		return weatherString;
 	}
 
-	public static String getWeatherName(int weatherType)
+	public static String getWeatherName(int weatherType) throws gmException
 	{
 		String weatherName = "";
 
@@ -73,14 +91,13 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid weather type: %d%n", weatherType);
-				break;
+				throw new gmException(String.format("Invalid weather type: %d", weatherType));
 		}
 
 		return weatherName;
 	}
 
-	public static int parseWeather(String weatherString)
+	public static int parseWeather(String weatherString) throws gmException
 	{
 		int weatherType = WEATHER_NONE;
 
@@ -99,8 +116,7 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid weather string: %s%n", weatherString);
-				break;
+				throw new gmException(String.format("Invalid weather string: %s", weatherString));
 		}
 
 		return weatherType;
@@ -109,7 +125,7 @@ abstract class gmHelper
 	// Die Kurzbezeichnungen der Strecken bleiben unverändert.
 	// Diese sind auf HAPPYTEC sowieso in der DB vorhanden.
 	// Es muss also nur eine Richtung implementiert werden.
-	public static String getTrack(String trackKey)
+	public static String getTrack(String trackKey) throws gmException
 	{
 		String trackName = "";
 
@@ -159,8 +175,7 @@ abstract class gmHelper
 				break;
 
 			default:
-				System.err.printf("Invalid track key: %s%n", trackKey);
-				break;
+				throw new gmException(String.format("Invalid track key: %s", trackKey));
 		}
 
 		return trackName;
@@ -180,10 +195,23 @@ abstract class gmHelper
 
 	public static String[] getTracks()
 	{
+		return getTracks(false);
+	}
+
+	public static String[] getTracks(boolean lc)
+	{
 		String[] values = {
 			"Bcr", "Gro", "Bor", "Wen", "Kiz", "Gar", "Mor",
 			"Vdi", "Soc", "Schl"
 		};
+
+		if(lc)
+		{
+			for(int i = 0; i < values.length; i++)
+			{
+				values[i] = values[i].toLowerCase();
+			}
+		}
 
 		return values;
 	}

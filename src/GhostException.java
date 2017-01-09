@@ -1,5 +1,5 @@
 /**
- * DynamicMenuItem.java: Avoid anonymous inner classes
+ * GhostException.java: GhostElement exception
  * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,38 +17,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.lang.reflect.Method;
-import javax.swing.JMenuItem;
-
-public class DynamicMenuItem extends JMenuItem implements ActionListener
+public class GhostException extends Exception
 {
-	String className;
-	String methodName;
-
-	public DynamicMenuItem(String textLabel, String className, String methodName)
+	public GhostException(String message)
 	{
-		super(textLabel);
-
-		this.className = className;
-		this.methodName = methodName;
-
-		addActionListener(this);
+		super(message);
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent a)
+	public GhostException(int i, String msg)
 	{
-		try
-		{
-			Class<?> c = Class.forName(this.className);
-			Method m = c.getDeclaredMethod(this.methodName);
-			m.invoke(null);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
+		super(String.format("[%d] %s", i, msg));
 	}
 }

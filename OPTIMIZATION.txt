@@ -1,0 +1,26 @@
+[OK] DynamicMenuItem.java
+[OK] eSportsAPI.java
+[OK] eSportsAPIException.java
+[OK] FNX.java
+[OK] GhostElement.java
+[OK] GhostException.java
+[OK] gmException.java
+[OK] gmHelper.java
+[  ] HTGT.java
+[OK] ImprovedFileChooser.java
+[  ] OfflineProfiles.java
+[OK] ProfileException.java
+
+--
+
+OfflineProfiles wirft ganz allgemein lauter "Exceptions".
+Das könnte man noch weiter einschränken? Und ProfileException
+an manchen Stellen werfen, wo eine Exception genutzt wird.
+
+--
+
+In HTGT müssen alle System.out/err Aufrufe durch dbg() ersetzt werden!
+
+--
+
+Was ist mit der CREDITS Datei?

@@ -1,19 +1,77 @@
-import java.io.*;
-import java.util.*;
-import java.net.URLEncoder;
-import javax.xml.parsers.*;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.*;
-import javax.xml.transform.stream.*;
-import org.xml.sax.InputSource;
-import org.w3c.dom.*;
+/**
+ * FNX.java: Static helper methods for various stuff
+ * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
-abstract class FNX
+import java.net.URLEncoder;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
+import java.util.Map;
+import java.util.TimeZone;
+
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+
+import javax.xml.transform.dom.DOMSource;
+
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+public abstract class FNX
 {
+	private static DateFormat             dateFormat;
 	private static DocumentBuilderFactory dbFactory;
 	private static DocumentBuilder        dBuilder;
+
+	public static String getDateString()
+	{
+		if(dateFormat == null)
+		{
+			// http://stackoverflow.com/a/3914498
+			dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+			dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+		}
+
+		return dateFormat.format(new Date());
+	}
 
 	// return string length of int
 	public static int strlen(int i)
@@ -75,7 +133,7 @@ abstract class FNX
 		return qs.toString();
 	}
 
-	private static void setupDOMParser() throws Exception
+	private static void setupDOMParser() throws SAXException, ParserConfigurationException, IOException
 	{
 		if(dbFactory == null)
 		{
@@ -88,29 +146,29 @@ abstract class FNX
 		}
 	}
 
-	public static Document getDOMDocument(String xml) throws Exception
+	public static Document getDOMDocument(String xml) throws SAXException, ParserConfigurationException, IOException
 	{
 		setupDOMParser();
 		return dBuilder.parse(new InputSource(new StringReader(xml)));
 	}
 
-	public static Document getDOMDocument(File file) throws Exception
+	public static Document getDOMDocument(File file) throws SAXException, ParserConfigurationException, IOException
 	{
 		setupDOMParser();
 		return dBuilder.parse(file);
 	}
 
-	public static String getStringFromDOM(Document input, boolean full) throws Exception
+	public static String getStringFromDOM(Document input, boolean full) throws TransformerException
 	{
 		return getStringFromDOM(new DOMSource(input), new StreamResult(new StringWriter()), full);
 	}
 
-	public static String getStringFromDOM(Element input, boolean full) throws Exception
+	public static String getStringFromDOM(Element input, boolean full) throws TransformerException
 	{
 		return getStringFromDOM(new DOMSource(input), new StreamResult(new StringWriter()), full);
 	}
 
-	public static String getStringFromDOM(DOMSource input, StreamResult output, boolean full) throws Exception
+	public static String getStringFromDOM(DOMSource input, StreamResult output, boolean full) throws TransformerException
 	{
 		TransformerFactory tf = TransformerFactory.newInstance();
 		Transformer t = tf.newTransformer();
@@ -144,4 +202,35 @@ abstract class FNX
 
 		return string;
 	}
+
+	public static void displayExceptionSummary(Exception e, String title, String header, String footer)
+	{
+		e.printStackTrace();
+
+		JOptionPane.showMessageDialog(null, String.format("%s%n%n%s: %s%n%n%s", ((header != null) ? header : ""), e.getClass().getCanonicalName(), e.getMessage(), ((footer != null) ? footer : "")).trim(), title, JOptionPane.ERROR_MESSAGE);
+	}
+
+	/*
+	// http://stackoverflow.com/a/14011536
+	public static void displayExceptionDetails(Exception e, String title)
+	{
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter(sw, true);
+
+		e.printStackTrace(pw);
+		String st = sw.getBuffer().toString();
+		System.err.println(st);
+
+		javax.swing.JTextArea jta = new javax.swing.JTextArea(st);
+		JScrollPane jsp = new JScrollPane(jta)
+		{
+			@Override
+			public java.awt.Dimension getPreferredSize()
+			{
+				return new java.awt.Dimension(480, 320);
+			}
+		};
+		JOptionPane.showMessageDialog(null, jsp, title, JOptionPane.ERROR_MESSAGE);
+	}
+	*/
 }

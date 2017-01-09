@@ -1,17 +1,39 @@
-import java.io.*;
-import java.util.ArrayList;
-import javax.xml.parsers.*;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.*;
-import javax.xml.transform.stream.*;
-import org.xml.sax.InputSource;
-import javax.xml.xpath.*;
-import org.w3c.dom.*;
+/**
+ * OfflineProfiles.java: Representation of OfflineProfiles.xml
+ * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
+
+import java.io.File;
+import java.io.FileNotFoundException;
 
 import java.lang.IndexOutOfBoundsException;
 
-// OfflineProfiles.xml
-class OfflineProfiles
+import java.util.ArrayList;
+
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+public class OfflineProfiles
 {
 	final private static String XML_TAG_DEFAULT = "DefaultProfile";
 	final private static String XML_TAG_PROFILE = "OfflineProfile";
@@ -58,7 +80,7 @@ class OfflineProfiles
 	{
 		if(this.file == null)
 		{
-			throw new Exception("OfflineProfiles not initialized with File; updateFile() not possible");
+			throw new IllegalStateException("OfflineProfiles not initialized with File; updateFile() not possible");
 		}
 
 		this.checkFile(xmlfile);
@@ -69,7 +91,7 @@ class OfflineProfiles
 	{
 		if(this.file == null)
 		{
-			throw new Exception("OfflineProfiles not initialized with File; reload() not possible");
+			throw new IllegalStateException("OfflineProfiles not initialized with File; reload() not possible");
 		}
 
 		this.changed = false;
@@ -88,17 +110,14 @@ class OfflineProfiles
 		this.OfflineProfiles = document.getElementsByTagName(this.XML_TAG_PROFILE);
 		NodeList DefaultProfiles = document.getElementsByTagName(this.XML_TAG_DEFAULT);
 
-		/*
-		if(this.getProfileCount() == 0)
+		if(this.getProfileCount() == 0 && DefaultProfiles.getLength() == 0)
 		{
-			throw new Exception(String.format("Missing <%s> tag", XML_TAG_PROFILE));
+			throw new ProfileException(String.format("Missing <%s> and <%s> tags", XML_TAG_PROFILE, XML_TAG_DEFAULT));
 		}
-
-		if(DefaultProfiles.getLength() > 1)
+		else if(DefaultProfiles.getLength() > 1)
 		{
-			throw new Exception(String.format("Too many <%s> tags", XML_TAG_DEFAULT));
+			throw new ProfileException(String.format("Too many <%s> tags", XML_TAG_DEFAULT));
 		}
-		*/
 
 		if(DefaultProfiles.getLength() > 0)
 		{
@@ -239,14 +258,14 @@ class OfflineProfiles
 			}
 			else
 			{
-				throw new Exception(String.format("No <%s> tag in profile #%d", this.XML_TAG_NICK, i));
+				throw new ProfileException(String.format("No <%s> tag in profile #%d", this.XML_TAG_NICK, i));
 			}
 		}
 
 		return profiles;
 	}
 
-	public void selectProfile(int index)
+	public void selectProfile(int index) throws Exception
 	{
 		if(index >= this.getProfileCount())
 		{
@@ -281,10 +300,17 @@ class OfflineProfiles
 
 				for(int i = 0; i < this.getGhostCount(); i++)
 				{
-					// Damit ein Geist nur einmal verarbeitet wird, werden alle bereits hier eingelesen.
-					// Somit erfolgt nur noch beim Profilwechsel eine aufwändige erneute Verarbeitung.
-					// Das ist allerdings gewollt, damit nicht unnötig Arbeitsspeicher belegt wird.
-					this.GhostElements.add(i, new GhostElement((Element) this.TrainingGhosts.item(i)));
+					try
+					{
+						// Damit ein Geist nur einmal verarbeitet wird, werden alle bereits hier eingelesen.
+						// Somit erfolgt nur noch beim Profilwechsel eine aufwändige erneute Verarbeitung.
+						// Das ist allerdings gewollt, damit nicht unnötig Arbeitsspeicher belegt wird.
+						this.GhostElements.add(i, new GhostElement((Element) this.TrainingGhosts.item(i)));
+					}
+					catch(GhostException e)
+					{
+						throw new GhostException(i, e.getMessage());
+					}
 				}
 			}
 		}
@@ -310,7 +336,6 @@ class OfflineProfiles
 		catch(Exception e)
 		{
 			e.printStackTrace();
-
 		}
 
 		return null;

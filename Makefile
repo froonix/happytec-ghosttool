@@ -60,7 +60,6 @@ sig:
 	gpg -u $(GPGKEY) --armor --output $(SIGFILE) --detach-sig $(CSUMFILE)
 
 clean:
-
 	$(RM) build/HTGT_*.*
 	$(RM) $(MFFILE) $(LICENCEFILE)
 	$(RM) classes/*.class src/*.class

@@ -1,33 +1,70 @@
-import java.io.*;
-import java.util.*;
-import java.util.prefs.*;
-import java.util.regex.*;
-import java.nio.charset.*;
-import java.nio.file.*;
+/**
+ * HTGT.java: Main class (GUI) for Happytec-Ghosttool
+ * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
 
-import javax.swing.*;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.*;
-import javax.swing.plaf.*;
-import javax.swing.plaf.basic.*;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.event.KeyEvent;
-import java.awt.event.ActionEvent;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.Toolkit;
-import java.awt.datatransfer.*;
-
-import org.w3c.dom.*;
-import javax.xml.parsers.*;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.*;
-import javax.xml.transform.stream.*;
-import org.xml.sax.InputSource;
+import java.io.File;
+import java.io.PrintWriter;
 
 import java.lang.IndexOutOfBoundsException;
+
+import java.nio.charset.StandardCharsets;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import java.util.prefs.Preferences;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
+
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+import javax.swing.plaf.basic.BasicTableHeaderUI;
+
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableModel;
 
 public class HTGT
 {
@@ -58,104 +95,88 @@ public class HTGT
 	private static File                       file;
 	private static int                        profile;
 
+	private static String                     token;
+	private static eSportsAPI                 anonAPI;
+	private static eSportsAPI                 api;
+
+	private static boolean                    debugMode;
+	private static DateFormat                 debugDate;
+
 	private static OfflineProfiles            OfflineProfiles;
 
-	private static JFrame                     mainwindow;
+	private static JFrame                     mainWindow;
 	private static JTable                     maintable;
 	private static DefaultTableModel          mainmodel;
 	private static ArrayList<DynamicMenuItem> menuitems;
 
+	private static void dbg(String msg)
+	{
+		if(debugMode)
+		{
+			if(debugDate == null)
+			{
+				debugDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZZZZ");
+			}
+
+			System.err.printf("[%s] %s - %s%n", debugDate.format(new Date()), Thread.currentThread().getStackTrace()[2].toString(), msg);
+		}
+	}
+
 	public static void about()
 	{
 		String licence = String.format(
-			  "    Copyright (C) 2017 Christian Schrötter <cs@fnx.li>%n%n"
-			+ "    This program is free software; you can redistribute it and/or modify%n"
-			+ "    it under the terms of the GNU General Public License as published by%n"
-			+ "    the Free Software Foundation; either version 3 of the License, or%n"
-			+ "    (at your option) any later version.%n%n"
-			+ "    This program is distributed in the hope that it will be useful,%n"
-			+ "    but WITHOUT ANY WARRANTY; without even the implied warranty of%n"
-			+ "    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the%n"
-			+ "    GNU General Public License for more details.%n%n"
-			+ "    You should have received a copy of the GNU General Public License%n"
-			+ "    along with this program; if not, write to the Free Software Foundation,%n"
-			+ "    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA"
+			  "Copyright (C) 2017 Christian Schr&ouml;tter &lt;cs@fnx.li&gt;<br /><br />"
+			+ "This program is free software; you can redistribute it and/or modify<br />"
+			+ "it under the terms of the GNU General Public License as published by<br />"
+			+ "the Free Software Foundation; either version 3 of the License, or<br />"
+			+ "(at your option) any later version.<br /><br />"
+			+ "This program is distributed in the hope that it will be useful,<br />"
+			+ "but WITHOUT ANY WARRANTY; without even the implied warranty of<br />"
+			+ "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the<br />"
+			+ "GNU General Public License for more details.<br /><br />"
+			+ "You should have received a copy of the GNU General Public License<br />"
+			+ "along with this program; if not, write to the Free Software Foundation,<br />"
+			+ "Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA"
 		);
 
-		String line = ""; // "----------------------------------------------------------------------------------------------------"
-		messageDialog(APPLICATION_TITLE, String.format("Application: %s%nVersion: %s%n%nWebsite: https://github.com/froonix/happytec-ghosttool%n%s by www.esports.happytec.at%n%n%s%n%n%s%n%n%s%n%n", APPLICATION_NAME, APPLICATION_VERSION, APPLICATION_API, line, licence, line));
+		// TODO: Links klickbar machen!
+		// http://stackoverflow.com/questions/8348063/clickable-links-in-joptionpane
+		// ...
+
+		messageDialog(APPLICATION_TITLE, String.format("<html><body>Application: %s<br />Version: %s<br /><br />Website: <a href='https://github.com/froonix/happytec-ghosttool'>github.com/froonix/happytec-ghosttool</a><br />%s by <a href='https://www.esports.happytec.at/'>esports.happytec.at</a><hr><pre style='padding: 10px; color: #AAAAAA;'>%s</pre></body></html>", APPLICATION_NAME, APPLICATION_VERSION, APPLICATION_API, licence));
 	}
 
-	public static void updateCheck()
+	private static void exceptionHandler(Exception e)
 	{
-		updateCheck(true, true);
+		exceptionHandler(e, null);
 	}
 
-	public static void updateCheck(boolean force, boolean msg)
+	private static void exceptionHandler(Exception e, String msg)
 	{
-		if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
+		FNX.displayExceptionSummary(e, "Fehler", msg, "Weitere Details stehen im Stacktrace in der Konsolenausgabe.");
+	}
+
+	public static void main(String[] args)
+	{
+		if(args.length > 0)
 		{
-			if(msg)
+			if(args[0].equals("-v"))
 			{
-				messageDialog(JOptionPane.INFORMATION_MESSAGE, null, "Du verwendest eine Entwicklerversion, da macht eine Updateprüfung keinen Sinn.");
+				// Required for Makefile! (jar/zip target)
+				System.out.println(APPLICATION_VERSION);
+				System.exit(0);
 			}
-
-			return;
-		}
-
-		long lastUpdateCheck;
-		Date date = new Date();
-
-		if(cfg(CFG_UC) == null)
-		{
-			lastUpdateCheck = 0L;
-		}
-		else
-		{
-			lastUpdateCheck = Long.parseLong(cfg(CFG_UC));
-		}
-
-		System.out.printf("Last update check: %d%n", lastUpdateCheck);
-		if(lastUpdateCheck <= 0 || date.getTime() > (lastUpdateCheck + UPDATE_INTERVAL))
-		{
-			cfg(CFG_UC, Objects.toString(date.getTime(), null));
-			force = true;
-		}
-
-		if(force)
-		{
-			eSportsAPI api = new eSportsAPI(null, APPLICATION_IDENT);
-			int updates = api.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION);
-
-			if(updates == 1)
+			else if(args[0].equals("-d"))
 			{
-				messageDialog(JOptionPane.INFORMATION_MESSAGE, null, String.format("Es ist ein Update verfügbar!%n%nBitte besuche die Website, um es herunterzuladen."));
-			}
-			else if(updates == 0)
-			{
-				if(msg)
-				{
-					messageDialog(JOptionPane.INFORMATION_MESSAGE, null, "Es gibt keine Updates, du verwendest bereits die aktuellste Version.");
-				}
+				debugMode = true;
 			}
 			else
 			{
-				if(msg)
-				{
-					APIError(api, "Updateprüfung fehlgeschlagen!");
-				}
+				debugMode = false;
 			}
 		}
-	}
 
-	public static void main(String[] args) throws Exception
-	{
-		if(args.length > 0 && args[0].equals("-v"))
-		{
-			System.out.println(APPLICATION_VERSION);
-			System.exit(0);
-		}
-
+		dbg("...");
 		if(!confirmDialog(JOptionPane.PLAIN_MESSAGE, APPLICATION_TITLE, String.format("Dieses Programm befindet sich noch in der Entwicklungs-/Testphase! Die Verwendung erfolgt auf eigene Gefahr.%n%nDer Autor übernimmt keine Haftung für Schäden, die direkt oder indirekt durch dieses Programm verursacht wurden.%nBitte erstelle selbst Backups deiner OfflineProfiles.xml XML-Datei(en), bevor du diese in diesem Programm öffnest.%n%nWillst du wirklich fortfahren?")))
 		{
 			System.exit(0);
@@ -166,11 +187,11 @@ public class HTGT
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
 
-		mainwindow = new JFrame(APPLICATION_TITLE);
-		mainwindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		mainwindow.setJMenuBar(getMenubar());
+		mainWindow = new JFrame(APPLICATION_TITLE);
+		mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		mainWindow.setJMenuBar(getMenubar());
 
-		mainwindow.addWindowListener(new HTGT_WindowAdapter());
+		mainWindow.addWindowListener(new HTGT_WindowAdapter());
 
 		Object rowData[][] = {};
 		Object columnNames[] = {"Spieler", "Strecke", "Wetter", "Ergebnis"};
@@ -187,19 +208,19 @@ public class HTGT
 		maintable.getTableHeader().setResizingAllowed(false);
 
 		JScrollPane scrollPane = new JScrollPane(maintable);
-		mainwindow.add(scrollPane, BorderLayout.CENTER);
+		mainWindow.add(scrollPane, BorderLayout.CENTER);
 
 		reset();
 
-		mainwindow.setSize(WINDOW_SIZE_START);
-		mainwindow.setMinimumSize(WINDOW_SIZE_MIN);
-		mainwindow.setVisible(true);
+		mainWindow.setSize(WINDOW_SIZE_START);
+		mainWindow.setMinimumSize(WINDOW_SIZE_MIN);
+		mainWindow.setVisible(true);
 
-		// ...
-		updateCheck(false, false);
+		// Die automatische Updateprüfung wird im Hintergrund ausgeführt...
+		new Thread(new HTGT_Background(HTGT_Background.EXEC_UPDATECHECK)).start();
 	}
 
-	private static JMenuBar getMenubar() throws Exception
+	private static JMenuBar getMenubar()
 	{
 		JMenuBar menu = new JMenuBar();
 
@@ -213,7 +234,7 @@ public class HTGT
 		return menu;
 	}
 
-	private static JMenu getMenu(String key) throws Exception
+	private static JMenu getMenu(String key)
 	{
 		String title;
 		switch(key)
@@ -224,7 +245,9 @@ public class HTGT
 			case "api":  title = "Server";     break;
 			case "help": title = "Hilfe";      break;
 
-			default: throw new Exception(String.format("Unknown menu »%s«", key));
+			default:
+				dbg(String.format("Unknown menu »%s«", key));
+				return null;
 		}
 
 		JMenu menu = new JMenu(title);
@@ -247,8 +270,8 @@ public class HTGT
 				menu.add(registerDynMenuItem("Einfügen",                          HTGT.class.getName(), "copyFromClipboard"));
 				menu.add(registerDynMenuItem("Löschen",                           HTGT.class.getName(), "deleteRows"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aus Datei importieren",             HTGT.class.getName(), "fileImport"));
-				menu.add(registerDynMenuItem("In Datei exportieren",              HTGT.class.getName(), "fileExport"));
+				menu.add(registerDynMenuItem("Aus Datei importieren",             HTGT.class.getName(), "importFile"));
+				menu.add(registerDynMenuItem("In Datei exportieren",              HTGT.class.getName(), "exportFile"));
 				break;
 
 			case "view":
@@ -270,7 +293,7 @@ public class HTGT
 
 			case "help":
 				menu.add(new DynamicMenuItem("Prüfung auf Updates",               HTGT.class.getName(), "updateCheck"));
-				menu.add(new DynamicMenuItem("Konfiguration löschen",             HTGT.class.getName(), "cfgClear"));
+				menu.add(new DynamicMenuItem("Konfiguration löschen",             HTGT.class.getName(), "clearConfigDialog"));
 				menu.add(new DynamicMenuItem("Über diese App",                    HTGT.class.getName(), "about"));
 				break;
 		}
@@ -373,83 +396,70 @@ public class HTGT
 			}
 		}
 
-		mainwindow.setTitle(APPLICATION_TITLE + filename + suffix);
+		mainWindow.setTitle(APPLICATION_TITLE + filename + suffix);
 	}
 
-	public static void ghostImport(File file)
+	public static int ghostImport(File f) throws Exception
 	{
-		try
-		{
-			ghostImport(new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())), StandardCharsets.UTF_8));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
+		return ghostImport(GhostElement.parseGhosts(f));
 	}
 
-	public static void ghostImport(String xmlstring)
+	public static int ghostImport(String xmlstring) throws Exception
 	{
-		ArrayList<GhostElement> ghosts = new ArrayList<GhostElement>();
+		return ghostImport(GhostElement.parseGhosts(xmlstring));
+	}
+
+	public static int ghostImport(GhostElement ghost)
+	{
+		return ghostImport(new GhostElement[]{ghost});
+	}
+
+	public static int ghostImport(GhostElement[] ghosts)
+	{
+		dbg("ghosts.length: " + ghosts.length);
 		boolean delete = false;
 
-		int i = 0;
-		try
+		if(ghosts.length > 0)
 		{
-			Pattern pattern = Pattern.compile("(<GhostDataPair[^>]+>)", Pattern.CASE_INSENSITIVE);
-			Matcher matcher = pattern.matcher(xmlstring);
-
-			String xmltag;
-			while(matcher.find())
+			for(int i = 0; i < ghosts.length; i++)
 			{
-				xmltag = matcher.group(1);
-
-				GhostElement ghostElement = new GhostElement(xmltag);
-				ghosts.add(ghostElement);
-
-				if(OfflineProfiles.getGhostsByCondition(ghostElement).length > 0)
+				if(OfflineProfiles.getGhostsByCondition(ghosts[i]).length > 0)
 				{
 					delete = true;
 				}
-
-				i++;
 			}
 
 			if(delete)
 			{
 				if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
 				{
-					return;
+					return -1;
 				}
 			}
 
-			for(int j = 0; j < ghosts.size(); j++)
+			for(int i = 0; i < ghosts.length; i++)
 			{
-				GhostElement ghostElement = ghosts.get(j);
+				addGhost(ghosts[i], true);
+				ghosts[i].printDetails();
 
-				addGhost(ghostElement, true);
-				ghostElement.printDetails();
-
-				int[] ghostDel = OfflineProfiles.getGhostsByCondition(ghostElement);
+				int[] ghostDel = OfflineProfiles.getGhostsByCondition(ghosts[i]);
 				for(int h = ghostDel.length - 2; h > -1; h--)
 				{
 					deleteGhost(ghostDel[h]);
 				}
 			}
 		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
 
-		// messageDialog(null, "Importierte Geister: " + i);
+		// messageDialog(null, "Importierte Geister: " + ghosts.length);
 
 		/*
-		if(i > 0)
+		if(ghosts.length > 0)
 		{
-			highlightLastRows(i);
+			highlightLastRows(ghosts.length);
 		}
 		*/
+
+		return ghosts.length;
 	}
 
 	public static void selectProfile()
@@ -465,58 +475,33 @@ public class HTGT
 		{
 			profiles = OfflineProfiles.getProfiles();
 			values = new String[profiles.length];
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			errorMessage("Eines der Profile enthält Fehler.");
-			return;
-		}
 
-		for(int i = 0; i < profiles.length; i++)
-		{
-			values[i] = String.format("[%0" + Integer.toString(FNX.strlen(profiles.length)) + "d] %s%s", i + 1, profiles[i], ((i == OfflineProfiles.defaultProfile()) ? " (Standardprofil)" : ""));
-
-			if(profile == i)
+			for(int i = 0; i < profiles.length; i++)
 			{
-				selection = values[i];
-			}
-		}
+				values[i] = String.format("[%0" + Integer.toString(FNX.strlen(profiles.length)) + "d] %s%s", i + 1, profiles[i], ((i == OfflineProfiles.defaultProfile()) ? " (Standardprofil)" : ""));
 
-		String input = (String)JOptionPane.showInputDialog(
-			mainwindow,
-			"Aktuell genutztes Profil aus der XML-Datei:",
-			"Profilauswahl",
-			JOptionPane.PLAIN_MESSAGE,
-			null,
-			values,
-			selection
-		);
-
-		if(input == null)
-		{
-			System.out.println("selectProfile: CANCEL");
-			return;
-		}
-		else
-		{
-			int selected = 0;
-			String value = (String) input;
-
-			for(int i = 0; i < values.length; i++)
-			{
-				if(values[i].equals(value))
+				if(profile == i)
 				{
-					selected = i;
-					break;
+					selection = values[i];
 				}
+			}
+
+			Integer selected = (Integer) inputDialog("Profilauswahl", "Aktuell genutztes Profil aus der XML-Datei:", values, selection);
+
+			if(selected == null)
+			{
+				return;
 			}
 
 			selectProfile(selected);
 		}
+		catch(Exception e)
+		{
+			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und kann nicht geladen werden!");
+		}
 	}
 
-	public static void selectProfile(int index)
+	public static void selectProfile(int index) throws Exception
 	{
 		if(OfflineProfiles == null)
 		{
@@ -566,7 +551,7 @@ public class HTGT
 			catch(Exception e)
 			{
 				e.printStackTrace();
-				errorMessage("Fehler beim Hinzufügen des Geists!");
+				errorMessage(String.format("Fehler beim Hinzufügen des Geists:%n%n%s", e.getMessage()));
 				return;
 			}
 		}
@@ -594,6 +579,134 @@ public class HTGT
 		}
 	}
 
+	private static Object inputDialog(String title, Object message, Object initialSelectionValue)
+	{
+		return inputDialog(title, message, null, initialSelectionValue);
+	}
+
+	private static Object inputDialog(String title, Object message, Object[] selectionValues, Object initialSelectionValue)
+	{
+		if(selectionValues != null)
+		{
+			dbg(String.format("Input dialog: SELECTION %s", title));
+		}
+		else
+		{
+			dbg(String.format("Input dialog: INPUTFIELD %s", title));
+		}
+
+		Object input = JOptionPane.showInputDialog(mainWindow, message, title, JOptionPane.PLAIN_MESSAGE, null, selectionValues, initialSelectionValue);
+
+		if(input == null)
+		{
+			dbg("Input dialog: CANCEL");
+			return null;
+		}
+
+		String selected = input.toString();
+
+		if(selectionValues != null)
+		{
+			for(int i = 0; i < selectionValues.length; i++)
+			{
+				if(selected.equals(selectionValues[i]))
+				{
+					dbg(String.format("Input dialog: SELECTED #%d", i));
+					return i;
+				}
+			}
+
+			dbg("Input dialog: SELECTION UNKNOWN");
+			return null;
+		}
+		else
+		{
+			selected = selected.trim();
+			dbg(String.format("Input dialog: VALUE(%d) %s", selected.length(), selected));
+			return selected;
+		}
+	}
+
+	private static File openDialog(String directory)
+	{
+		return fileDialog(true, directory, null);
+	}
+
+	private static File saveDialog(String directory, File selection)
+	{
+		return fileDialog(false, directory, selection);
+	}
+
+	private static File fileDialog(boolean open, String directory, File selection)
+	{
+		JFileChooser chooser;
+		int code;
+
+		if(open)
+		{
+			dbg(String.format("File dialog: OPEN %s", directory));
+			chooser = new JFileChooser(directory);
+		}
+		else
+		{
+			dbg(String.format("File dialog: SAVE %s", directory));
+			chooser = new ImprovedFileChooser(directory);
+		}
+
+		if(selection != null)
+		{
+			dbg(String.format("File dialog: SET %s", selection.getAbsolutePath()));
+			chooser.setSelectedFile(selection);
+		}
+
+		// dbg("File dialog: FILTER *.xml");
+		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
+		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
+
+		if(open)
+		{
+			code = chooser.showOpenDialog(null);
+		}
+		else
+		{
+			code = chooser.showSaveDialog(null);
+		}
+
+		if(code == JFileChooser.APPROVE_OPTION)
+		{
+			File selectedFile = chooser.getSelectedFile();
+			dbg(String.format("File dialog: APPROVE %s", selectedFile));
+
+			if(selectedFile != null && (!open || selectedFile.exists()))
+			{
+				return selectedFile;
+			}
+			else
+			{
+				dbg("File dialog: FILE NOT FOUND");
+			}
+		}
+		else if(code == JFileChooser.CANCEL_OPTION)
+		{
+			dbg("File dialog: CANCEL");
+		}
+		else if(code == JFileChooser.ERROR_OPTION)
+		{
+			dbg("File dialog: ERROR");
+		}
+		else
+		{
+			dbg("File dialog: UNKNOWN");
+		}
+
+		return null;
+	}
+
+	private static boolean confirmDialog(String msg)
+	{
+		return confirmDialog(null, msg);
+	}
+
 	private static boolean confirmDialog(String title, String msg)
 	{
 		return confirmDialog(JOptionPane.QUESTION_MESSAGE, title, msg);
@@ -601,12 +714,17 @@ public class HTGT
 
 	private static boolean confirmDialog(int type, String title, String msg)
 	{
-		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainwindow, msg, title, JOptionPane.YES_NO_OPTION, type))
+		dbg(String.format("New yes/no confirm dialog: %s", title));
+		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type))
 		{
+			dbg("return TRUE (confirmed)");
 			return true;
 		}
-
-		return false;
+		else
+		{
+			dbg("return FALSE (not confirmed)");
+			return false;
+		}
 	}
 
 	private static void errorMessage(String msg)
@@ -619,6 +737,21 @@ public class HTGT
 		messageDialog(JOptionPane.ERROR_MESSAGE, title, msg);
 	}
 
+	private static void infoDialog(String msg)
+	{
+		infoDialog(null, msg);
+	}
+
+	private static void infoDialog(String title, String msg)
+	{
+		messageDialog(JOptionPane.INFORMATION_MESSAGE, title, msg);
+	}
+
+	private static void messageDialog(String msg)
+	{
+		messageDialog(null, msg);
+	}
+
 	private static void messageDialog(String title, String msg)
 	{
 		messageDialog(JOptionPane.PLAIN_MESSAGE, title, msg);
@@ -626,12 +759,15 @@ public class HTGT
 
 	private static void messageDialog(int type, String title, String msg)
 	{
-		JOptionPane.showMessageDialog(mainwindow, msg, title, type);
+		JOptionPane.showMessageDialog(mainWindow, msg, title, type);
 	}
 
-	private static void noSelection()
+	private static boolean noSelection()
 	{
+		dbg("No selection available!");
 		messageDialog(null, String.format("Die gewünschte Aktion funktioniert nur, wenn bereits Geister ausgewählt wurden.%n%nMarkiere eine Zeile mit der Maus, eine Mehrfachauswahl ist durch Halten der Strg/Ctrl Taste möglich."));
+
+		return false;
 	}
 
 /***********************************************************************
@@ -684,8 +820,6 @@ public class HTGT
 			}
 		}
 
-		System.out.println(data.toString());
-
 		if(copy)
 		{
 			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(data.toString()), null);
@@ -716,6 +850,7 @@ public class HTGT
 				if(content instanceof String)
 				{
 					ghostImport(content.toString());
+					// messageDialog(null, "");
 					break;
 				}
 			}
@@ -730,492 +865,504 @@ public class HTGT
  *                             API ACTIONS                             *
  ***********************************************************************/
 
-	private static void APIError(eSportsAPI api, String msg)
+	// Fehlermeldung der API formatiert ausgeben.
+	private static void APIError(eSportsAPIException e, String msg)
 	{
-		errorMessage(APPLICATION_API, String.format("%s%n%nFehlercode: %s%n%s", msg, api.getErrorCode(), api.getErrorMessage()).trim());
+		if(e.getErrorCode().equals("TOKEN_INVALID"))
+		{
+			dbg("API token invalid: Removed from prefs!");
+			cfg(CFG_TOKEN, null);
+		}
+
+		msg = (msg == null) ? "Der Server gab bei der API-Anfrage einen Fehler zurück!" : msg;
+		errorMessage(APPLICATION_API, String.format("%s%n%nFehlercode: %s%n%s", msg, e.getErrorCode(), e.getErrorMessage()).trim());
 	}
 
+	// Erzwungene Updateprüfung.
+	public static void updateCheck()
+	{
+		updateCheck(true, false);
+	}
+
+	// Updateprüfung über die API durchführen.
+	public static void updateCheck(boolean force, boolean auto)
+	{
+		long lastUpdateCheck;
+		int updatesAvailable;
+
+		if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
+		{
+			dbg(String.format("Update check disabled: %s", APPLICATION_VERSION));
+
+			if(!auto)
+			{
+				infoDialog("Du verwendest eine Entwicklerversion, da macht eine Updateprüfung keinen Sinn.");
+			}
+
+			return;
+		}
+
+		Date date = new Date();
+		lastUpdateCheck = cfg.getLong(CFG_UC, 0L);
+		dbg(String.format("Current time: %d", date.getTime()));
+		dbg(String.format("Last update check: %d", lastUpdateCheck));
+		dbg(String.format("Check interval: %d", UPDATE_INTERVAL));
+
+		if(lastUpdateCheck <= 0L || date.getTime() > (lastUpdateCheck + UPDATE_INTERVAL))
+		{
+			cfg.putLong(CFG_UC, date.getTime());
+			force = true;
+		}
+
+		if(force)
+		{
+			if(anonAPI == null)
+			{
+				// Der Token wird absichtlich nicht mitgesendet!
+				anonAPI = new eSportsAPI(null, APPLICATION_IDENT);
+			}
+
+			try
+			{
+				if(anonAPI.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION, auto))
+				{
+					dbg("New update available!" + ((auto) ? " (autocheck)" : ""));
+					infoDialog("Es ist ein neues Update verfügbar! Besuche die Website, um es herunterzuladen.");
+				}
+				else
+				{
+					dbg("No updates available..." + ((auto) ? " (autocheck)" : ""));
+
+					if(!auto)
+					{
+						infoDialog("Es gibt keine Updates, du verwendest bereits die aktuellste Version.");
+					}
+				}
+			}
+			catch(eSportsAPIException e)
+			{
+				if(!auto)
+				{
+					APIError(e, "Updateprüfung fehlgeschlagen!");
+				}
+				else
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	// API-Token aus der Konfiguration löschen.
 	public static void deleteToken()
 	{
 		cfg(CFG_TOKEN, null);
 		messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_API, String.format("Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!%n%nDu kannst ihn über das Menü jederzeit erneut eintragen."));
 	}
 
+	// API-Token erstmalig eintragen oder ändern.
+	// Wird fix in der Konfiguration gespeichert!
 	public static void setupToken()
 	{
+		String oldToken = cfg(CFG_TOKEN);
+		String newToken = null;
+
 		while(true)
 		{
-			Object input = JOptionPane.showInputDialog(
-				mainwindow,
-				"Bitte gib deinen persönlichen Zugriffsschlüssel ein:",
-				APPLICATION_API,
-				JOptionPane.PLAIN_MESSAGE,
-				null,
-				null,
-				cfg(CFG_TOKEN)
-			);
-
-			if(input == null)
+			if((newToken = (String) inputDialog(APPLICATION_API, "Bitte gib deinen persönlichen Zugriffsschlüssel ein:", oldToken)) != null)
 			{
-				System.out.println("setupToken: CANCEL");
-				return;
+				newToken = newToken.toLowerCase();
+				if(!newToken.matches("^[a-f0-9]+$"))
+				{
+					dbg("Invalid API token! Asking once again...");
+					errorMessage("Ungültiger API-Zugangsschlüssel! Bitte versuche es nochmals.");
+					continue;
+				}
+				else if(oldToken == null || !oldToken.equals(newToken))
+				{
+					cfg(CFG_TOKEN, newToken);
+				}
+				else
+				{
+					dbg("API token not changed.");
+				}
 			}
 
-			String token = String.format("%s", input).trim().toLowerCase();
-			Pattern p = Pattern.compile("^[A-F0-9]+$", Pattern.CASE_INSENSITIVE);
-			Matcher m = p.matcher(token);
+			break;
+		}
+	}
 
-			if(token.length() == 0)
+	// Token vom User abfragen, falls noch nicht vorhanden.
+	// Zusätzlich wird nur hier ein eSportsAPI-Objekt erzeugt.
+	// Die einzige Ausnahme ist der Updatecheck über die API.
+	private static boolean prepareAPI()
+	{
+		String oldToken = token;
+		for(int i = 0; i < 3; i++)
+		{
+			if((token = cfg(CFG_TOKEN)) != null)
 			{
-				System.out.println("setupToken: EMPTY");
-				continue;
-			}
-			else if(!m.find())
-			{
-				System.out.println("setupToken: INVALID");
-				continue;
+				if(oldToken == null || !oldToken.equals(token))
+				{
+					dbg("Token changed! Resetting API instance...");
+					api = new eSportsAPI(token, APPLICATION_IDENT);
+				}
+
+				return true;
 			}
 			else
 			{
-				System.out.printf("setupToken: VALUE (%d)%n", token.length());
-				System.out.printf("New API token: %s%n", token);
-				cfg(CFG_TOKEN, token);
-				return;
-			}
-		}
-	}
-
-	private static String getToken()
-	{
-		String token = cfg(CFG_TOKEN);
-		if(token == null || token.equals(""))
-		{
-			setupToken(); token = cfg(CFG_TOKEN);
-			if(token == null || token.equals(""))
-			{
-				return null;
+				dbg(String.format("Asking for API token... (try #%d)%n", i + 1));
+				setupToken();
 			}
 		}
 
-		return token;
+		dbg("Three times is enough! No API token available.");
+
+		api = null;
+		token = null;
+		return false;
 	}
 
-	public static void ghostUpload()
+	// Markierte Geister über die API hochladen.
+	// Danach Bestätigung zur Übernahme anzeigen.
+	public static boolean ghostUpload()
 	{
+		GhostElement[] ghosts;
+		boolean error = false;
+		int[] ghostIDs = null;
+
 		if(OfflineProfiles == null)
 		{
-			return;
+			return false;
 		}
 
 		int[] selection = maintable.getSelectedRows();
+		if(selection.length == 0) return noSelection();
 
-		if(selection.length == 0)
-		{
-			noSelection();
-			return;
-		}
-
-		/*
-		if(!confirmDialog(APPLICATION_API, String.format("Sollen die markierten Geister (%d) wirklich zum Server hochgeladen werden?%n%nDie Ergebnisse werden bei dieser Aktion automatisch für deinen Spieler übernommen!", selection.length)))
-		{
-			return;
-		}
-		*/
-
-		GhostElement[] ghosts = new GhostElement[selection.length];
+		ghosts = new GhostElement[selection.length];
 		for(int i = 0; i < selection.length; i++)
 		{
 			ghosts[i] = OfflineProfiles.getGhost(selection[i]);
 		}
 
-		String token = getToken();
-		if(token == null)
+		if(!prepareAPI())
 		{
-			return;
+			return false;
 		}
 
-		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
-		int[] ghostIDs = api.getGhostIDs(ghosts);
-
-		if(ghostIDs == null)
+		try
 		{
-			APIError(api, "Upload fehlgeschlagen...");
-			return;
+			ghostIDs = api.getGhostIDs(ghosts);
+			if(ghostIDs.length != selection.length)
+			{
+				dbg(String.format("ghosts(%d) != selection(%d)", ghostIDs.length, selection.length));
+				errorMessage("Die Menge der von der API empfangenen Geist-IDs entspricht nicht der angeforderten Anzahl.");
+				return false;
+			}
 		}
-		else if(ghostIDs.length != selection.length)
+		catch(eSportsAPIException e)
 		{
-			errorMessage("ghostIDs.length != selection.length");
-			return;
+			APIError(e, "Upload fehlgeschlagen...");
 		}
 
 		for(int i = 0; i < ghostIDs.length; i++)
 		{
 			GhostElement ghost = ghosts[i];
-			if(!confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
+			dbg(String.format("Line %d uploaded as ghost ID %d: %s", selection[i], ghostIDs[i], ghost.getDebugDetails()));
+
+			if(confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
 			{
-				continue;
-			}
-
-			if(!api.applyResultByGhostID(ghostIDs[i]))
-			{
-				System.out.printf("Hochgeladener Geist: ID %d (Übernahme fehlgeschlagen)%n", ghostIDs[i]);
-				APIError(api, String.format("Der Geist mit der ID %d konnte nicht übernommen werden!", ghostIDs[i]));
-			}
-			else
-			{
-				System.out.printf("Hochgeladener Geist: ID %d (erfolgreich übernommen)%n", ghostIDs[i]);
-				messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_API, String.format("Der Geist mit der ID %d wurde erfolgreich eingetragen!%n%nEs wird jedoch einige Minuten dauern, bis die Rangliste aktualisiert wird.", ghostIDs[i]));
-			}
-		}
-	}
-
-	public static void ghostDownload()
-	{
-		if(OfflineProfiles == null)
-		{
-			return;
-		}
-
-		String token = getToken();
-		if(token == null)
-		{
-			return;
-		}
-
-		String last_input = "";
-
-		while(true)
-		{
-			Object input = JOptionPane.showInputDialog(
-				mainwindow,
-				"Um einen Geist vom Server herunterzuladen, trage einfach die Ghost-ID ein:",
-				APPLICATION_API,
-				JOptionPane.PLAIN_MESSAGE,
-				null,
-				null,
-				last_input
-			);
-
-			if(input == null)
-			{
-				System.out.println("ghostDownload: CANCEL");
-				return;
-			}
-
-			ArrayList<Integer> ids = new ArrayList<Integer>(0);
-			String[] parts = input.toString().split("[^0-9]+");
-
-			for(int i = 0; i < parts.length; i++)
-			{
-				int id = FNX.intval(parts[i].trim());
-
-				if(id > 0)
+				try
 				{
-					ids.add(id);
+					if(api.applyResultByGhostID(ghostIDs[i]))
+					{
+						dbg(String.format("Successfully applied result from ghost with ID %d.", ghostIDs[i]));
+						messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%n%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
+					}
+					else
+					{
+						throw new eSportsAPIException();
+					}
+				}
+				catch(eSportsAPIException e)
+				{
+					error = true;
+					dbg(String.format("Failed to apply ghost with ID %d.", ghostIDs[i]));
+					APIError(e, String.format("Der Geist mit der ID %d konnte nicht übernommen werden!", ghostIDs[i]));
 				}
 			}
-
-			// ladegrafik? oder wenigstens ein ladedialog?
-			// ...
-
-			if(!ghostDownload(ids.stream().mapToInt(i -> i).toArray()))
-			{
-				continue;
-			}
-
-			return;
-		}
-	}
-
-	public static boolean ghostDownload(int id)
-	{
-		int[] ids = new int[1];
-		ids[0] = id;
-
-		return ghostDownload(ids);
-	}
-
-	public static boolean ghostDownload(int[] ids)
-	{
-		String token = getToken();
-		if(token == null)
-		{
-			return false;
 		}
 
-		Integer[] id;
-		String ghostdata;
-
-		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
-
-		if(ids.length == 0)
+		if(!error)
 		{
-			System.out.println("ghostDownload: NULL");
-			return false;
-		}
-		else if(ids.length == 1)
-		{
-			System.out.println("ghostDownload: single ID");
-			ghostdata = api.getGhostByID(ids[0]);
+			return true;
 		}
 		else
 		{
-			System.out.printf("ghostDownload: IDs (%d)", ids.length);
-			ghostdata = api.getGhostsByIDs(ids);
-		}
-
-		if(ghostdata == null)
-		{
-			APIError(api, "Download fehlgeschlagen...");
 			return false;
 		}
-
-		ghostImport(ghostdata);
-
-		return true;
 	}
 
+	// Eingabefeld für Geist-IDs zum Herunterladen. Mehrere IDs können
+	// durch beliebige nicht-numerische Trennzeichen angegeben werden.
+	public static void ghostDownload()
+	{
+		int id;
+		String[] parts;
+		String input = null;
+		ArrayList<Integer> ids;
+
+		if(OfflineProfiles != null && prepareAPI())
+		{
+			while(true)
+			{
+				if((input = (String) inputDialog(APPLICATION_API, "Um einen oder mehrere Geister vom Server herunterzuladen, trage einfach die Geist-IDs ein:", input)) != null)
+				{
+					ids = new ArrayList<Integer>(0);
+					parts = input.split("[^0-9]+");
+
+					for(int i = 0; i < parts.length; i++)
+					{
+						if((id = FNX.intval(parts[i].trim())) > 0)
+						{
+							ids.add(id);
+						}
+					}
+
+					if(!ghostDownload(ids.stream().mapToInt(i -> i).toArray()))
+					{
+						continue;
+					}
+					else
+					{
+						infoDialog("Der Download von mindestens einem Geist war erfolgreich.");
+					}
+				}
+
+				break;
+			}
+		}
+	}
+
+	// Download einer einzelnen Geist-ID über die API.
+	public static boolean ghostDownload(int id)
+	{
+		return ghostDownload(new int[]{id});
+	}
+
+	// Download mehrerer Geist-IDs über die API.
+	public static boolean ghostDownload(int[] ids)
+	{
+		try
+		{
+			Integer[] id;
+			GhostElement[] ghostdata;
+
+			if(prepareAPI())
+			{
+				if(ids.length == 0)
+				{
+					dbg("ids.length = 0");
+					return false;
+				}
+				else if(ids.length == 1)
+				{
+					dbg("ids.length = 1");
+					ghostdata = new GhostElement[1];
+					ghostdata[0] = api.getGhostByID(ids[0]);
+				}
+				else
+				{
+					dbg("ids.length > 1");
+					ghostdata = api.getGhostsByIDs(ids);
+				}
+
+				if(ghostImport(ghostdata) > 0)
+				{
+					return true;
+				}
+				else
+				{
+					throw new eSportsAPIException();
+				}
+			}
+		}
+		catch(eSportsAPIException e)
+		{
+			APIError(e, "Download fehlgeschlagen...");
+		}
+
+		return false;
+	}
+
+	// Auswahl einer Strecke/Wetter für den Geistdownload. Das passiert
+	// offline, erst die Rangliste wird über die API vom Server geladen.
 	public static void ghostSelect()
 	{
-		if(OfflineProfiles == null)
+		if(OfflineProfiles == null || !prepareAPI())
 		{
 			return;
 		}
 
-		String token = getToken();
-		if(token == null)
-		{
-			return;
-		}
-
-		String selection   = null;
-		String lastTrack   = cfg(CFG_TRACK);
-		String lastWeather = cfg(CFG_WEATHER);
+		Integer input;
+		String selection;
 
 		String[]   tracks     = gmHelper.getTracks();
 		int[]      weathers   = gmHelper.getWeatherIDs();
 		String[]   values     = new String[tracks.length * weathers.length];
 		String[][] conditions = new String[tracks.length * weathers.length][3];
 
-		for(int i = 0; i < tracks.length; i++)
+		String lastTrack   = cfg(CFG_TRACK);
+		String lastWeather = cfg(CFG_WEATHER);
+
+		while(true)
 		{
-			for(int h = 0; h < weathers.length; h++)
+			selection = null;
+			for(int i = 0; i < tracks.length; i++)
 			{
-				int key = (i * weathers.length) + h;
-				values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
-
-				conditions[key][0] = values[key];
-				conditions[key][1] = tracks[i];
-				conditions[key][2] = Integer.toString(weathers[h]);
-
-				// TODO: Eigentlich nicht ganz korrekt, da das Wetter als "int" verglichen werden müsste.
-				if(lastTrack != null && lastTrack.toLowerCase().equals(tracks[i].toLowerCase()) && lastWeather != null && lastWeather.equals(Integer.toString(weathers[h])))
+				for(int h = 0; h < weathers.length; h++)
 				{
-					selection = values[key];
+					int key = (i * weathers.length) + h;
+
+					try
+					{
+						values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+					}
+					catch(gmException e)
+					{
+						values[key] = "";
+					}
+
+					conditions[key][0] = values[key];
+					conditions[key][1] = tracks[i];
+					conditions[key][2] = Integer.toString(weathers[h]);
+
+					// TODO: Eigentlich nicht ganz korrekt, da das Wetter als "int" verglichen werden müsste. So ist es aber einheitlich und einfacher.
+					if(lastTrack != null && lastTrack.toLowerCase().equals(tracks[i].toLowerCase()) && lastWeather != null && lastWeather.equals(Integer.toString(weathers[h])))
+					{
+						selection = values[key];
+					}
+				}
+			}
+
+			if((input = (Integer) inputDialog(APPLICATION_API, "Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst die gewünschte Strecke aus:", values, selection)) != null)
+			{
+				lastTrack = cfg(CFG_TRACK, conditions[input][1]);
+				lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
+
+				if(!ghostSelect(lastTrack, Integer.parseInt(lastWeather)))
+				{
+					continue;
+				}
+			}
+
+			break;
+		}
+	}
+
+	// Auswahl eines Geists aus der Rangliste zum Herunterladen.
+	// Vorher muss bereits nach Strecke/Wetter gefragt worden sein!
+	public static boolean ghostSelect(String track, int weather)
+	{
+		try
+		{
+			List<Map<String,Object>> results;
+			Integer selection;
+
+			if(OfflineProfiles != null && prepareAPI())
+			{
+				results = api.getResultsByCondition(track, weather);
+
+				if(results.size() > 0)
+				{
+					dbg(String.format("Got %d results.", results.size()));
+					Integer[] ghosts = new Integer[results.size()];
+					String[] values = new String[results.size()];
+
+					for(int i = 0; i < results.size(); i++)
+					{
+						Map<String,Object> result = results.get(i);
+						ghosts[i] = Integer.parseInt(result.get("GhostID").toString());
+						values[i] = String.format("%0" + Integer.toString(FNX.strlen(results.size())) + "d. %s – %s", result.get("Position"), gmHelper.getResult(Integer.parseInt(result.get("Result").toString())), result.get("Nickname"));
+					}
+
+					if((selection = (Integer) inputDialog(APPLICATION_API, "Nachfolgend alle verfügbaren Geister der gewählten Strecke:", values, null)) != null)
+					{
+						Integer ghost = ghosts[selection];
+						ghostDownload(ghost); return true;
+					}
+				}
+				else
+				{
+					// Das sollte nicht passieren, da RESULT_EMPTY zurückgegeben wird.
+					dbg("Something went really wrong! We got an empty result list...");
+					errorMessage(APPLICATION_API, "Der Server hat offenbar Schluckauf!");
 				}
 			}
 		}
-
-		String input = (String)JOptionPane.showInputDialog(
-			mainwindow,
-			"Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst die gewünschte Strecke aus:",
-			APPLICATION_API,
-			JOptionPane.PLAIN_MESSAGE,
-			null,
-			values,
-			selection
-		);
-
-		if(input == null)
+		catch(eSportsAPIException e)
 		{
-			System.out.println("...: CANCEL");
-			return;
+			APIError(e, "Die Rangliste konnte nicht geladen werden...");
 		}
 
-		String selectedTrack   = null;
-		String selectedWeather = null;
-		String value = (String) input;
-
-		for(int i = 0; i < conditions.length; i++)
-		{
-			if(conditions[i][0].equals(value))
-			{
-				selectedTrack = conditions[i][1];
-				selectedWeather = conditions[i][2];
-				break;
-			}
-		}
-
-		if(selectedTrack == null || selectedWeather == null)
-		{
-			Exception e = new Exception();
-			e.printStackTrace(); return;
-		}
-
-		System.out.printf("SELECTED: %s (%s)%n", selectedTrack, selectedWeather);
-
-		cfg(CFG_TRACK, selectedTrack);
-		cfg(CFG_WEATHER, selectedWeather);
-
-		ghostSelect(selectedTrack, Integer.parseInt(selectedWeather));
+		return false;
 	}
 
-	public static void ghostSelect(String track, int weather)
-	{
-		if(OfflineProfiles == null)
-		{
-			return;
-		}
-
-		String token = getToken();
-		if(token == null)
-		{
-			return;
-		}
-
-		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
-		List<Map<String,Object>> results = api.getResultsByCondition(track, weather);
-
-		if(results == null)
-		{
-			APIError(api, "Die Rangliste konnte nicht geladen werden...");
-			return;
-		}
-
-		String selection = null;
-		String[] values = new String[results.size()];
-		Integer[] ghosts = new Integer[results.size()];
-
-		for(int i = 0; i < results.size(); i++)
-		{
-			Map<String,Object> result = results.get(i);
-			ghosts[i] = Integer.parseInt(result.get("GhostID").toString());
-			values[i] = String.format("%0" + Integer.toString(FNX.strlen(results.size())) + "d. %s – %s", result.get("Position"), gmHelper.getResult(Integer.parseInt(result.get("Result").toString())), result.get("Nickname"));
-		}
-
-		String input = (String)JOptionPane.showInputDialog(
-			mainwindow,
-			"Nachfolgend alle verfügbaren Geister der gewählten Strecke:",
-			APPLICATION_API,
-			JOptionPane.PLAIN_MESSAGE,
-			null,
-			values,
-			null
-		);
-
-		if(input == null)
-		{
-			System.out.println("...: CANCEL");
-			return;
-		}
-
-		String value = (String) input;
-		Integer ghost = null;
-
-		for(int i = 0; i < values.length; i++)
-		{
-			if(values[i].equals(value))
-			{
-				ghost = ghosts[i];
-				break;
-			}
-		}
-
-		if(ghost == null)
-		{
-			return;
-		}
-
-		System.out.printf("selected ghost: %d%n", ghost);
-
-		ghostDownload(ghost);
-	}
-
+	// Details des Tokens anzeigen.
 	public static void playerInfo()
 	{
-		String token = getToken();
-		if(token == null)
+		try
 		{
-			return;
+			if(prepareAPI())
+			{
+				Map<String,Object> data = api.getPlayerInfo();
+				data.forEach((k,v) -> dbg(String.format("playerDetails.%s: %s", k, v)));
+
+				messageDialog(APPLICATION_API, String.format("Nachfolgend alle Details des angegebenen API-Tokens.%n%nHAPPYTEC-Account: %1$s%nBewerb: %3$s%nTeilnehmer: %2$s", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
+			}
 		}
-
-		eSportsAPI api = new eSportsAPI(token, APPLICATION_IDENT);
-		Map<String,Object> data = api.getPlayerInfo();
-
-		if(data == null)
+		catch(eSportsAPIException e)
 		{
-			APIError(api, "Da ging etwas schief...");
-			return;
+			APIError(e, null);
 		}
-
-		messageDialog(APPLICATION_API, String.format("Nachfolgend alle Details des angegebenen API-Tokens.%n%nBewerb: %3$s%nTeilnehmer: %2$s%n%nHAPPYTEC-Account: %1$s", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
 	}
 
 /***********************************************************************
  *                            FILE ACTIONS                             *
  ***********************************************************************/
 
+	// Öffnet eine neue Datei, beachtet aber ungespeicherte Änderungen
+	// in einer eventuell bereits geöffneten Datei. Ohne die explizite
+	// Zustimmung, gehen keine Daten verloren. Die Funktion hat leider
+	// einen Schönheitsfehler: Die bisherige Datei wird bereits vor dem
+	// Dialog geschlossen. Wird danach keine Datei ausgewählt, ist
+	// nachher gar keine mehr geladen. Das sollte korrigiert werden.
 	public static void openFile()
 	{
-		if(!closeFile())
+		if(closeFile() && OfflineProfiles == null)
 		{
-			return;
-		}
-
-		// TODO: Wenn Config leer ist, Standardpfade je nach OS anbieten?
-		// ...
-
-		JFileChooser chooser = new JFileChooser(cfg(CFG_CWD));
-
-		// TODO: XML-Filter auslagern, wird auch beim Speichern genutzt.
-		// ...
-
-		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
-		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
-
-		int code = chooser.showOpenDialog(null);
-
-		if(code == JFileChooser.APPROVE_OPTION)
-		{
-			System.err.println("JFileChooser: APPROVE_OPTION");
-			File tmp = chooser.getSelectedFile();
-
-			if(tmp.exists())
+			if((file = openDialog(cfg(CFG_CWD))) != null)
 			{
-				System.err.println("XML inputfilename: " + tmp.getAbsolutePath());
-				cfg(CFG_CWD, String.format("%s", tmp.getParent()));
+				cfg(CFG_CWD, file.getParent().toString());
 
 				try
 				{
-					OfflineProfiles = new OfflineProfiles(tmp);
-					file = tmp;
-
-					selectProfile(0);
-					updateWindowTitle();
-					enableMenuItems();
+					OfflineProfiles = new OfflineProfiles(file);
+					selectProfile(0); updateWindowTitle(); enableMenuItems();
+					dbg("Successfully loaded XML file! Let's rumble...");
 				}
 				catch(Exception e)
 				{
 					reset();
-
-					e.printStackTrace();
-					errorMessage("Fehler beim Laden der XML-Datei!");
+					exceptionHandler(e, "Die XML-Datei konnte nicht geöffnet werden!");
 				}
 			}
 		}
-		else if(code == JFileChooser.CANCEL_OPTION)
-		{
-			System.err.println("JFileChooser: CANCEL_OPTION");
-		}
-		else if(code == JFileChooser.ERROR_OPTION)
-		{
-			System.err.println("JFileChooser: ERROR_OPTION");
-		}
-
-		// todo: listener für dateiänderungen
-		// ...
 	}
 
+	// Liest die Datei neu ein, beachtet aber ungespeicherte Änderungen.
+	// Ohne die explizite Bestätigung des Users, geht nichts verloren.
 	public static void reloadFile()
 	{
 		if(OfflineProfiles == null || unsavedChanges())
@@ -1225,22 +1372,29 @@ public class HTGT
 
 		try
 		{
+			dbg("Reloading file...");
 			OfflineProfiles.reload();
+			selectProfile(profile);
+			syncGUI();
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace();
+			exceptionHandler(e, "Fehler beim Neuladen der Datei");
 		}
-
-		selectProfile(profile);
-		syncGUI();
 	}
 
-	public static boolean saveFile()
+	// Speichert Änderungen, wenn es welche gibt.
+	public static void saveFile()
 	{
-		return saveFile(false);
+		if(!saveFile(false))
+		{
+			dbg("Failed to save file! (safe internal state)");
+			errorMessage("Die Datei konnte nicht gespeichert werden!");
+		}
 	}
 
+	// Speichert die Änderungen in der aktuellen Datei.
+	// Der erste Parameter mit für saveFileAs() gedacht.
 	public static boolean saveFile(boolean force)
 	{
 		if(OfflineProfiles == null)
@@ -1269,60 +1423,55 @@ public class HTGT
 		return true;
 	}
 
-	// TODO: Noch nicht fertig!
-	// TODO: XML-Filter auslagern!
+	// "Speichern unter" Dialog.
 	public static void saveFileAs()
 	{
+		File selectedFile;
+
 		if(OfflineProfiles == null)
 		{
 			return;
 		}
 
-
-
-
-		JFileChooser chooser = new ImprovedFileChooser(file.getParent());
-
-		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
-		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
-		chooser.setSelectedFile(file);
-
-		int code = chooser.showSaveDialog(null);
-
-		if(code == JFileChooser.APPROVE_OPTION)
+		if((selectedFile = saveDialog(file.getParent().toString(), file)) != null)
 		{
-			System.err.println("saveFileAs: APPROVE_OPTION");
-			File tmp = chooser.getSelectedFile();
+			cfg(CFG_CWD, selectedFile.getParent().toString());
 
-			if(tmp != null)
+			try
 			{
-				System.err.println("XML outputfilename: " + tmp.getAbsolutePath());
-				cfg(CFG_CWD, String.format("%s", tmp.getAbsolutePath()));
+				file = selectedFile;
+				if(!saveFile(true))
+				{
+					throw new Exception();
+				}
 
-				try
-				{
-					file = tmp;
-					saveFile(true);
-					OfflineProfiles.updateFile(file);
-					return;
-				}
-				catch(Exception e)
-				{
-					e.printStackTrace();
-					// OfflineProfiles File?
-				}
+				OfflineProfiles.updateFile(file);
+				dbg("File saved to new location.");
 			}
-		}
-		else if(code == JFileChooser.CANCEL_OPTION)
-		{
-			System.err.println("saveFileAs: CANCEL_OPTION");
-		}
-		else if(code == JFileChooser.ERROR_OPTION)
-		{
-			System.err.println("saveFileAs: ERROR_OPTION");
+			catch(Exception e)
+			{
+				exceptionHandler(e, "Die Datei konnte nicht gespeichert werden!");
+			}
 		}
 	}
 
+	// Gibt es noch ungespeicherte Änderungen?
+	// Fragt den User, was gemacht werden soll.
+	public static boolean unsavedChanges()
+	{
+		if(OfflineProfiles != null && OfflineProfiles.changed())
+		{
+			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Deine Bearbeitungen wurden noch nicht gespeichert.%nWenn du fortfährst, gehen die Änderungen verloren!%n%nTrotzdem ohne Speichern fortfahren?")))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	// Schließt die aktuelle Datei, beachtet aber ungespeicherte Änderungen.
+	// Ohne explizite Bestätigung, gehen keine ungesicherten Daten verloren.
 	public static boolean closeFile()
 	{
 		if(OfflineProfiles == null)
@@ -1340,132 +1489,96 @@ public class HTGT
 		return true;
 	}
 
-	public static boolean unsavedChanges()
+	// Programm beenden, aber ungespeicherte Änderungen beachten.
+	// Ohne explizite Bestätigung, gehen keine Daten verloren.
+	public static void quit()
 	{
-		if(OfflineProfiles != null && OfflineProfiles.changed())
+		if(closeFile())
 		{
-			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Deine Bearbeitungen wurden noch nicht gespeichert.%nWenn du fortfährst, gehen die Änderungen verloren!%n%nTrotzdem ohne Speichern fortfahren?")))
+			dbg("Good bye!");
+			System.exit(0);
+		}
+		else
+		{
+			dbg("File not closed.");
+		}
+	}
+
+	// Auswahl einer Datei, in die markierte Geister exportiert werden sollen.
+	// Es handelt sich dabei um eine korrekte XML-Datei, mit eigenen Knoten.
+	public static boolean exportFile()
+	{
+		StringBuilder data;
+		File selectedFile;
+
+		if(OfflineProfiles != null)
+		{
+			int[] selection = maintable.getSelectedRows();
+			if(selection.length == 0) return noSelection();
+
+			if((selectedFile = saveDialog(cfg(CFG_CWDPORT), new File("export.xml"))) != null)
 			{
-				System.out.println("quit: NO");
-				return true;
+				cfg(CFG_CWDPORT, selectedFile.getParent().toString());
+
+				try
+				{
+					data = new StringBuilder();
+					for(int i = selection.length - 1; i > -1; i--)
+					{
+						GhostElement ghost = OfflineProfiles.getGhost(selection[i]);
+						dbg(String.format("Exporting line %d: %s", selection[i], ghost.getDebugDetails()));
+						data.insert(0, String.format("\t<!-- %s @ %s (%s): %s -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), ghost.toString()));
+					}
+
+					data.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<GhostList>\r\n\r\n");
+					data.append(String.format("</GhostList>\r\n<!-- %s -->\r\n", FNX.getDateString()));
+
+					PrintWriter pw = new PrintWriter(selectedFile);
+					pw.printf("%s", data.toString()); pw.close();
+
+					dbg("Export to file successfully!");
+					infoDialog(String.format("Die Geister wurden erfolgreich exportiert:%n%n%s", selectedFile));
+
+					return true;
+				}
+				catch(Exception e)
+				{
+					exceptionHandler(e, "Beim Export trat ein Fehler auf!");
+				}
 			}
 		}
 
 		return false;
 	}
 
-	public static void quit()
+	// Auswahl einer Datei, aus der Geister importiert werden sollen.
+	public static void importFile()
 	{
-		if(closeFile())
+		String parentPath;
+		File selectedFile;
+		int importCounter;
+
+		if(OfflineProfiles != null && (selectedFile = openDialog(cfg(CFG_CWDPORT))) != null)
 		{
-			System.exit(0);
-		}
-	}
+			cfg(CFG_CWDPORT, selectedFile.getParent().toString());
 
-	public static void fileExport()
-	{
-		if(OfflineProfiles == null)
-		{
-			return;
-		}
-
-		StringBuilder data = new StringBuilder();
-		int[] selection = maintable.getSelectedRows();
-
-		if(selection.length == 0)
-		{
-			noSelection();
-			return;
-		}
-
-		// todo: insert xml header
-		// ...
-
-		for(int i = selection.length - 1; i > -1; i--)
-		{
-			// todo: insert comments
-			// ...
-
-			data.insert(0, OfflineProfiles.getGhost(selection[i]).toString());
-		}
-
-		JFileChooser chooser = new ImprovedFileChooser(cfg(CFG_CWDPORT));
-
-		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
-		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
-		chooser.setSelectedFile(new File("export.xml"));
-
-		int code = chooser.showSaveDialog(null);
-
-		if(code == JFileChooser.APPROVE_OPTION)
-		{
-			System.err.println("fileExport: APPROVE_OPTION");
-			File tmp = chooser.getSelectedFile();
-
-			if(tmp != null)
+			try
 			{
-				System.err.println("XML export filename: " + tmp.getAbsolutePath());
-				cfg(CFG_CWDPORT, String.format("%s", tmp.getParent()));
-
-				try
+				if((importCounter = ghostImport(selectedFile)) > 0)
 				{
-					PrintWriter pw = new PrintWriter(tmp);
-					pw.printf("%s", data.toString());
-					pw.close();
+					dbg(String.format("importCounter = %d (ok)", importCounter));
+					infoDialog(String.format("Anzahl importierter Geister: %d", importCounter));
 				}
-				catch(Exception e)
+				else if(importCounter == 0)
 				{
-					e.printStackTrace();
+					dbg("importCounter = 0 (none)");
+					errorMessage("In der ausgewählten Datei sind keine Geister vorhanden!");
 				}
 			}
-		}
-		else if(code == JFileChooser.CANCEL_OPTION)
-		{
-			System.err.println("fileExport: CANCEL_OPTION");
-		}
-		else if(code == JFileChooser.ERROR_OPTION)
-		{
-			System.err.println("fileExport: ERROR_OPTION");
-		}
-	}
-
-	public static void fileImport()
-	{
-		if(OfflineProfiles == null)
-		{
-			return;
-		}
-
-		JFileChooser chooser = new JFileChooser(cfg(CFG_CWDPORT));
-
-		// TODO: XML-Filter auslagern, wird auch woanders genutzt.
-		// ...
-
-		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
-		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
-
-		int code = chooser.showOpenDialog(null);
-
-		if(code == JFileChooser.APPROVE_OPTION)
-		{
-			System.err.println("fileImport: APPROVE_OPTION");
-			File tmp = chooser.getSelectedFile();
-
-			if(tmp.exists())
+			catch(Exception e)
 			{
-				System.err.println("XML import filename: " + tmp.getAbsolutePath());
-				cfg(CFG_CWDPORT, String.format("%s", tmp.getParent()));
-
-				ghostImport(tmp);
+				exceptionHandler(e, "Bei der Verarbeitung der XML-Datei kam es zu einem Fehler!");
 			}
-		}
-		else if(code == JFileChooser.CANCEL_OPTION)
-		{
-			System.err.println("fileImport: CANCEL_OPTION");
-		}
-		else if(code == JFileChooser.ERROR_OPTION)
-		{
-			System.err.println("fileImport: ERROR_OPTION");
 		}
 	}
 
@@ -1473,40 +1586,128 @@ public class HTGT
  *                        CONFIGURATION HELPER                         *
  ***********************************************************************/
 
-	// Konfiguration "key" auslesen.
-	private static String cfg(String key)
+	// Konfiguration $key auslesen. Wenn sie noch nicht
+	// existiert, wird der Standardwert $def zurückgegeben.
+	private static String getConfig(String key, String def)
 	{
-		// return cfg.get(key, "");
-		return cfg.get(key, null);
+		return cfg.get(key, def);
 	}
 
-	// Setze Konfiguration "key" auf den Wert "value".
-	// Mit NULL als Wert wird die Konfiguration gelöscht!
-	// Es wird immer der neue gesetzte Wert zurückgegeben.
+	// Setze Konfiguration $key auf den Wert $value.
+	private static void setConfig(String key, String value)
+	{
+		String oldValue;
+		String newValue;
+
+		if(key.equals(CFG_TOKEN))
+		{
+			oldValue = String.format("HIDDEN String(%d)", getConfig(key, "").length());
+			newValue = String.format("HIDDEN String(%d)", value.length());
+		}
+		else
+		{
+			oldValue = getConfig(key, null);
+			newValue = value;
+		}
+
+		if(getConfig(key, "").equals(value))
+		{
+			dbg(String.format("Config for key \"%s\" unchanged: %s", key, value));
+		}
+		else
+		{
+			dbg(String.format("Old config for key \"%s\": %s", key, oldValue));
+			dbg(String.format("New config for key \"%s\": %s", key, newValue));
+
+			cfg.put(key, value);
+		}
+	}
+
+	// Entferne Konfiguration $key.
+	private static void removeConfig(String key)
+	{
+		String oldValue;
+
+		if(key.equals(CFG_TOKEN))
+		{
+			oldValue = String.format("HIDDEN String(%d)", getConfig(key, "").length());
+		}
+		else
+		{
+			oldValue = getConfig(key, null);
+		}
+
+		dbg(String.format("Removing config for key \"%s\", old value: %s", key, oldValue));
+
+		cfg.remove(key);
+	}
+
+	// Liefert die Konfiguration $key.
+	// Der Standardwert ist hierbei NULL.
+	private static String cfg(String key)
+	{
+		return getConfig(key, null);
+	}
+
+	// Setzt die Konfiguration $key auf den Wert $value.
+	// Wenn $value NULL ist, wird die Konfiguration gelöscht!
+	// Gibt immer den neu gesetzten Wert der Konfiguration aus.
 	private static String cfg(String key, String value)
 	{
 		if(value == null)
 		{
-			cfg.remove(key);
-			return null;
+			removeConfig(key);
+		}
+		else
+		{
+			setConfig(key, value);
 		}
 
-		cfg.put(key, value);
 		return cfg(key);
 	}
 
-	// ALLE Konfiguration löschen.
-	public static void cfgClear()
+	// Alle Konfigurationswerte löschen.
+	// Gibt den Status der Aktion zurück.
+	private static boolean clearConfig()
 	{
 		try
 		{
-			cfg.clear();
-			messageDialog(JOptionPane.INFORMATION_MESSAGE, null, "Die Konfiguration dieser Anwendung wurde erfolgreich zurückgesetzt.");
+			/*
+			// Wäre fürs Debugging gut, funktioniert aber nicht.
+			// Eventuell wäre eine dumpConfig() Methode besser?
+			String[] cfgs = cfg.childrenNames();
+			dbg(String.format("%d", cfgs.length));
+			for(int i = 0; i < cfgs.length; i++)
+			{
+				removeConfig(cfgs[i]);
+			}
+			*/
+
+			dbg("Clearing config!");
+			cfg.clear(); return true;
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace();
-			errorMessage(e.getMessage());
+			exceptionHandler(e, null);
+		}
+
+		return false;
+	}
+
+	// Alle Konfigurationswerte löschen,
+	// aber mit Rückfrage und Statusmeldung.
+	public static void clearConfigDialog()
+	{
+		if(confirmDialog(null, "Soll die gesamte Konfiguration dieses Programms wirklich gelöscht werden?"))
+		{
+			if(clearConfig())
+			{
+				infoDialog("Die Konfiguration dieser Anwendung wurde erfolgreich zurückgesetzt.");
+			}
+			else
+			{
+				// errorMessage("Die Konfiguration konnte nicht gelöscht werden!");
+			}
 		}
 	}
 }
@@ -1527,6 +1728,7 @@ class HTGT_JTable extends JTable
 		super(dm);
 	}
 
+	@Override
 	public TableCellRenderer getCellRenderer(int row, int column)
 	{
 		if(column > 0)
@@ -1539,20 +1741,41 @@ class HTGT_JTable extends JTable
 		}
 	}
 
+	@Override
 	public boolean isCellEditable(int row, int column)
 	{
 		return false;
-	};
+	}
 }
 
 class HTGT_WindowAdapter extends java.awt.event.WindowAdapter
 {
+	@Override
 	public void windowClosing(java.awt.event.WindowEvent windowEvent)
 	{
 		HTGT.quit();
 	}
 }
 
-// TODO: Sinnvollere und einheitliche Konsolenausgaben,
-//       die einen echten Mehrwert für den User haben.
-// ...
+class HTGT_Background implements Runnable
+{
+	public static final int EXEC_UPDATECHECK = 1;
+
+	private int exec;
+
+	public HTGT_Background(int exec)
+	{
+		this.exec = exec;
+	}
+
+	@Override
+	public void run()
+	{
+		switch(this.exec)
+		{
+			case EXEC_UPDATECHECK:
+				HTGT.updateCheck(false, true);
+				break;
+		}
+	}
+}
