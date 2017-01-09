@@ -550,8 +550,7 @@ public class HTGT
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace();
-				errorMessage(String.format("Fehler beim Hinzufügen des Geists:%n%n%s", e.getMessage()));
+				exceptionHandler(e, "Der Geist konnte nicht hinzugefügt werden!");
 				return;
 			}
 		}
@@ -575,7 +574,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace();
+			exceptionHandler(e, "Der Geist konnte nicht gelöscht werden!");
 		}
 	}
 
@@ -857,7 +856,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace();
+			exceptionHandler(e, null);
 		}
 	}
 
@@ -1231,6 +1230,7 @@ public class HTGT
 					}
 					catch(gmException e)
 					{
+						e.printStackTrace();
 						values[key] = "";
 					}
 
