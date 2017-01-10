@@ -78,13 +78,9 @@ public class HTGT
 	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(400, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
 
-	// --- Standardpfade (oder über Registry auslesen?) ---
-	// MAC: /Applications/SkiChallenge16.app/Contents/MacOS/SkiChallenge16.app/Contents/MacOS/Game_Data/OfflineProfiles.xml
-	// LINUX: ~/.wine/drive_c/Games/Ski Challenge 16/Game_Data
-	// WINDOWS: C:\\Games\\Ski Challenge 16\\Game_Data
-
 	// Konfigurationsnamen für java.util.prefs
 	private static String CFG_UC      = "update-check";
+	private static String CFG_DEFAULT = "default-file";
 	private static String CFG_TOKEN   = "esports-token";
 	private static String CFG_CWD     = "last-directory";
 	private static String CFG_CWDPORT = "last-port-directory";
@@ -255,7 +251,8 @@ public class HTGT
 		switch(key)
 		{
 			case "file":
-				menu.add(new DynamicMenuItem("Öffnen",                            HTGT.class.getName(), "openFile"));
+				menu.add(new DynamicMenuItem("XML-Datei öffnen",                  HTGT.class.getName(), "openFile"));
+				menu.add(new DynamicMenuItem("Standardpfad öffnen",               HTGT.class.getName(), "openDefaultFile"));
 				menu.addSeparator(); // --------------------------------
 				menu.add(registerDynMenuItem("Speichern",                         HTGT.class.getName(), "saveFile"));
 				menu.add(registerDynMenuItem("Speichern unter",                   HTGT.class.getName(), "saveFileAs"));
@@ -293,7 +290,11 @@ public class HTGT
 
 			case "help":
 				menu.add(new DynamicMenuItem("Prüfung auf Updates",               HTGT.class.getName(), "updateCheck"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(new DynamicMenuItem("Standardpfad einstellen",           HTGT.class.getName(), "changeDefaultFile"));
+				menu.add(new DynamicMenuItem("Standardpfad zurücksetzen",         HTGT.class.getName(), "resetDefaultFile"));
 				menu.add(new DynamicMenuItem("Konfiguration löschen",             HTGT.class.getName(), "clearConfigDialog"));
+				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("Über diese App",                    HTGT.class.getName(), "about"));
 				break;
 		}
@@ -956,7 +957,7 @@ public class HTGT
 	public static void deleteToken()
 	{
 		cfg(CFG_TOKEN, null);
-		messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_API, String.format("Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!%n%nDu kannst ihn über das Menü jederzeit erneut eintragen."));
+		infoDialog(APPLICATION_API, String.format("Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!%n%nDu kannst ihn über das Menü jederzeit erneut eintragen."));
 	}
 
 	// API-Token erstmalig eintragen oder ändern.
@@ -1077,7 +1078,7 @@ public class HTGT
 					if(api.applyResultByGhostID(ghostIDs[i]))
 					{
 						dbg(String.format("Successfully applied result from ghost with ID %d.", ghostIDs[i]));
-						messageDialog(JOptionPane.INFORMATION_MESSAGE, APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%n%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
+						infoDialog(APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%n%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
 					}
 					else
 					{
@@ -1345,19 +1346,98 @@ public class HTGT
 			if((file = openDialog(cfg(CFG_CWD))) != null)
 			{
 				cfg(CFG_CWD, file.getParent().toString());
-
-				try
-				{
-					OfflineProfiles = new OfflineProfiles(file);
-					selectProfile(0); updateWindowTitle(); enableMenuItems();
-					dbg("Successfully loaded XML file! Let's rumble...");
-				}
-				catch(Exception e)
-				{
-					reset();
-					exceptionHandler(e, "Die XML-Datei konnte nicht geöffnet werden!");
-				}
+				openInternalFile();
 			}
+		}
+	}
+
+	// Datei öffnen, interne Version ohne Rückfragen.
+	private static void openInternalFile()
+	{
+		try
+		{
+			OfflineProfiles = new OfflineProfiles(file);
+			selectProfile(0); updateWindowTitle(); enableMenuItems();
+			dbg("Successfully loaded XML file! Let's rumble...");
+		}
+		catch(Exception e)
+		{
+			reset();
+			exceptionHandler(e, "Die XML-Datei konnte nicht geöffnet werden!");
+		}
+	}
+
+	// Standardpfad je nach OS öffnen.
+	public static void openDefaultFile()
+	{
+		File defaultFile;
+
+		if(closeFile() && OfflineProfiles == null)
+		{
+			if((defaultFile = getDefaultFile()) != null)
+			{
+				file = defaultFile;
+				openInternalFile();
+			}
+		}
+	}
+
+	// Standardpfad aus Konfiguration auslesen.
+	// Oder den Pfad automatisch ermitteln.
+	public static File getDefaultFile()
+	{
+		String defaultPath;
+		String osName;
+
+		if((defaultPath = cfg(CFG_DEFAULT)) == null || defaultPath.length() == 0)
+		{
+			// TODO: Check for null pointer?
+			osName = System.getProperty("os.name").toLowerCase();
+
+			if(osName.indexOf("windows") != -1)
+			{
+				defaultPath = "C:\\Games\\Ski Challenge 16\\Game_Data\\OfflineProfiles.xml";
+			}
+			else if(osName.indexOf("linux") != -1)
+			{
+				defaultPath = System.getProperty("user.home") + "/.wine/drive_c/Games/Ski Challenge 16/Game_Data/OfflineProfiles.xml";
+			}
+			else if(osName.indexOf("mac") != -1)
+			{
+				defaultPath = "/Applications/SkiChallenge16.app/Contents/MacOS/SkiChallenge16.app/Contents/MacOS/Game_Data/OfflineProfiles.xml";
+			}
+			else
+			{
+				errorMessage(String.format("Nicht unterstützter Wert für os.name: %s", osName));
+				return null;
+			}
+		}
+
+		return new File(defaultPath);
+	}
+
+	// Standardpfad zurücksetzen.
+	public static void resetDefaultFile()
+	{
+		cfg(CFG_DEFAULT, null);
+		infoDialog(null, "Der Standardpfad wurde zurückgesetzt!");
+	}
+
+	// API-Token erstmalig eintragen oder ändern.
+	// Wird fix in der Konfiguration gespeichert!
+	public static void changeDefaultFile()
+	{
+		String defaultFile;
+
+		// TODO: Check if file exists?
+		// ...
+
+		if((defaultFile = (String) inputDialog(null, "Standardpfad der XML-Datei:", getDefaultFile())) != null)
+		{
+			cfg(CFG_DEFAULT, defaultFile);
+
+			// TODO: infoDialog() ?
+			// ...
 		}
 	}
 

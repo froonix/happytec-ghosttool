@@ -362,7 +362,7 @@ public class eSportsAPI
 
 			if(this.osdata == null)
 			{
-				this.osdata = String.format("%s; %s; %s; %s", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"), System.getProperty("java.version"));
+				this.osdata = String.format("%s; %s; %s; %s; %s", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"), System.getProperty("java.runtime.name"), System.getProperty("java.version"));
 			}
 			connection.setRequestProperty("X-OS-Data", this.osdata);
 
