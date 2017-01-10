@@ -60,6 +60,7 @@ public class eSportsAPI
 
 	private String token;
 	private String useragent;
+	private String osdata;
 
 	public eSportsAPI(String token)
 	{
@@ -346,8 +347,8 @@ public class eSportsAPI
 		try
 		{
 			connection = (HttpsURLConnection) new URL(url).openConnection();
+			connection.setReadTimeout(API_TIMEOUT * 3);
 			connection.setConnectTimeout(API_TIMEOUT);
-			connection.setReadTimeout(API_TIMEOUT);
 
 			if(this.useragent != null)
 			{
@@ -358,6 +359,12 @@ public class eSportsAPI
 			{
 				connection.setRequestProperty("X-Auth-Token", this.token);
 			}
+
+			if(this.osdata == null)
+			{
+				this.osdata = String.format("%s; %s; %s; %s", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"), System.getProperty("java.version"));
+			}
+			connection.setRequestProperty("X-OS-Data", this.osdata);
 
 			connection.setRequestMethod("POST"); connection.setDoOutput(true);
 			tx = new DataOutputStream(connection.getOutputStream());
