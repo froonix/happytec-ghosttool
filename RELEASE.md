@@ -15,7 +15,7 @@ git branch v0.0.0-alpha2
 git checkout v0.0.0-alpha2
 nano src/HTGT.java
 
-git commit -S -m 'Prepare v0.0.0-alpha2 release'
+git commit -a -S -m 'Prepare v0.0.0-alpha2 release'
 git push origin v0.0.0-alpha2
 
 git tag release-0.0.0-alpha2
