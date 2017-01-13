@@ -80,8 +80,8 @@ public class HTGT
 	final private static String    APPLICATION_TITLE   = "HTGT (HAPPYTEC Ghosttool)";
 	final private static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
 	final private static String    APPLICATION_IDENT   = "HTGT <https://github.com/froonix/happytec-ghosttool>";
-	final private static Dimension WINDOW_SIZE_START   = new Dimension(800, 400);
-	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(400, 200);
+	final private static Dimension WINDOW_SIZE_START   = new Dimension(900, 400);
+	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(450, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
@@ -203,7 +203,7 @@ public class HTGT
 		mainWindow.addWindowListener(new HTGT_WindowAdapter());
 
 		Object rowData[][] = {};
-		Object columnNames[] = {"Spieler", "Strecke", "Wetter", "Ergebnis"};
+		Object columnNames[] = {"Spieler", "Strecke", "Wetter", "Ski", "Ergebnis"};
 
 		mainmodel = new DefaultTableModel(rowData, columnNames);
 		maintable = new HTGT_JTable(mainmodel);
@@ -597,8 +597,9 @@ public class HTGT
 			}
 		}
 
-		Object tmp[] = { ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult() };
+		Object tmp[] = { ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), gmHelper.formatSki(ghost.getSki()), ghost.getResult() };
 		mainmodel.addRow(tmp);
+		showTableHeader();
 	}
 
 	public static void deleteGhost(int index)
@@ -1922,7 +1923,7 @@ public class HTGT
 					{
 						GhostElement ghost = OfflineProfiles.getGhost(selection[i]);
 						dbg(String.format("Exporting line %d: %s", selection[i], ghost.getDebugDetails()));
-						data.insert(0, String.format("\t<!-- %s @ %s (%s): %s -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), ghost.toString()));
+						data.insert(0, String.format("\t<!-- %s @ %s (%s): %s (%s) -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), gmHelper.formatSki(ghost.getSki()), ghost.toString()));
 					}
 
 					data.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<GhostList>\r\n\r\n");

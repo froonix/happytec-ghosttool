@@ -193,6 +193,16 @@ public abstract class gmHelper
 		return ResultFormat.format(new Date(ms));
 	}
 
+	public static String formatSki(int[] ski)
+	{
+		if(ski == null || ski.length != 3)
+		{
+			return "??-??-??";
+		}
+
+		return String.format("%02d-%02d-%02d", ski[0], ski[1], ski[2]);
+	}
+
 	public static String[] getTracks()
 	{
 		return getTracks(false);

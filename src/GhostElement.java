@@ -59,6 +59,7 @@ public class GhostElement
 	private String  DataRaw;
 	private byte[]  DataBinary;
 	private String  Nickname;
+	private int[]   Ski;
 
 	// TODO: UID?
 	// ...
@@ -151,8 +152,7 @@ public class GhostElement
 
 		if(GhostPattern == null)
 		{
-			// Der Ski wird an dieser Stelle absichtlich nicht mitextrahiert. Oder braucht den jemand unbedingt?
-			this.GhostPattern = Pattern.compile("\062.\012.(.{1,32})\022\016(.{1,32})\030(.)\100.$", Pattern.DOTALL);
+			this.GhostPattern = Pattern.compile("\030.\042.(?:\010(?<c>.))?(?:\020(?<g>.))?(?:\030(?<s>.))?\042.*?\062.\012.(?<n>.{1,32})\022\016(?<e>.{1,32})\030(?<v>.)\100.$", Pattern.DOTALL);
 		}
 
 		try
@@ -193,14 +193,24 @@ public class GhostElement
 
 			if(m.find())
 			{
-				this.Nickname = m.group(1);
-				// this.edition = m.group(2);
-				// this.flag = m.group(3);
+				this.Nickname = m.group("n");
+				// this.edition = m.group("e");
+				// this.flag = m.group("v");
+
+				this.Ski = new int[]{
+					(m.group("c") != null) ? (int) m.group("c").charAt(0) : 0,
+					(m.group("g") != null) ? (int) m.group("g").charAt(0) : 0,
+					(m.group("s") != null) ? (int) m.group("s").charAt(0) : 0
+				};
 			}
 
 			if(this.Nickname == null || !this.Nickname.matches("^(?i)[A-Z0-9_]{1,20}$"))
 			{
 				throw new GhostException("GhostData: Missing or invalid nickname");
+			}
+			else if(this.Ski == null || this.Ski.length != 3 || (this.Ski[0] + this.Ski[1] + this.Ski[2]) > 100)
+			{
+				throw new GhostException("GhostData: Missing or invalid ski");
 			}
 		}
 		catch(gmException e)
@@ -280,6 +290,11 @@ public class GhostElement
 		return gmHelper.getResult(this.Time);
 	}
 
+	public int[] getSki()
+	{
+		return this.Ski;
+	}
+
 	public void printDetails()
 	{
 		try
@@ -290,6 +305,7 @@ public class GhostElement
 			System.out.printf(" Time:    %s (%d)%n", this.getResult(), this.getTime());
 			System.out.printf(" Track:   [%s] %s%n", this.getTrack().toUpperCase(), this.getTrackName());
 			System.out.printf(" Weather: [%s] %s (%d)%n", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
+			System.out.printf(" Ski:     %d-%d-%d%n", this.Ski[0], this.Ski[1], this.Ski[2]);
 			// System.out.printf("%n%s%n", DataRaw);
 			System.out.printf("--------------------------------%n");
 		}
@@ -305,7 +321,7 @@ public class GhostElement
 	{
 		try
 		{
-			return String.format("%s @ %s (%s/%s) - %s", this.getNickname(), this.getTrack().toUpperCase(), this.getGameMode(), gmHelper.getWeather(this.Weather).toUpperCase(), this.getTime());
+			return String.format("%s @ %s (%s/%s) - %s (%d-%d-%d)", this.getNickname(), this.getTrack().toUpperCase(), this.getGameMode(), gmHelper.getWeather(this.Weather).toUpperCase(), this.getTime(), this.Ski[0], this.Ski[1], this.Ski[2]);
 		}
 		catch(gmException e)
 		{
