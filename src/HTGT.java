@@ -18,11 +18,16 @@
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.lang.IndexOutOfBoundsException;
 
 import java.nio.charset.StandardCharsets;
+
+import java.nio.file.Files;
+
+import java.nio.file.attribute.FileTime;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -46,6 +51,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -77,6 +83,8 @@ public class HTGT
 	final private static Dimension WINDOW_SIZE_START   = new Dimension(800, 400);
 	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(400, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
+	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
+	final private static String    FF_TITLE            = "Fast-Follow-Modus";
 
 	// Konfigurationsnamen für java.util.prefs
 	private static String CFG_UC      = "update-check";
@@ -90,6 +98,7 @@ public class HTGT
 	private static Preferences                cfg;
 	private static File                       file;
 	private static int                        profile;
+	private static String                     nickname;
 
 	private static String                     token;
 	private static eSportsAPI                 anonAPI;
@@ -99,6 +108,10 @@ public class HTGT
 	private static DateFormat                 debugDate;
 
 	private static OfflineProfiles            OfflineProfiles;
+
+	private static volatile boolean           ffState;
+	private static volatile JDialog           ffDialog;
+	private static volatile boolean           ffChanged;
 
 	private static JFrame                     mainWindow;
 	private static JTable                     maintable;
@@ -282,7 +295,8 @@ public class HTGT
 				menu.add(registerDynMenuItem("Geister durch ID(s) herunterladen", HTGT.class.getName(), "ghostDownload"));
 				menu.add(registerDynMenuItem("Geist auswählen und herunterladen", HTGT.class.getName(), "ghostSelect"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails",           HTGT.class.getName(), "playerInfo"));
+				menu.add(registerDynMenuItem(FF_TITLE + " aktivieren",            HTGT.class.getName(), "fastFollow"));
+				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails anzeigen",  HTGT.class.getName(), "playerInfo"));
 				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("API-Token ändern",                  HTGT.class.getName(), "setupToken"));
 				menu.add(new DynamicMenuItem("API-Token löschen",                 HTGT.class.getName(), "deleteToken"));
@@ -337,8 +351,9 @@ public class HTGT
 
 	private static void reset()
 	{
-		profile = 0; file = null;
+		file            = null;
 		OfflineProfiles = null;
+		profile         = 0;
 
 		syncGUI();
 	}
@@ -385,11 +400,13 @@ public class HTGT
 	public static void updateWindowTitle()
 	{
 		String filename = "";
+		String profilename = "";
 		String suffix = "";
 
 		if(OfflineProfiles != null)
 		{
 			filename = " – " + file.getAbsolutePath();
+			profilename = " – " + nickname;
 
 			if(OfflineProfiles.changed())
 			{
@@ -397,44 +414,67 @@ public class HTGT
 			}
 		}
 
-		mainWindow.setTitle(APPLICATION_TITLE + filename + suffix);
+		mainWindow.setTitle(APPLICATION_TITLE + filename + profilename + suffix);
 	}
 
 	public static int ghostImport(File f) throws Exception
 	{
-		return ghostImport(GhostElement.parseGhosts(f));
+		return ghostImport(f, false);
+	}
+
+	public static int ghostImport(File f, boolean force) throws Exception
+	{
+		return ghostImport(GhostElement.parseGhosts(f), force);
 	}
 
 	public static int ghostImport(String xmlstring) throws Exception
 	{
-		return ghostImport(GhostElement.parseGhosts(xmlstring));
+		return ghostImport(xmlstring, false);
+	}
+
+	public static int ghostImport(String xmlstring, boolean force) throws Exception
+	{
+		return ghostImport(GhostElement.parseGhosts(xmlstring), force);
 	}
 
 	public static int ghostImport(GhostElement ghost)
 	{
-		return ghostImport(new GhostElement[]{ghost});
+		return ghostImport(ghost, false);
+	}
+
+	public static int ghostImport(GhostElement ghost, boolean force)
+	{
+		return ghostImport(new GhostElement[]{ghost}, force);
 	}
 
 	public static int ghostImport(GhostElement[] ghosts)
+	{
+		return ghostImport(ghosts, false);
+	}
+
+	public static int ghostImport(GhostElement[] ghosts, boolean force)
 	{
 		dbg("ghosts.length: " + ghosts.length);
 		boolean delete = false;
 
 		if(ghosts.length > 0)
 		{
-			for(int i = 0; i < ghosts.length; i++)
+			if(!force)
 			{
-				if(OfflineProfiles.getGhostsByCondition(ghosts[i]).length > 0)
+				for(int i = 0; i < ghosts.length; i++)
 				{
-					delete = true;
+					if(OfflineProfiles.getGhostsByCondition(ghosts[i]).length > 0)
+					{
+						delete = true;
+					}
 				}
-			}
 
-			if(delete)
-			{
-				if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
+				if(delete)
 				{
-					return -1;
+					if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
+					{
+						return -1;
+					}
 				}
 			}
 
@@ -517,6 +557,7 @@ public class HTGT
 		if(OfflineProfiles.getProfileCount() > 0)
 		{
 			OfflineProfiles.selectProfile(index);
+			nickname = OfflineProfiles.getProfiles()[index];
 		}
 
 		profile = index;
@@ -576,6 +617,218 @@ public class HTGT
 		catch(Exception e)
 		{
 			exceptionHandler(e, "Der Geist konnte nicht gelöscht werden!");
+		}
+	}
+
+	public static void fastFollow()
+	{
+		if(OfflineProfiles != null && !unsavedChanges())
+		{
+			if(profile != OfflineProfiles.defaultProfile())
+			{
+				while(true)
+				{
+					try
+					{
+						JOptionPane msg = new JOptionPane(String.format("Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%nSobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%nWichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%nÄnderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%nDu kannst diesen Modus jederzeit abbrechen..."), JOptionPane.PLAIN_MESSAGE);
+						msg.setOptions(new String[]{"Abbrechen"});
+						ffDialog = msg.createDialog(FF_TITLE);
+
+						ffState = true;
+						dbg("Starting worker thread...");
+						new Thread(new HTGT_Background(HTGT_Background.EXEC_FASTFOLLOW)).start();
+						dbg("Opening blocking info dialog...");
+						ffDialog.setVisible(true);
+						ffState = false;
+
+						if(ffChanged)
+						{
+							dbg("We are back in the main thread!");
+
+							GhostElement[][] oldProfileGhosts = null;
+							GhostElement[][] oldDefaultGhosts = null;
+							int oldProfileCount = OfflineProfiles.getProfileCount();
+							int oldDefaultProfile = OfflineProfiles.defaultProfile();
+
+							oldProfileGhosts = OfflineProfiles.getAllGhosts();
+
+							if(oldDefaultProfile > -1)
+							{
+								OfflineProfiles.selectProfile(oldDefaultProfile);
+								oldDefaultGhosts = OfflineProfiles.getAllGhosts();
+								OfflineProfiles.selectProfile(profile);
+							}
+
+							reloadFile(true);
+
+							GhostElement[][] newProfileGhosts = null;
+							GhostElement[][] newDefaultGhosts = null;
+							int newProfileCount = OfflineProfiles.getProfileCount();
+							int newDefaultProfile = OfflineProfiles.defaultProfile();
+
+							if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
+							{
+								dbg(String.format("Unsupported changes: %d != %d || %d != %d%n", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile));
+								errorMessage(FF_TITLE, "Es wurden nicht unterstützte Änderungen festgestellt!");
+								return;
+							}
+
+							newProfileGhosts = OfflineProfiles.getAllGhosts();
+
+							if(newDefaultProfile > -1)
+							{
+								OfflineProfiles.selectProfile(newDefaultProfile);
+								newDefaultGhosts = OfflineProfiles.getAllGhosts();
+								OfflineProfiles.selectProfile(profile);
+							}
+
+							String[] tracks = gmHelper.getTracks(true);
+							int[] weathers = gmHelper.getWeatherIDs();
+
+							String currentGhost = "";
+							int lastUploadedTrack = -1;
+							int lastUploadedWeather = -1;
+							boolean lastFromDefault = false;
+
+							for(int t = 0; t < tracks.length; t++)
+							{
+								for(int w = 0; w < weathers.length; w++)
+								{
+									if((oldProfileGhosts[t][w] == null && newProfileGhosts[t][w] != null) || (oldProfileGhosts[t][w] != null && newProfileGhosts[t][w] != null && oldProfileGhosts[t][w].getTime() != newProfileGhosts[t][w].getTime()))
+									{
+										dbg(String.format("Changed result: %s / %s%n", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+
+										ghostUpload(newProfileGhosts[t][w], true);
+
+										lastUploadedTrack = t;
+										lastUploadedWeather = w;
+									}
+								}
+							}
+
+							if(newDefaultProfile > -1)
+							{
+								for(int t = 0; t < tracks.length; t++)
+								{
+									for(int w = 0; w < weathers.length; w++)
+									{
+										if((oldDefaultGhosts[t][w] == null && newDefaultGhosts[t][w] != null) || (oldDefaultGhosts[t][w] != null && newDefaultGhosts[t][w] != null && oldDefaultGhosts[t][w].getTime() != newDefaultGhosts[t][w].getTime()))
+										{
+											dbg(String.format("Changed (default) result: %s / %s%n", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+
+											ghostUpload(newDefaultGhosts[t][w], true);
+
+											lastUploadedTrack = t;
+											lastUploadedWeather = w;
+											lastFromDefault = true;
+										}
+									}
+								}
+							}
+
+							if(lastUploadedTrack > -1 && lastUploadedWeather > -1)
+							{
+								if(/*lastFromDefault &&*/ newProfileGhosts[lastUploadedTrack][lastUploadedWeather] != null)
+								{
+									currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedTrack][lastUploadedWeather].getResult());
+								}
+
+								if(confirmDialog(FF_TITLE, String.format("Willst du für %s (%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getWeatherName(weathers[lastUploadedWeather]), currentGhost)))
+								{
+									if(ghostSelect(tracks[lastUploadedTrack], weathers[lastUploadedWeather], true))
+									{
+										if(OfflineProfiles.changed() && !saveFile(true))
+										{
+											errorMessage("Die Änderungen konnten nicht gespeichert werden!");
+										}
+									}
+								}
+							}
+
+							continue;
+						}
+						else
+						{
+							dbg("Dialog canceled or closed.");
+							break;
+						}
+
+						// Thread.sleep(1000);
+					}
+					catch(InterruptedException e)
+					{
+						e.printStackTrace();
+					}
+					catch(Exception e)
+					{
+						exceptionHandler(e);
+						return;
+					}
+				}
+			}
+			else
+			{
+				infoDialog(FF_TITLE, "Dieser Modus funktioniert nur, wenn du nicht das Standardprofil ausgewählt hast.");
+			}
+		}
+	}
+
+	protected static void fastFollowWorker()
+	{
+		FileTime oldTime;
+		FileTime newTime;
+
+		ffChanged = false;
+
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
+		try
+		{
+			oldTime = Files.getLastModifiedTime(file.toPath());
+
+			while(true)
+			{
+				if(!ffState)
+				{
+					dbg("Killed via external state variable.");
+					return;
+				}
+
+				newTime = Files.getLastModifiedTime(file.toPath());
+
+				if(newTime.compareTo(oldTime) > 0)
+				{
+					dbg("File modification time changed!");
+					Thread.sleep(1000);
+					oldTime = newTime;
+					ffChanged = true;
+					return;
+				}
+				else
+				{
+					dbg("Nothing to do. Sleeping...");
+				}
+
+				Thread.sleep(FF_CHECK_INTERVAL);
+			}
+		}
+		catch(IOException e)
+		{
+			exceptionHandler(e);
+			return;
+		}
+		catch(InterruptedException e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			ffState = false;
+			ffDialog.setVisible(false);
+			dbg("Cleanup. Goodbye...");
 		}
 	}
 
@@ -765,7 +1018,7 @@ public class HTGT
 	private static boolean noSelection()
 	{
 		dbg("No selection available!");
-		messageDialog(null, String.format("Die gewünschte Aktion funktioniert nur, wenn bereits Geister ausgewählt wurden.%n%nMarkiere eine Zeile mit der Maus, eine Mehrfachauswahl ist durch Halten der Strg/Ctrl Taste möglich."));
+		infoDialog(null, String.format("Die gewünschte Aktion funktioniert nur, wenn bereits Geister ausgewählt wurden.%n%nMarkiere eine Zeile mit der Maus, eine Mehrfachauswahl ist durch Halten der Strg/Ctrl Taste möglich."));
 
 		return false;
 	}
@@ -885,7 +1138,7 @@ public class HTGT
 	}
 
 	// Updateprüfung über die API durchführen.
-	public static void updateCheck(boolean force, boolean auto)
+	protected static void updateCheck(boolean force, boolean auto)
 	{
 		long lastUpdateCheck;
 		int updatesAvailable;
@@ -1029,8 +1282,6 @@ public class HTGT
 	public static boolean ghostUpload()
 	{
 		GhostElement[] ghosts;
-		boolean error = false;
-		int[] ghostIDs = null;
 
 		if(OfflineProfiles == null)
 		{
@@ -1046,6 +1297,33 @@ public class HTGT
 			ghosts[i] = OfflineProfiles.getGhost(selection[i]);
 		}
 
+		return ghostUpload(ghosts, false);
+	}
+
+	// Interne Funktion für den sofortigen Upload eines Geists.
+	private static boolean ghostUpload(GhostElement ghost)
+	{
+		return ghostUpload(new GhostElement[]{ghost}, false);
+	}
+
+	// ...
+	private static boolean ghostUpload(GhostElement ghost, boolean silent)
+	{
+		return ghostUpload(new GhostElement[]{ghost}, silent);
+	}
+
+	// ...
+	private static boolean ghostUpload(GhostElement[] ghosts)
+	{
+		return ghostUpload(ghosts, false);
+	}
+
+	// Interne Funktion für den sofortigen Upload von Geistern.
+	private static boolean ghostUpload(GhostElement[] ghosts, boolean silent)
+	{
+		int[] ghostIDs = null;
+		boolean error = false;
+
 		if(!prepareAPI())
 		{
 			return false;
@@ -1054,9 +1332,9 @@ public class HTGT
 		try
 		{
 			ghostIDs = api.getGhostIDs(ghosts);
-			if(ghostIDs.length != selection.length)
+			if(ghostIDs.length != ghosts.length)
 			{
-				dbg(String.format("ghosts(%d) != selection(%d)", ghostIDs.length, selection.length));
+				dbg(String.format("ghosts(%d) != selection(%d)", ghostIDs.length, ghosts.length));
 				errorMessage("Die Menge der von der API empfangenen Geist-IDs entspricht nicht der angeforderten Anzahl.");
 				return false;
 			}
@@ -1069,7 +1347,7 @@ public class HTGT
 		for(int i = 0; i < ghostIDs.length; i++)
 		{
 			GhostElement ghost = ghosts[i];
-			dbg(String.format("Line %d uploaded as ghost ID %d: %s", selection[i], ghostIDs[i], ghost.getDebugDetails()));
+			dbg(String.format("Item #%d uploaded as ghost ID %d: %s", i, ghostIDs[i], ghost.getDebugDetails()));
 
 			if(confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
 			{
@@ -1078,7 +1356,11 @@ public class HTGT
 					if(api.applyResultByGhostID(ghostIDs[i]))
 					{
 						dbg(String.format("Successfully applied result from ghost with ID %d.", ghostIDs[i]));
-						infoDialog(APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%n%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
+
+						if(!silent)
+						{
+							infoDialog(APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%n%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
+						}
 					}
 					else
 					{
@@ -1148,11 +1430,23 @@ public class HTGT
 	// Download einer einzelnen Geist-ID über die API.
 	public static boolean ghostDownload(int id)
 	{
-		return ghostDownload(new int[]{id});
+		return ghostDownload(id, false);
+	}
+
+	// ...
+	public static boolean ghostDownload(int id, boolean force)
+	{
+		return ghostDownload(new int[]{id}, force);
 	}
 
 	// Download mehrerer Geist-IDs über die API.
 	public static boolean ghostDownload(int[] ids)
+	{
+		return ghostDownload(ids, false);
+	}
+
+	// ...
+	public static boolean ghostDownload(int[] ids, boolean force)
 	{
 		try
 		{
@@ -1178,9 +1472,16 @@ public class HTGT
 					ghostdata = api.getGhostsByIDs(ids);
 				}
 
-				if(ghostImport(ghostdata) > 0)
+				int imported = ghostImport(ghostdata, force);
+
+				if(imported > 0)
 				{
 					return true;
+				}
+				else if(imported == -1)
+				{
+					dbg("imported = -1");
+					return false;
 				}
 				else
 				{
@@ -1266,6 +1567,12 @@ public class HTGT
 	// Vorher muss bereits nach Strecke/Wetter gefragt worden sein!
 	public static boolean ghostSelect(String track, int weather)
 	{
+		return ghostSelect(track, weather, false);
+	}
+
+	// Ermöglicht alle Rückfragen zu umgehen, die beim Download auftreten.
+	public static boolean ghostSelect(String track, int weather, boolean force)
+	{
 		try
 		{
 			List<Map<String,Object>> results;
@@ -1291,7 +1598,8 @@ public class HTGT
 					if((selection = (Integer) inputDialog(APPLICATION_API, "Nachfolgend alle verfügbaren Geister der gewählten Strecke:", values, null)) != null)
 					{
 						Integer ghost = ghosts[selection];
-						ghostDownload(ghost); return true;
+						ghostDownload(ghost, true);
+						return true;
 					}
 				}
 				else
@@ -1445,22 +1753,29 @@ public class HTGT
 	// Ohne die explizite Bestätigung des Users, geht nichts verloren.
 	public static void reloadFile()
 	{
-		if(OfflineProfiles == null || unsavedChanges())
-		{
-			return;
-		}
-
 		try
 		{
-			dbg("Reloading file...");
-			OfflineProfiles.reload();
-			selectProfile(profile);
-			syncGUI();
+			reloadFile(false);
 		}
 		catch(Exception e)
 		{
 			exceptionHandler(e, "Fehler beim Neuladen der Datei");
 		}
+	}
+
+	// Liest die Datei neu ein, beachtet keine ungespeicherte Änderungen!
+	// Diese Funktion ist für interne Zwecke über Fast-Follow gedacht.
+	private static void reloadFile(boolean force) throws Exception
+	{
+		if(!force && (OfflineProfiles == null || unsavedChanges()))
+		{
+			return;
+		}
+
+		dbg("Reloading file...");
+		OfflineProfiles.reload();
+		selectProfile(profile);
+		syncGUI();
 	}
 
 	// Speichert Änderungen, wenn es welche gibt.
@@ -1840,6 +2155,7 @@ class HTGT_WindowAdapter extends java.awt.event.WindowAdapter
 class HTGT_Background implements Runnable
 {
 	public static final int EXEC_UPDATECHECK = 1;
+	public static final int EXEC_FASTFOLLOW  = 2;
 
 	private int exec;
 
@@ -1855,6 +2171,10 @@ class HTGT_Background implements Runnable
 		{
 			case EXEC_UPDATECHECK:
 				HTGT.updateCheck(false, true);
+				break;
+
+			case EXEC_FASTFOLLOW:
+				HTGT.fastFollowWorker();
 				break;
 		}
 	}

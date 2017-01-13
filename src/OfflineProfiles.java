@@ -198,6 +198,33 @@ public class OfflineProfiles
 		return this.getGhostsByCondition(ghost.getTrack(), ghost.getWeather());
 	}
 
+	public GhostElement[][] getAllGhosts()
+	{
+		String[] tracks = gmHelper.getTracks(true);
+		int[] weathers = gmHelper.getWeatherIDs();
+
+		GhostElement result[][] = new GhostElement[tracks.length][weathers.length];
+
+		for(int t = 0; t < tracks.length; t++)
+		{
+			for(int w = 0; w < weathers.length; w++)
+			{
+				int[] ghosts = this.getGhostsByCondition(tracks[t], weathers[w]);
+
+				if(ghosts.length > 0)
+				{
+					result[t][w] = this.getGhost(ghosts[0]);
+				}
+				else
+				{
+					result[t][w] = null;
+				}
+			}
+		}
+
+		return result;
+	}
+
 	public void deleteGhost(int index) throws Exception
 	{
 		this.changed = true;
