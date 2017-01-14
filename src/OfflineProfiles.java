@@ -200,6 +200,11 @@ public class OfflineProfiles
 
 	public GhostElement[][] getAllGhosts()
 	{
+		return this.getAllGhosts(false);
+	}
+
+	public GhostElement[][] getAllGhosts(boolean warn)
+	{
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs();
 
@@ -211,7 +216,11 @@ public class OfflineProfiles
 			{
 				int[] ghosts = this.getGhostsByCondition(tracks[t], weathers[w]);
 
-				if(ghosts.length > 0)
+				if(ghosts.length > 1 && warn)
+				{
+					return null;
+				}
+				else if(ghosts.length > 0)
 				{
 					result[t][w] = this.getGhost(ghosts[0]);
 				}

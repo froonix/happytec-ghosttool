@@ -280,6 +280,8 @@ public class HTGT
 				menu.add(registerDynMenuItem("Einfügen",                          HTGT.class.getName(), "copyFromClipboard"));
 				menu.add(registerDynMenuItem("Löschen",                           HTGT.class.getName(), "deleteRows"));
 				menu.addSeparator(); // --------------------------------
+				menu.add(registerDynMenuItem("Nach Strecke/Wetter sortieren",     HTGT.class.getName(), "resort"));
+				menu.addSeparator(); // --------------------------------
 				menu.add(registerDynMenuItem("Aus Datei importieren",             HTGT.class.getName(), "importFile"));
 				menu.add(registerDynMenuItem("In Datei exportieren",              HTGT.class.getName(), "exportFile"));
 				break;
@@ -830,6 +832,42 @@ public class HTGT
 			ffState = false;
 			ffDialog.setVisible(false);
 			dbg("Cleanup. Goodbye...");
+		}
+	}
+
+	public static void resort()
+	{
+		if(OfflineProfiles != null)
+		{
+			GhostElement[][] ghosts;
+
+			if((ghosts = OfflineProfiles.getAllGhosts(true)) == null)
+			{
+				if(confirmDialog(null, String.format("Es kann nur einen Geist pro Strecke/Wetter geben. Wenn du fortfährst, werden doppelte Einträge gelöscht!%n%nBist du sicher, dass du die Sortierung durchführen möchtest?")))
+				{
+					ghosts = OfflineProfiles.getAllGhosts(false);
+				}
+				else
+				{
+					return;
+				}
+			}
+
+			for(int i = (OfflineProfiles.getGhostCount() - 1); i > -1; i--)
+			{
+				deleteGhost(i);
+			}
+
+			for(int t = 0; t < ghosts.length; t++)
+			{
+				for(int w = 0; w < ghosts[t].length; w++)
+				{
+					if(ghosts[t][w] != null)
+					{
+						addGhost(ghosts[t][w], true);
+					}
+				}
+			}
 		}
 	}
 
