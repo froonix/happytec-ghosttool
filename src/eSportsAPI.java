@@ -284,6 +284,80 @@ public class eSportsAPI
 		}
 	}
 
+	public int[][] getAllResults() throws eSportsAPIException
+	{
+		String[] tracks = gmHelper.getTracks(true);
+		int[] weathers = gmHelper.getWeatherIDs();
+
+		// Es ist intern wesentlich einfacher mit numerischen Schlüsseln
+		// zu arbeiten. Eine Map würde nur unnötigen Overhead erzeugen!
+		int results[][] = new int[tracks.length][weathers.length];
+
+		for(int t = 0; t < tracks.length; t++)
+		{
+			for(int w = 0; w < weathers.length; w++)
+			{
+				results[t][w] = -1;
+			}
+		}
+
+		try
+		{
+			// Diese Methode liefert aber nur aktive Strecken zurück!
+			// Allerdings mit automatischer Qualifikation/Rennen Erkennung.
+			String result = this.request("OFFLINE", "result.dump", null);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList OfflineResults = doc.getElementsByTagName("OfflineResult");
+
+			if(OfflineResults.getLength() > 0)
+			{
+				for(int i = 0; i < OfflineResults.getLength(); i++)
+				{
+					Element OfflineResult = (Element) OfflineResults.item(i);
+					Map<String,Object> hm = new HashMap<String,Object>(4);
+
+					String track = OfflineResult.getAttribute("Track").toLowerCase();
+					String weather = OfflineResult.getAttribute("Weather").toLowerCase();
+
+					int t = -1;
+					int w = -1;
+
+					for(int h = 0; h < tracks.length; h++)
+					{
+						if(tracks[h].equals(track))
+						{
+							t = h;
+							break;
+						}
+					}
+
+					for(int h = 0; h < weathers.length; h++)
+					{
+						if(gmHelper.getWeather(weathers[h]).equals(weather))
+						{
+							w = h;
+							break;
+						}
+					}
+
+					if(t == -1 || w == -1 || results[t][w] != -1)
+					{
+						throw new eSportsAPIException();
+					}
+
+					results[t][w] = Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent());
+				}
+			}
+		}
+		catch(SAXException|ParserConfigurationException|IOException|NullPointerException|gmException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+
+		return results;
+	}
+
 	public boolean updateAvailable(String app, String version, boolean autocheck) throws eSportsAPIException
 	{
 		try

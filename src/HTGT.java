@@ -266,55 +266,57 @@ public class HTGT
 		switch(key)
 		{
 			case "file":
-				menu.add(new DynamicMenuItem("XML-Datei öffnen",                  HTGT.class.getName(), "openFile"));
-				menu.add(new DynamicMenuItem("Standardpfad öffnen",               HTGT.class.getName(), "openDefaultFile"));
+				menu.add(new DynamicMenuItem("XML-Datei öffnen",                    HTGT.class.getName(), "openFile"));
+				menu.add(new DynamicMenuItem("Standardpfad öffnen",                 HTGT.class.getName(), "openDefaultFile"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Speichern",                         HTGT.class.getName(), "saveFile"));
-				menu.add(registerDynMenuItem("Speichern unter",                   HTGT.class.getName(), "saveFileAs"));
+				menu.add(registerDynMenuItem("Speichern",                           HTGT.class.getName(), "saveFile"));
+				menu.add(registerDynMenuItem("Speichern unter",                     HTGT.class.getName(), "saveFileAs"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Schließen",                         HTGT.class.getName(), "closeFile"));
-				menu.add(new DynamicMenuItem("Beenden",                           HTGT.class.getName(), "quit"));
+				menu.add(registerDynMenuItem("Schließen",                           HTGT.class.getName(), "closeFile"));
+				menu.add(new DynamicMenuItem("Beenden",                             HTGT.class.getName(), "quit"));
 				break;
 
 			case "edit":
-				menu.add(registerDynMenuItem("Ausschneiden",                      HTGT.class.getName(), "cutToClipboard"));
-				menu.add(registerDynMenuItem("Kopieren",                          HTGT.class.getName(), "copyToClipboard"));
-				menu.add(registerDynMenuItem("Einfügen",                          HTGT.class.getName(), "copyFromClipboard"));
-				menu.add(registerDynMenuItem("Löschen",                           HTGT.class.getName(), "deleteRows"));
+				menu.add(registerDynMenuItem("Ausschneiden",                        HTGT.class.getName(), "cutToClipboard"));
+				menu.add(registerDynMenuItem("Kopieren",                            HTGT.class.getName(), "copyToClipboard"));
+				menu.add(registerDynMenuItem("Einfügen",                            HTGT.class.getName(), "copyFromClipboard"));
+				menu.add(registerDynMenuItem("Löschen",                             HTGT.class.getName(), "deleteRows"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Nach Strecke/Wetter sortieren",     HTGT.class.getName(), "resort"));
+				menu.add(registerDynMenuItem("Nach Strecke/Wetter sortieren",       HTGT.class.getName(), "resort"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aus Datei importieren",             HTGT.class.getName(), "importFile"));
-				menu.add(registerDynMenuItem("In Datei exportieren",              HTGT.class.getName(), "exportFile"));
+				menu.add(registerDynMenuItem("Aus Datei importieren",               HTGT.class.getName(), "importFile"));
+				menu.add(registerDynMenuItem("In Datei exportieren",                HTGT.class.getName(), "exportFile"));
 				break;
 
 			case "view":
-				menu.add(registerDynMenuItem("Profil auswählen",                  HTGT.class.getName(), "selectProfile"));
+				menu.add(registerDynMenuItem("Profil auswählen",                    HTGT.class.getName(), "selectProfile"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aktualisieren",                     HTGT.class.getName(), "reloadFile"));
+				menu.add(registerDynMenuItem("Aktualisieren",                       HTGT.class.getName(), "reloadFile"));
 				break;
 
 			case "api":
-				menu.add(registerDynMenuItem("Geister hochladen",                 HTGT.class.getName(), "ghostUpload"));
-				menu.add(registerDynMenuItem("Geister durch ID(s) herunterladen", HTGT.class.getName(), "ghostDownload"));
-				menu.add(registerDynMenuItem("Geist auswählen und herunterladen", HTGT.class.getName(), "ghostSelect"));
+				menu.add(registerDynMenuItem("Geister hochladen",                   HTGT.class.getName(), "ghostUpload"));
+				menu.add(registerDynMenuItem("Geister durch ID(s) herunterladen",   HTGT.class.getName(), "ghostDownload"));
+				menu.add(registerDynMenuItem("Geist auswählen und herunterladen",   HTGT.class.getName(), "ghostSelect"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem(FF_TITLE + " aktivieren",            HTGT.class.getName(), "fastFollow"));
-				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails anzeigen",  HTGT.class.getName(), "playerInfo"));
+				menu.add(registerDynMenuItem(FF_TITLE + " (nur pB's hochladen)",    HTGT.class.getName(), "fastFollow"));
+				menu.add(registerDynMenuItem(FF_TITLE + " (immer alles hochladen)", HTGT.class.getName(), "fastFollowForce"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("API-Token ändern",                  HTGT.class.getName(), "setupToken"));
-				menu.add(new DynamicMenuItem("API-Token löschen",                 HTGT.class.getName(), "deleteToken"));
+				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails anzeigen",    HTGT.class.getName(), "playerInfo"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(new DynamicMenuItem("API-Token ändern",                    HTGT.class.getName(), "setupToken"));
+				menu.add(new DynamicMenuItem("API-Token löschen",                   HTGT.class.getName(), "deleteToken"));
 				break;
 
 			case "help":
-				menu.add(new DynamicMenuItem("Prüfung auf Updates",               HTGT.class.getName(), "updateCheck"));
-				menu.add(registerDynMenuItem("DLL-Datei überprüfen",              HTGT.class.getName(), "updateCheckDLL"));
+				menu.add(new DynamicMenuItem("Prüfung auf Updates",                 HTGT.class.getName(), "updateCheck"));
+				menu.add(registerDynMenuItem("DLL-Datei überprüfen",                HTGT.class.getName(), "updateCheckDLL"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Standardpfad einstellen",           HTGT.class.getName(), "changeDefaultFile"));
-				menu.add(new DynamicMenuItem("Standardpfad zurücksetzen",         HTGT.class.getName(), "resetDefaultFile"));
-				menu.add(new DynamicMenuItem("Konfiguration löschen",             HTGT.class.getName(), "clearConfigDialog"));
+				menu.add(new DynamicMenuItem("Standardpfad einstellen",             HTGT.class.getName(), "changeDefaultFile"));
+				menu.add(new DynamicMenuItem("Standardpfad zurücksetzen",           HTGT.class.getName(), "resetDefaultFile"));
+				menu.add(new DynamicMenuItem("Konfiguration löschen",               HTGT.class.getName(), "clearConfigDialog"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Über diese App",                    HTGT.class.getName(), "about"));
+				menu.add(new DynamicMenuItem("Über diese App",                      HTGT.class.getName(), "about"));
 				break;
 		}
 
@@ -627,22 +629,37 @@ public class HTGT
 		}
 	}
 
+	public static void fastFollowForce()
+	{
+		fastFollow(true);
+	}
+
 	public static void fastFollow()
+	{
+		fastFollow(false);
+	}
+
+	public static void fastFollow(boolean force)
 	{
 		if(OfflineProfiles != null && !unsavedChanges())
 		{
 			if(profile != OfflineProfiles.defaultProfile())
 			{
-				if(!prepareAPI())
+				try
 				{
-					return;
-				}
-
-				while(true)
-				{
-					try
+					if(!prepareAPI())
 					{
-						JOptionPane msg = new JOptionPane(String.format("Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%nSobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%nWichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%nÄnderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%nDu kannst diesen Modus jederzeit abbrechen..."), JOptionPane.PLAIN_MESSAGE);
+						return;
+					}
+
+					// Diese API-Anfrage ist hier noch nicht notwendig.
+					// Dadurch wird aber schon hier geprüft, ob der Token
+					// gültig ist und ob aktive Strecken verfügbar sind.
+					int[][] results = api.getAllResults();
+
+					while(true)
+					{
+						JOptionPane msg = new JOptionPane(String.format("Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%nSobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%nWichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%nÄnderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%nDu kannst diesen Modus jederzeit beenden..."), JOptionPane.PLAIN_MESSAGE);
 						msg.setOptions(new String[]{"Abbrechen"});
 						ffDialog = msg.createDialog(FF_TITLE);
 
@@ -701,6 +718,9 @@ public class HTGT
 							int lastUploadedTrack = -1;
 							int lastUploadedWeather = -1;
 							boolean lastFromDefault = false;
+							boolean realUpload = false;
+
+							ArrayList<ArrayList> ghosts = new ArrayList<ArrayList>();
 
 							for(int t = 0; t < tracks.length; t++)
 							{
@@ -708,9 +728,13 @@ public class HTGT
 								{
 									if((oldProfileGhosts[t][w] == null && newProfileGhosts[t][w] != null) || (oldProfileGhosts[t][w] != null && newProfileGhosts[t][w] != null && oldProfileGhosts[t][w].getTime() != newProfileGhosts[t][w].getTime()))
 									{
-										dbg(String.format("Changed result: %s / %s%n", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+										dbg(String.format("Changed result: %s / %s", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
 
-										ghostUpload(newProfileGhosts[t][w], true);
+										// ghostUpload(newProfileGhosts[t][w], true);
+
+										ArrayList<Object> item = new ArrayList<Object>(3);
+										item.add(t); item.add(w); item.add(newProfileGhosts[t][w]);
+										ghosts.add(item);
 
 										lastUploadedTrack = t;
 										lastUploadedWeather = w;
@@ -726,9 +750,13 @@ public class HTGT
 									{
 										if((oldDefaultGhosts[t][w] == null && newDefaultGhosts[t][w] != null) || (oldDefaultGhosts[t][w] != null && newDefaultGhosts[t][w] != null && oldDefaultGhosts[t][w].getTime() != newDefaultGhosts[t][w].getTime()))
 										{
-											dbg(String.format("Changed (default) result: %s / %s%n", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+											dbg(String.format("Changed (default) result: %s / %s", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
 
-											ghostUpload(newDefaultGhosts[t][w], true);
+											// ghostUpload(newDefaultGhosts[t][w], true);
+
+											ArrayList<Object> item = new ArrayList<Object>(3);
+											item.add(t); item.add(w); item.add(newDefaultGhosts[t][w]);
+											ghosts.add(item);
 
 											lastUploadedTrack = t;
 											lastUploadedWeather = w;
@@ -738,7 +766,36 @@ public class HTGT
 								}
 							}
 
-							if(lastUploadedTrack > -1 && lastUploadedWeather > -1)
+							if(ghosts.size() > 0)
+							{
+								results = api.getAllResults();
+
+								for(int i = 0; i < ghosts.size(); i++)
+								{
+									ArrayList item = ghosts.get(i);
+									GhostElement ghost = (GhostElement) item.get(2);
+									int w = (int) item.get(1); int t = (int) item.get(0);
+
+									if(results[t][w] == -1 || ghost.getTime() < results[t][w])
+									{
+										dbg(String.format("Uploading ghost: %s", ghost.getDebugDetails()));
+										ghostUpload(ghost, true);
+										realUpload = true;
+									}
+									else
+									{
+										dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[t][w], ghost.getDebugDetails()));
+
+										if(force)
+										{
+											dbg("Still uploading it because we are in FORCE mode...");
+											ghostUpload(new GhostElement[]{ghost}, true, true);
+										}
+									}
+								}
+							}
+
+							if(realUpload && lastUploadedTrack > -1 && lastUploadedWeather > -1)
 							{
 								if(/*lastFromDefault &&*/ newProfileGhosts[lastUploadedTrack][lastUploadedWeather] != null)
 								{
@@ -767,15 +824,22 @@ public class HTGT
 
 						// Thread.sleep(1000);
 					}
-					catch(InterruptedException e)
-					{
-						e.printStackTrace();
-					}
-					catch(Exception e)
-					{
-						exceptionHandler(e);
-						return;
-					}
+				}
+				catch(eSportsAPIException e)
+				{
+					APIError(e, "Da ist etwas schief gegangen...");
+				}
+				catch(InterruptedException e)
+				{
+					e.printStackTrace();
+				}
+				catch(Exception e)
+				{
+					exceptionHandler(e);
+				}
+				finally
+				{
+					return;
 				}
 			}
 			else
@@ -1422,29 +1486,29 @@ public class HTGT
 			ghosts[i] = OfflineProfiles.getGhost(selection[i]);
 		}
 
-		return ghostUpload(ghosts, false);
+		return ghostUpload(ghosts, false, false);
 	}
 
 	// Interne Funktion für den sofortigen Upload eines Geists.
 	private static boolean ghostUpload(GhostElement ghost)
 	{
-		return ghostUpload(new GhostElement[]{ghost}, false);
+		return ghostUpload(new GhostElement[]{ghost}, false, false);
 	}
 
 	// ...
 	private static boolean ghostUpload(GhostElement ghost, boolean silent)
 	{
-		return ghostUpload(new GhostElement[]{ghost}, silent);
+		return ghostUpload(new GhostElement[]{ghost}, silent, false);
 	}
 
 	// ...
 	private static boolean ghostUpload(GhostElement[] ghosts)
 	{
-		return ghostUpload(ghosts, false);
+		return ghostUpload(ghosts, false, false);
 	}
 
 	// Interne Funktion für den sofortigen Upload von Geistern.
-	private static boolean ghostUpload(GhostElement[] ghosts, boolean silent)
+	private static boolean ghostUpload(GhostElement[] ghosts, boolean silent, boolean doNotApply)
 	{
 		int[] ghostIDs = null;
 		boolean error = false;
@@ -1474,7 +1538,7 @@ public class HTGT
 			GhostElement ghost = ghosts[i];
 			dbg(String.format("Item #%d uploaded as ghost ID %d: %s", i, ghostIDs[i], ghost.getDebugDetails()));
 
-			if(confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
+			if(!doNotApply && confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
 			{
 				try
 				{
