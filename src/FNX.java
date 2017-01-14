@@ -18,6 +18,9 @@
  */
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
@@ -25,6 +28,9 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
 import java.net.URLEncoder;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -233,4 +239,73 @@ public abstract class FNX
 		JOptionPane.showMessageDialog(null, jsp, title, JOptionPane.ERROR_MESSAGE);
 	}
 	*/
+
+	public static String sha512(File file)
+	{
+		int length;
+		byte[] block;
+		byte[] bytes;
+
+		InputStream in;
+		MessageDigest md;
+
+		StringBuilder sb;
+		String hash = null;
+
+		try
+		{
+			in = new FileInputStream(file);
+			md = MessageDigest.getInstance("SHA-512");
+
+			block = new byte[4096];
+			while((length = in.read(block)) > 0)
+			{
+				md.update(block, 0, length);
+			}
+
+			bytes = md.digest();
+			sb = new StringBuilder();
+
+			for(int i = 0; i < bytes.length; i++)
+			{
+				sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+			}
+
+			hash = sb.toString();
+		}
+		catch(NoSuchAlgorithmException|IOException e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+
+		return hash;
+	}
+
+	public static String sha512(String input)
+	{
+		byte[] bytes;
+		StringBuilder sb;
+		String hash = null;
+
+		try
+		{
+			bytes = MessageDigest.getInstance("SHA-512").digest(input.getBytes("UTF-8"));
+			sb = new StringBuilder();
+
+			for(int i=0; i< bytes.length ;i++)
+			{
+				sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+			}
+
+			hash = sb.toString();
+		}
+		catch(NoSuchAlgorithmException|UnsupportedEncodingException e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+
+		return hash;
+	}
 }

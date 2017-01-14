@@ -87,6 +87,7 @@ public class HTGT
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
 
 	// Konfigurationsnamen für java.util.prefs
+	private static String CFG_DC      = "dll-check";
 	private static String CFG_UC      = "update-check";
 	private static String CFG_DEFAULT = "default-file";
 	private static String CFG_TOKEN   = "esports-token";
@@ -96,6 +97,7 @@ public class HTGT
 	private static String CFG_TRACK   = "last-track";
 
 	private static Preferences                cfg;
+	private static File                       dll;
 	private static File                       file;
 	private static int                        profile;
 	private static String                     nickname;
@@ -306,6 +308,7 @@ public class HTGT
 
 			case "help":
 				menu.add(new DynamicMenuItem("Prüfung auf Updates",               HTGT.class.getName(), "updateCheck"));
+				menu.add(registerDynMenuItem("DLL-Datei überprüfen",              HTGT.class.getName(), "updateCheckDLL"));
 				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("Standardpfad einstellen",           HTGT.class.getName(), "changeDefaultFile"));
 				menu.add(new DynamicMenuItem("Standardpfad zurücksetzen",         HTGT.class.getName(), "resetDefaultFile"));
@@ -353,6 +356,7 @@ public class HTGT
 
 	private static void reset()
 	{
+		dll             = null;
 		file            = null;
 		OfflineProfiles = null;
 		profile         = 0;
@@ -866,6 +870,83 @@ public class HTGT
 					{
 						addGhost(ghosts[t][w], true);
 					}
+				}
+			}
+		}
+	}
+
+	public static void updateCheckDLL()
+	{
+		updateCheckDLL(true, false);
+	}
+
+	protected static void updateCheckDLL(boolean force, boolean auto)
+	{
+		long lastDLLCheck;
+		int newDLLAvailable;
+
+		if(dll == null || !dll.exists() || !dll.isFile())
+		{
+			dbg("DLL not initialized or not found.");
+
+			if(!auto)
+			{
+				errorMessage(null, "Es wurde keine DLL-Datei gefunden.");
+			}
+
+			return;
+		}
+
+		Date date = new Date();
+		lastDLLCheck = cfg.getLong(CFG_DC, 0L);
+		dbg(String.format("Current time: %d", date.getTime()));
+		dbg(String.format("Last DLL check: %d", lastDLLCheck));
+		dbg(String.format("Check interval: %d", UPDATE_INTERVAL));
+
+		if(lastDLLCheck <= 0L || date.getTime() > (lastDLLCheck + UPDATE_INTERVAL))
+		{
+			cfg.putLong(CFG_DC, date.getTime());
+			force = true;
+		}
+
+		if(force)
+		{
+			if(anonAPI == null)
+			{
+				// Der Token wird absichtlich nicht mitgesendet!
+				anonAPI = new eSportsAPI(null, APPLICATION_IDENT);
+			}
+
+			try
+			{
+				// TODO: Check for NULL?
+				String hash = FNX.sha512(dll);
+				dbg(String.format("SHA512: %s", hash));
+
+				if(anonAPI.updateAvailable("SC.DLL", hash, auto))
+				{
+					dbg("New DLL available!" + ((auto) ? " (autocheck)" : ""));
+					infoDialog("Es ist eine neuere DLL-Datei verfügbar! Besuche das Forum, um sie herunterzuladen.");
+				}
+				else
+				{
+					dbg("No new DLL available..." + ((auto) ? " (autocheck)" : ""));
+
+					if(!auto)
+					{
+						infoDialog("Es gibt keine neuere DLL-Datei, du verwendest bereits die aktuellste Version.");
+					}
+				}
+			}
+			catch(eSportsAPIException e)
+			{
+				if(!auto)
+				{
+					APIError(e, "Prüfung der DLL-Datei fehlgeschlagen!");
+				}
+				else
+				{
+					e.printStackTrace();
 				}
 			}
 		}
@@ -1712,6 +1793,26 @@ public class HTGT
 			reset();
 			exceptionHandler(e, "Die XML-Datei konnte nicht geöffnet werden!");
 		}
+
+		checkDLL();
+	}
+
+	private static void checkDLL()
+	{
+		if(dll == null)
+		{
+			dll = new File(String.format("%2$s%1$s%3$s%1$s%4$s", File.separator, file.getParent().toString(), "Managed", "Assembly-CSharp.dll"));
+		}
+
+		if(dll.exists() && dll.isFile())
+		{
+			dbg(String.format("DLL file exists: %s", dll.getAbsolutePath().toString()));
+			new Thread(new HTGT_Background(HTGT_Background.EXEC_DLLCHECK)).start();
+		}
+		else
+		{
+			dbg(String.format("DLL file not found: %s", dll.getAbsolutePath().toString()));
+		}
 	}
 
 	// Standardpfad je nach OS öffnen.
@@ -2195,6 +2296,7 @@ class HTGT_Background implements Runnable
 {
 	public static final int EXEC_UPDATECHECK = 1;
 	public static final int EXEC_FASTFOLLOW  = 2;
+	public static final int EXEC_DLLCHECK    = 3;
 
 	private int exec;
 
@@ -2214,6 +2316,10 @@ class HTGT_Background implements Runnable
 
 			case EXEC_FASTFOLLOW:
 				HTGT.fastFollowWorker();
+				break;
+
+			case EXEC_DLLCHECK:
+				HTGT.updateCheckDLL(false, true);
 				break;
 		}
 	}
