@@ -633,6 +633,11 @@ public class HTGT
 		{
 			if(profile != OfflineProfiles.defaultProfile())
 			{
+				if(!prepareAPI())
+				{
+					return;
+				}
+
 				while(true)
 				{
 					try
