@@ -796,7 +796,7 @@ public class HTGT
 									int t = (int) item.get(1);
 									int m = (int) item.get(0);
 
-									if(results[m][t][w] == -1 || ghost.getTime() < results[m][t][w])
+									if(results[m][t][w] == -1 || (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[m][t][w]))
 									{
 										dbg(String.format("Uploading ghost: %s", ghost.getDebugDetails()));
 										ghostUpload(ghost, true);

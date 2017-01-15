@@ -44,6 +44,11 @@ public abstract class gmHelper
 
 	private static DateFormat ResultFormat;
 
+	public static boolean isReverseGameMode(int gameModeType)
+	{
+		return (gameModeType == GAMEMODE_MM_TIMEATTACK);
+	}
+
 	public static String getGameMode(int gameModeType, boolean uppercase) throws gmException
 	{
 		String gameModeString = getGameMode(gameModeType);
