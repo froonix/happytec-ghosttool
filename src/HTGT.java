@@ -1166,6 +1166,14 @@ public class HTGT
 		{
 			// DEBUG/TEST ONLY!
 			mainWindow.toFront();
+
+			if(mainWindow.isAlwaysOnTopSupported())
+			{
+				// http://stackoverflow.com/a/18015090
+				boolean aot = mainWindow.isAlwaysOnTop();
+				mainWindow.setAlwaysOnTop(true);
+				mainWindow.setAlwaysOnTop(aot);
+			}
 		}
 
 		dbg(String.format("New yes/no confirm dialog: %s", title));
