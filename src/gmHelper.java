@@ -376,4 +376,11 @@ public abstract class gmHelper
 
 		return values;
 	}
+
+	public static int[] getGameModeIDs()
+	{
+		int[] values = {GAMEMODE_DEFAULT, GAMEMODE_MM_ROWDY, GAMEMODE_MM_TIMEATTACK, GAMEMODE_MM_ARCADE, GAMEMODE_MM_EXTREME, GAMEMODE_MM_EXTREMEICE, GAMEMODE_MM_LASTDOWNSWING};
+
+		return values;
+	}
 }

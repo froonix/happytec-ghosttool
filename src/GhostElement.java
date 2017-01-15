@@ -52,10 +52,10 @@ public class GhostElement
 	private static Pattern GhostsPattern;
 
 	private Element XML;
+	private int     GameMode;
 	private String  Track;
 	private int     Weather;
 	private int     Time;
-	private String  GameMode;
 	private String  DataRaw;
 	private byte[]  DataBinary;
 	private String  Nickname;
@@ -157,10 +157,11 @@ public class GhostElement
 
 		try
 		{
-			String weatherString = xml.getAttribute("Weather");
+			String weatherString = xml.getAttribute("Weather").toUpperCase();
+			String gameModeString = xml.getAttribute("GameMode").toUpperCase();
+
 			this.Track = xml.getAttribute("Track").toLowerCase();
 			this.Time = FNX.intval(xml.getAttribute("Time"), true);
-			this.GameMode = xml.getAttribute("GameMode").toUpperCase();
 			this.DataRaw = xml.getAttribute("Data");
 
 			if(this.Time <= 0 || this.Time > 660000)
@@ -175,9 +176,15 @@ public class GhostElement
 			{
 				throw new GhostException("Attribute \"Weather\" is missing or empty.");
 			}
+			/*
 			else if(!this.GameMode.equals("DEFAULT"))
 			{
 				throw new GhostException("Attribute \"GameMode\" is missing, empty or value is unsupported.");
+			}
+			*/
+			else if(gameModeString.length() == 0)
+			{
+				throw new GhostException("Attribute \"GameMode\" is missing or empty.");
 			}
 			else if(this.Track.length() == 0 || !Arrays.asList(gmHelper.getTracks(true)).contains(this.Track))
 			{
@@ -185,6 +192,7 @@ public class GhostElement
 			}
 
 			this.Weather = gmHelper.parseWeather(weatherString);
+			this.GameMode = gmHelper.parseGameMode(gameModeString);
 			this.DataBinary = Base64.getDecoder().decode(this.DataRaw);
 
 			// Normalerweise gehört das mit Google's Protocol Buffers extrahiert.
@@ -234,9 +242,23 @@ public class GhostElement
 		return this.XML;
 	}
 
-	public String getGameMode()
+	public int getGameMode()
 	{
 		return this.GameMode;
+	}
+
+	public String getGameModeName()
+	{
+		try
+		{
+			return gmHelper.getGameModeName(this.GameMode);
+		}
+		catch(gmException e)
+		{
+			e.printStackTrace();
+
+			return null;
+		}
 	}
 
 	public String getNickname()
@@ -301,10 +323,10 @@ public class GhostElement
 		{
 			System.out.printf("--------------------------------%n");
 			System.out.printf(" Nick:    %s%n", this.getNickname());
-			// System.out.printf(" Mode:    %s%n", this.GameMode);
 			System.out.printf(" Time:    %s (%d)%n", this.getResult(), this.getTime());
 			System.out.printf(" Track:   [%s] %s%n", this.getTrack().toUpperCase(), this.getTrackName());
 			System.out.printf(" Weather: [%s] %s (%d)%n", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
+			System.out.printf(" Mode:    [%s] %s (%d)%n", gmHelper.getGameMode(this.GameMode).toUpperCase(), this.getGameModeName(), this.getGameMode());
 			System.out.printf(" Ski:     %d-%d-%d%n", this.Ski[0], this.Ski[1], this.Ski[2]);
 			// System.out.printf("%n%s%n", DataRaw);
 			System.out.printf("--------------------------------%n");
@@ -321,7 +343,7 @@ public class GhostElement
 	{
 		try
 		{
-			return String.format("%s @ %s (%s/%s) - %s (%d-%d-%d)", this.getNickname(), this.getTrack().toUpperCase(), this.getGameMode(), gmHelper.getWeather(this.Weather).toUpperCase(), this.getTime(), this.Ski[0], this.Ski[1], this.Ski[2]);
+			return String.format("%s @ %s (%s/%s) - %s (%d-%d-%d)", this.getNickname(), this.getTrack().toUpperCase(), gmHelper.getGameMode(this.getGameMode()).toUpperCase(), gmHelper.getWeather(this.Weather).toUpperCase(), this.getTime(), this.Ski[0], this.Ski[1], this.Ski[2]);
 		}
 		catch(gmException e)
 		{

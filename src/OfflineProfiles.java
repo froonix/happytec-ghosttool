@@ -175,7 +175,7 @@ public class OfflineProfiles
 		return this.GhostElements.get(index);
 	}
 
-	public int[] getGhostsByCondition(String track, int weather)
+	public int[] getGhostsByCondition(int mode, String track, int weather)
 	{
 		track = track.toLowerCase();
 		ArrayList<Integer> ghosts = new ArrayList<Integer>();
@@ -184,7 +184,7 @@ public class OfflineProfiles
 		{
 			GhostElement ghost = this.getGhost(i);
 
-			if(ghost.getTrack().toLowerCase().equals(track) && ghost.getWeather() == weather)
+			if(ghost.getGameMode() == mode && ghost.getTrack().toLowerCase().equals(track) && ghost.getWeather() == weather)
 			{
 				ghosts.add(i);
 			}
@@ -195,38 +195,42 @@ public class OfflineProfiles
 
 	public int[] getGhostsByCondition(GhostElement ghost)
 	{
-		return this.getGhostsByCondition(ghost.getTrack(), ghost.getWeather());
+		return this.getGhostsByCondition(ghost.getGameMode(), ghost.getTrack(), ghost.getWeather());
 	}
 
-	public GhostElement[][] getAllGhosts()
+	public GhostElement[][][] getAllGhosts()
 	{
 		return this.getAllGhosts(false);
 	}
 
-	public GhostElement[][] getAllGhosts(boolean warn)
+	public GhostElement[][][] getAllGhosts(boolean warn)
 	{
+		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs();
 
-		GhostElement result[][] = new GhostElement[tracks.length][weathers.length];
+		GhostElement result[][][] = new GhostElement[modes.length][tracks.length][weathers.length];
 
-		for(int t = 0; t < tracks.length; t++)
+		for(int m = 0; m < modes.length; m++)
 		{
-			for(int w = 0; w < weathers.length; w++)
+			for(int t = 0; t < tracks.length; t++)
 			{
-				int[] ghosts = this.getGhostsByCondition(tracks[t], weathers[w]);
+				for(int w = 0; w < weathers.length; w++)
+				{
+					int[] ghosts = this.getGhostsByCondition(modes[m], tracks[t], weathers[w]);
 
-				if(ghosts.length > 1 && warn)
-				{
-					return null;
-				}
-				else if(ghosts.length > 0)
-				{
-					result[t][w] = this.getGhost(ghosts[0]);
-				}
-				else
-				{
-					result[t][w] = null;
+					if(ghosts.length > 1 && warn)
+					{
+						return null;
+					}
+					else if(ghosts.length > 0)
+					{
+						result[m][t][w] = this.getGhost(ghosts[0]);
+					}
+					else
+					{
+						result[m][t][w] = null;
+					}
 				}
 			}
 		}

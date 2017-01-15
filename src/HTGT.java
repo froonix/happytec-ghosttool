@@ -205,7 +205,7 @@ public class HTGT
 		mainWindow.addWindowListener(new HTGT_WindowAdapter());
 
 		Object rowData[][] = {};
-		Object columnNames[] = {"Spieler", "Strecke", "Wetter", "Ski", "Ergebnis"};
+		Object columnNames[] = {"Spieler", "Spielmodus", "Strecke", "Wetter", "Ski", "Ergebnis"};
 
 		mainmodel = new DefaultTableModel(rowData, columnNames);
 		maintable = new HTGT_JTable(mainmodel);
@@ -605,7 +605,7 @@ public class HTGT
 			}
 		}
 
-		Object tmp[] = { ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), gmHelper.formatSki(ghost.getSki()), ghost.getResult() };
+		Object tmp[] = {ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), gmHelper.formatSki(ghost.getSki()), ghost.getResult()};
 		mainmodel.addRow(tmp);
 		showTableHeader();
 	}
@@ -655,7 +655,7 @@ public class HTGT
 					// Diese API-Anfrage ist hier noch nicht notwendig.
 					// Dadurch wird aber schon hier geprüft, ob der Token
 					// gültig ist und ob aktive Strecken verfügbar sind.
-					int[][] results = api.getAllResults();
+					int[][][] results = api.getAllResults();
 
 					while(true)
 					{
@@ -680,8 +680,8 @@ public class HTGT
 						{
 							dbg("We are back in the main thread!");
 
-							GhostElement[][] oldProfileGhosts = null;
-							GhostElement[][] oldDefaultGhosts = null;
+							GhostElement[][][] oldProfileGhosts = null;
+							GhostElement[][][] oldDefaultGhosts = null;
 							int oldProfileCount = OfflineProfiles.getProfileCount();
 							int oldDefaultProfile = OfflineProfiles.defaultProfile();
 
@@ -696,8 +696,8 @@ public class HTGT
 
 							reloadFile(true);
 
-							GhostElement[][] newProfileGhosts = null;
-							GhostElement[][] newDefaultGhosts = null;
+							GhostElement[][][] newProfileGhosts = null;
+							GhostElement[][][] newDefaultGhosts = null;
 							int newProfileCount = OfflineProfiles.getProfileCount();
 							int newDefaultProfile = OfflineProfiles.defaultProfile();
 
@@ -717,10 +717,12 @@ public class HTGT
 								OfflineProfiles.selectProfile(profile);
 							}
 
+							int[] modes = gmHelper.getGameModeIDs();
 							String[] tracks = gmHelper.getTracks(true);
 							int[] weathers = gmHelper.getWeatherIDs();
 
 							String currentGhost = "";
+							int lastUploadedMode = -1;
 							int lastUploadedTrack = -1;
 							int lastUploadedWeather = -1;
 							boolean lastFromDefault = false;
@@ -728,45 +730,55 @@ public class HTGT
 
 							ArrayList<ArrayList> ghosts = new ArrayList<ArrayList>();
 
-							for(int t = 0; t < tracks.length; t++)
+							for(int m = 0; m < modes.length; m++)
 							{
-								for(int w = 0; w < weathers.length; w++)
+								for(int t = 0; t < tracks.length; t++)
 								{
-									if((oldProfileGhosts[t][w] == null && newProfileGhosts[t][w] != null) || (oldProfileGhosts[t][w] != null && newProfileGhosts[t][w] != null && oldProfileGhosts[t][w].getTime() != newProfileGhosts[t][w].getTime()))
+									for(int w = 0; w < weathers.length; w++)
 									{
-										dbg(String.format("Changed result: %s / %s", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+										if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
+										{
+											dbg(String.format("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
 
-										// ghostUpload(newProfileGhosts[t][w], true);
+											// ghostUpload(newProfileGhosts[t][w], true);
 
-										ArrayList<Object> item = new ArrayList<Object>(3);
-										item.add(t); item.add(w); item.add(newProfileGhosts[t][w]);
-										ghosts.add(item);
+											ArrayList<Object> item = new ArrayList<Object>(4);
+											item.add(m); item.add(t); item.add(w);
+											item.add(newProfileGhosts[m][t][w]);
+											ghosts.add(item);
 
-										lastUploadedTrack = t;
-										lastUploadedWeather = w;
+											lastUploadedMode = m;
+											lastUploadedTrack = t;
+											lastUploadedWeather = w;
+										}
 									}
 								}
 							}
 
 							if(newDefaultProfile > -1)
 							{
-								for(int t = 0; t < tracks.length; t++)
+								for(int m = 0; m < modes.length; m++)
 								{
-									for(int w = 0; w < weathers.length; w++)
+									for(int t = 0; t < tracks.length; t++)
 									{
-										if((oldDefaultGhosts[t][w] == null && newDefaultGhosts[t][w] != null) || (oldDefaultGhosts[t][w] != null && newDefaultGhosts[t][w] != null && oldDefaultGhosts[t][w].getTime() != newDefaultGhosts[t][w].getTime()))
+										for(int w = 0; w < weathers.length; w++)
 										{
-											dbg(String.format("Changed (default) result: %s / %s", gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+											if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
+											{
+												dbg(String.format("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
 
-											// ghostUpload(newDefaultGhosts[t][w], true);
+												// ghostUpload(newDefaultGhosts[t][w], true);
 
-											ArrayList<Object> item = new ArrayList<Object>(3);
-											item.add(t); item.add(w); item.add(newDefaultGhosts[t][w]);
-											ghosts.add(item);
+												ArrayList<Object> item = new ArrayList<Object>(4);
+												item.add(m); item.add(t); item.add(w);
+												item.add(newDefaultGhosts[m][t][w]);
+												ghosts.add(item);
 
-											lastUploadedTrack = t;
-											lastUploadedWeather = w;
-											lastFromDefault = true;
+												lastUploadedMode = m;
+												lastUploadedTrack = t;
+												lastUploadedWeather = w;
+												lastFromDefault = true;
+											}
 										}
 									}
 								}
@@ -779,10 +791,12 @@ public class HTGT
 								for(int i = 0; i < ghosts.size(); i++)
 								{
 									ArrayList item = ghosts.get(i);
-									GhostElement ghost = (GhostElement) item.get(2);
-									int w = (int) item.get(1); int t = (int) item.get(0);
+									GhostElement ghost = (GhostElement) item.get(3);
+									int w = (int) item.get(2);
+									int t = (int) item.get(1);
+									int m = (int) item.get(0);
 
-									if(results[t][w] == -1 || ghost.getTime() < results[t][w])
+									if(results[m][t][w] == -1 || ghost.getTime() < results[m][t][w])
 									{
 										dbg(String.format("Uploading ghost: %s", ghost.getDebugDetails()));
 										ghostUpload(ghost, true);
@@ -790,7 +804,7 @@ public class HTGT
 									}
 									else
 									{
-										dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[t][w], ghost.getDebugDetails()));
+										dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[m][t][w], ghost.getDebugDetails()));
 
 										if(force)
 										{
@@ -801,16 +815,16 @@ public class HTGT
 								}
 							}
 
-							if(realUpload && lastUploadedTrack > -1 && lastUploadedWeather > -1)
+							if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather > -1)
 							{
-								if(/*lastFromDefault &&*/ newProfileGhosts[lastUploadedTrack][lastUploadedWeather] != null)
+								if(/*lastFromDefault &&*/ newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
 								{
-									currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedTrack][lastUploadedWeather].getResult());
+									currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
 								}
 
-								if(confirmDialog(FF_TITLE, String.format("Willst du für %s (%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getWeatherName(weathers[lastUploadedWeather]), currentGhost)))
+								if(confirmDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(weathers[lastUploadedWeather]), currentGhost)))
 								{
-									if(ghostSelect(tracks[lastUploadedTrack], weathers[lastUploadedWeather], true))
+									if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], weathers[lastUploadedWeather], true))
 									{
 										if(OfflineProfiles.changed() && !saveFile(true))
 										{
@@ -918,7 +932,7 @@ public class HTGT
 	{
 		if(OfflineProfiles != null)
 		{
-			GhostElement[][] ghosts;
+			GhostElement[][][] ghosts;
 
 			if((ghosts = OfflineProfiles.getAllGhosts(true)) == null)
 			{
@@ -937,13 +951,16 @@ public class HTGT
 				deleteGhost(i);
 			}
 
-			for(int t = 0; t < ghosts.length; t++)
+			for(int m = 0; m < ghosts.length; m++)
 			{
-				for(int w = 0; w < ghosts[t].length; w++)
+				for(int t = 0; t < ghosts[m].length; t++)
 				{
-					if(ghosts[t][w] != null)
+					for(int w = 0; w < ghosts[m][t].length; w++)
 					{
-						addGhost(ghosts[t][w], true);
+						if(ghosts[m][t][w] != null)
+						{
+							addGhost(ghosts[m][t][w], true);
+						}
 					}
 				}
 			}
@@ -1781,6 +1798,17 @@ public class HTGT
 		return ghostSelect(track, weather, false);
 	}
 
+	// RESERVIERT FÜR DIE ZUKUNFT! DAS UNTERSTÜTZT DIE API NOCH NICHT!
+	public static boolean ghostSelect(int mode, String track, int weather, boolean force)
+	{
+		if(mode == gmHelper.GAMEMODE_DEFAULT)
+		{
+			return ghostSelect(track, weather, force);
+		}
+
+		return false;
+	}
+
 	// Ermöglicht alle Rückfragen zu umgehen, die beim Download auftreten.
 	public static boolean ghostSelect(String track, int weather, boolean force)
 	{
@@ -2357,13 +2385,17 @@ class HTGT_JTable extends JTable
 	@Override
 	public TableCellRenderer getCellRenderer(int row, int column)
 	{
-		if(column > 0)
+		if(column == 0)
+		{
+			return renderLeft;
+		}
+		else if(column == 5)
 		{
 			return renderRight;
 		}
 		else
 		{
-			return renderLeft;
+			return renderCenter;
 		}
 	}
 

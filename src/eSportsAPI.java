@@ -284,20 +284,24 @@ public class eSportsAPI
 		}
 	}
 
-	public int[][] getAllResults() throws eSportsAPIException
+	public int[][][] getAllResults() throws eSportsAPIException
 	{
+		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs();
 
-		// Es ist intern wesentlich einfacher mit numerischen Schlüsseln
-		// zu arbeiten. Eine Map würde nur unnötigen Overhead erzeugen!
-		int results[][] = new int[tracks.length][weathers.length];
+		// Es ist intern wesentlich einfacher mit numerischen Schlüsseln zu arbeiten.
+		// Eine Map würde nur unnötigen Overhead erzeugen, der nicht notwendig ist.
+		int results[][][] = new int[modes.length][tracks.length][weathers.length];
 
-		for(int t = 0; t < tracks.length; t++)
+		for(int m = 0; m < modes.length; m++)
 		{
-			for(int w = 0; w < weathers.length; w++)
+			for(int t = 0; t < tracks.length; t++)
 			{
-				results[t][w] = -1;
+				for(int w = 0; w < weathers.length; w++)
+				{
+					results[m][t][w] = -1;
+				}
 			}
 		}
 
@@ -319,9 +323,20 @@ public class eSportsAPI
 
 					String track = OfflineResult.getAttribute("Track").toLowerCase();
 					String weather = OfflineResult.getAttribute("Weather").toLowerCase();
+					String gamemode = OfflineResult.getAttribute("GameMode").toLowerCase();
 
+					int m = -1;
 					int t = -1;
 					int w = -1;
+
+					for(int h = 0; h < modes.length; h++)
+					{
+						if(gmHelper.getGameMode(modes[h]).equals(gamemode))
+						{
+							m = h;
+							break;
+						}
+					}
 
 					for(int h = 0; h < tracks.length; h++)
 					{
@@ -341,12 +356,12 @@ public class eSportsAPI
 						}
 					}
 
-					if(t == -1 || w == -1 || results[t][w] != -1)
+					if(m == -1 || t == -1 || w == -1 || results[m][t][w] != -1)
 					{
 						throw new eSportsAPIException();
 					}
 
-					results[t][w] = Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent());
+					results[m][t][w] = Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent());
 				}
 			}
 		}
