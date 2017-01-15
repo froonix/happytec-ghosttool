@@ -1162,6 +1162,12 @@ public class HTGT
 
 	private static boolean confirmDialog(int type, String title, String msg)
 	{
+		if(mainWindow != null)
+		{
+			// DEBUG/TEST ONLY!
+			mainWindow.toFront();
+		}
+
 		dbg(String.format("New yes/no confirm dialog: %s", title));
 		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type))
 		{
