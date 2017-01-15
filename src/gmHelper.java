@@ -33,7 +33,151 @@ public abstract class gmHelper
 	//                     QUALIFICATION = 1
 	//                     RACE          = 5
 
+	// Interne Minimode-IDs von HAPPYTEC.
+	public final static int GAMEMODE_DEFAULT          = 0;
+	public final static int GAMEMODE_MM_ROWDY         = 1;
+	public final static int GAMEMODE_MM_TIMEATTACK    = 2;
+	public final static int GAMEMODE_MM_ARCADE        = 3;
+	public final static int GAMEMODE_MM_EXTREME       = 4;
+	public final static int GAMEMODE_MM_EXTREMEICE    = 5; // ACHTUNG: Nur bei Eis verfügbar!
+	public final static int GAMEMODE_MM_LASTDOWNSWING = 6;
+
 	private static DateFormat ResultFormat;
+
+	public static String getGameMode(int gameModeType, boolean uppercase) throws gmException
+	{
+		String gameModeString = getGameMode(gameModeType);
+
+		if(uppercase)
+		{
+			gameModeString = gameModeString.toUpperCase();
+		}
+
+		return gameModeString;
+	}
+
+	public static String getGameMode(int gameModeType) throws gmException
+	{
+		String gameModeString = "";
+
+		switch(gameModeType)
+		{
+			case GAMEMODE_DEFAULT:
+				gameModeString = "default";
+				break;
+
+			case GAMEMODE_MM_ROWDY:
+				gameModeString = "minimode_rowdy";
+				break;
+
+			case GAMEMODE_MM_TIMEATTACK:
+				gameModeString = "minimode_timeattack";
+				break;
+
+			case GAMEMODE_MM_ARCADE:
+				gameModeString = "minimode_arcade";
+				break;
+
+			case GAMEMODE_MM_EXTREME:
+				gameModeString = "minimode_extreme";
+				break;
+
+			case GAMEMODE_MM_EXTREMEICE:
+				gameModeString = "minimode_extremeice";
+				break;
+
+			case GAMEMODE_MM_LASTDOWNSWING:
+				gameModeString = "minimode_lastdownswing";
+				break;
+
+			default:
+				throw new gmException(String.format("Invalid game mode type: %d", gameModeType));
+		}
+
+		return gameModeString;
+	}
+
+	public static String getGameModeName(int gameModeType) throws gmException
+	{
+		String gameModeName = "";
+
+		switch(gameModeType)
+		{
+			case GAMEMODE_DEFAULT:
+				gameModeName = "Standard";
+				break;
+
+			case GAMEMODE_MM_ROWDY:
+				gameModeName = "Freeride";
+				break;
+
+			case GAMEMODE_MM_TIMEATTACK:
+				gameModeName = "Zeitbombe";
+				break;
+
+			case GAMEMODE_MM_ARCADE:
+				gameModeName = "Arcade";
+				break;
+
+			case GAMEMODE_MM_EXTREME:
+				gameModeName = "Extrem";
+				break;
+
+			case GAMEMODE_MM_EXTREMEICE:
+				gameModeName = "Blitzeis";
+				break;
+
+			case GAMEMODE_MM_LASTDOWNSWING:
+				gameModeName = "Talfahrt";
+				break;
+
+			default:
+				throw new gmException(String.format("Invalid game mode type: %d", gameModeType));
+		}
+
+		return gameModeName;
+	}
+
+	public static int parseGameMode(String gameModeString) throws gmException
+	{
+		int gameModeType = -1;
+
+		switch(gameModeString.toLowerCase())
+		{
+			case "default":
+				gameModeType = GAMEMODE_DEFAULT;
+				break;
+
+			case "minimode_rowdy":
+				gameModeType = GAMEMODE_MM_ROWDY;
+				break;
+
+			case "minimode_timeattack":
+				gameModeType = GAMEMODE_MM_TIMEATTACK;
+				break;
+
+			case "minimode_arcade":
+				gameModeType = GAMEMODE_MM_ARCADE;
+				break;
+
+			case "minimode_extreme":
+				gameModeType = GAMEMODE_MM_EXTREME;
+				break;
+
+			case "minimode_extremeice":
+				gameModeType = GAMEMODE_MM_EXTREMEICE;
+				break;
+
+			case "minimode_lastdownswing":
+				gameModeType = GAMEMODE_MM_LASTDOWNSWING;
+				break;
+
+			default:
+				throw new gmException(String.format("Invalid game mode string: %s", gameModeString));
+		}
+
+		return gameModeType;
+	}
 
 	public static String getWeather(int weatherType, boolean uppercase) throws gmException
 	{
