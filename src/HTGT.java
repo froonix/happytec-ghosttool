@@ -659,9 +659,15 @@ public class HTGT
 
 					while(true)
 					{
-						JOptionPane msg = new JOptionPane(String.format("Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%nSobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%nWichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%nÄnderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%nDu kannst diesen Modus jederzeit beenden..."), JOptionPane.PLAIN_MESSAGE);
+						JOptionPane msg = new JOptionPane(String.format(
+							"Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%n" +
+							"Sobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%n" +
+							"Wichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%n" +
+							"Änderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%n" +
+							"Du kannst diesen Modus jederzeit beenden..."
+						), JOptionPane.PLAIN_MESSAGE);
 						msg.setOptions(new String[]{"Abbrechen"});
-						ffDialog = msg.createDialog(FF_TITLE);
+						ffDialog = msg.createDialog(mainWindow, FF_TITLE);
 
 						ffState = true;
 						dbg("Starting worker thread...");
