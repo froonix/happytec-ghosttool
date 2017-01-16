@@ -93,6 +93,7 @@ public class HTGT
 	private static String CFG_TOKEN   = "esports-token";
 	private static String CFG_CWD     = "last-directory";
 	private static String CFG_CWDPORT = "last-port-directory";
+	private static String CFG_MODE    = "last-gamemode";
 	private static String CFG_WEATHER = "last-weather";
 	private static String CFG_TRACK   = "last-track";
 
@@ -1725,13 +1726,72 @@ public class HTGT
 		return false;
 	}
 
-	// Auswahl einer Strecke/Wetter für den Geistdownload. Das passiert
+	// Auswahl eines Spielmodus für den Geistdownload. Das passiert
 	// offline, erst die Rangliste wird über die API vom Server geladen.
 	public static void ghostSelect()
 	{
 		if(OfflineProfiles == null || !prepareAPI())
 		{
 			return;
+		}
+
+		if(true)
+		{
+			// BIS DER API PARAMETER FERTIG IST...
+			ghostSelect(gmHelper.GAMEMODE_DEFAULT);
+			return;
+		}
+
+		Integer input;
+		String selection;
+
+		int[] modes = gmHelper.getGameModeIDs();
+		String[] values = new String[modes.length];
+		String lastMode = cfg(CFG_MODE);
+
+		while(true)
+		{
+			selection = null;
+			for(int i = 0; i < modes.length; i++)
+			{
+				try
+				{
+					values[i] = gmHelper.getGameModeName(modes[i]);
+				}
+				catch(gmException e)
+				{
+					e.printStackTrace();
+					values[i] = "";
+				}
+
+				// TODO: Eigentlich nicht ganz korrekt, da es als "int" verglichen werden müsste. So ist es aber einheitlich und einfacher.
+				if(lastMode != null && lastMode.equals(Integer.toString(modes[i])))
+				{
+					selection = values[i];
+				}
+			}
+
+			if((input = (Integer) inputDialog(APPLICATION_API, "Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst den gewünschten Spielmodus aus:", values, selection)) != null)
+			{
+				lastMode = cfg(CFG_MODE, input.toString());
+
+				if(!ghostSelect(input.intValue()))
+				{
+					continue;
+				}
+			}
+
+			break;
+		}
+	}
+
+	// Auswahl einer Strecke/Wetter für den Geistdownload. Das passiert
+	// offline, erst die Rangliste wird über die API vom Server geladen.
+	public static boolean ghostSelect(int mode)
+	{
+		if(OfflineProfiles == null || !prepareAPI())
+		{
+			return false;
 		}
 
 		Integer input;
@@ -1781,7 +1841,11 @@ public class HTGT
 				lastTrack = cfg(CFG_TRACK, conditions[input][1]);
 				lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
 
-				if(!ghostSelect(lastTrack, Integer.parseInt(lastWeather)))
+				if(ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather)))
+				{
+					return true;
+				}
+				else
 				{
 					continue;
 				}
@@ -1789,6 +1853,8 @@ public class HTGT
 
 			break;
 		}
+
+		return false;
 	}
 
 	// Auswahl eines Geists aus der Rangliste zum Herunterladen.
@@ -1796,6 +1862,12 @@ public class HTGT
 	public static boolean ghostSelect(String track, int weather)
 	{
 		return ghostSelect(track, weather, false);
+	}
+
+	// RESERVIERT FÜR DIE ZUKUNFT! DAS UNTERSTÜTZT DIE API NOCH NICHT!
+	public static boolean ghostSelect(int mode, String track, int weather)
+	{
+		return ghostSelect(mode, track, weather, false);
 	}
 
 	// RESERVIERT FÜR DIE ZUKUNFT! DAS UNTERSTÜTZT DIE API NOCH NICHT!
