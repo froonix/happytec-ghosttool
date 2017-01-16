@@ -1814,9 +1814,19 @@ public class HTGT
 				{
 					int key = (i * weathers.length) + h;
 
+					// TODO: EXTREMEICE darf nur auf Eis stattfinden!
+					// ...
+
 					try
 					{
-						values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+						if(mode == gmHelper.GAMEMODE_DEFAULT)
+						{
+							values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+						}
+						else
+						{
+							values[key] = String.format("%s: %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+						}
 					}
 					catch(gmException e)
 					{
