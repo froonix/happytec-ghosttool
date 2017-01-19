@@ -1578,7 +1578,7 @@ public class HTGT
 			GhostElement ghost = ghosts[i];
 			dbg(String.format("Item #%d uploaded as ghost ID %d: %s", i, ghostIDs[i], ghost.getDebugDetails()));
 
-			if(!doNotApply && confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
+			if(!doNotApply && confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nSpiemodus: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
 			{
 				try
 				{
@@ -1735,13 +1735,6 @@ public class HTGT
 			return;
 		}
 
-		if(true)
-		{
-			// BIS DER API PARAMETER FERTIG IST...
-			ghostSelect(gmHelper.GAMEMODE_DEFAULT);
-			return;
-		}
-
 		Integer input;
 		String selection;
 
@@ -1799,8 +1792,20 @@ public class HTGT
 
 		String[]   tracks     = gmHelper.getTracks();
 		int[]      weathers   = gmHelper.getWeatherIDs();
-		String[]   values     = new String[tracks.length * weathers.length];
-		String[][] conditions = new String[tracks.length * weathers.length][3];
+
+		String[]   values;
+		String[][] conditions;
+
+		if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+		{
+			values     = new String[tracks.length];
+			conditions = new String[tracks.length][3];
+		}
+		else
+		{
+			values     = new String[tracks.length * weathers.length];
+			conditions = new String[tracks.length * weathers.length][3];
+		}
 
 		String lastTrack   = cfg(CFG_TRACK);
 		String lastWeather = cfg(CFG_WEATHER);
@@ -1814,14 +1819,25 @@ public class HTGT
 				{
 					int key = (i * weathers.length) + h;
 
-					// TODO: EXTREMEICE darf nur auf Eis stattfinden!
-					// ...
+					if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+					{
+						if(weathers[h] != gmHelper.WEATHER_ICE)
+						{
+							continue;
+						}
+
+						key = i;
+					}
 
 					try
 					{
 						if(mode == gmHelper.GAMEMODE_DEFAULT)
 						{
 							values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+						}
+						else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+						{
+							values[key] = String.format("%s: %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]));
 						}
 						else
 						{
@@ -1846,7 +1862,7 @@ public class HTGT
 				}
 			}
 
-			if((input = (Integer) inputDialog(APPLICATION_API, "Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst die gewünschte Strecke aus:", values, selection)) != null)
+			if((input = (Integer) inputDialog(APPLICATION_API, "Wähle nun die gewünschte Strecke und das Wetter aus:", values, selection)) != null)
 			{
 				lastTrack = cfg(CFG_TRACK, conditions[input][1]);
 				lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
@@ -1869,30 +1885,13 @@ public class HTGT
 
 	// Auswahl eines Geists aus der Rangliste zum Herunterladen.
 	// Vorher muss bereits nach Strecke/Wetter gefragt worden sein!
-	public static boolean ghostSelect(String track, int weather)
-	{
-		return ghostSelect(track, weather, false);
-	}
-
-	// RESERVIERT FÜR DIE ZUKUNFT! DAS UNTERSTÜTZT DIE API NOCH NICHT!
 	public static boolean ghostSelect(int mode, String track, int weather)
 	{
 		return ghostSelect(mode, track, weather, false);
 	}
 
-	// RESERVIERT FÜR DIE ZUKUNFT! DAS UNTERSTÜTZT DIE API NOCH NICHT!
-	public static boolean ghostSelect(int mode, String track, int weather, boolean force)
-	{
-		if(mode == gmHelper.GAMEMODE_DEFAULT)
-		{
-			return ghostSelect(track, weather, force);
-		}
-
-		return false;
-	}
-
 	// Ermöglicht alle Rückfragen zu umgehen, die beim Download auftreten.
-	public static boolean ghostSelect(String track, int weather, boolean force)
+	public static boolean ghostSelect(int mode, String track, int weather, boolean force)
 	{
 		try
 		{
@@ -1901,7 +1900,7 @@ public class HTGT
 
 			if(OfflineProfiles != null && prepareAPI())
 			{
-				results = api.getResultsByCondition(track, weather);
+				results = api.getResultsByCondition(mode, track, weather);
 
 				if(results.size() > 0)
 				{

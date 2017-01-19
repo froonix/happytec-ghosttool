@@ -236,11 +236,11 @@ public class eSportsAPI
 		}
 	}
 
-	public List<Map<String,Object>> getResultsByCondition(String track, String weather) throws eSportsAPIException
+	public List<Map<String,Object>> getResultsByCondition(String mode, String track, String weather) throws eSportsAPIException
 	{
 		try
 		{
-			return this.getResultsByCondition(track, gmHelper.parseWeather(weather));
+			return this.getResultsByCondition(gmHelper.parseGameMode(mode), track, gmHelper.parseWeather(weather));
 		}
 		catch(gmException e)
 		{
@@ -248,12 +248,14 @@ public class eSportsAPI
 		}
 	}
 
-	public List<Map<String,Object>> getResultsByCondition(String track, int weather) throws eSportsAPIException
+	public List<Map<String,Object>> getResultsByCondition(int mode, String track, int weather) throws eSportsAPIException
 	{
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
-			args.put("byTrack", track); args.put("byWeatherID", weather);
+			args.put("byGameModeID", mode);
+			args.put("byTrack", track);
+			args.put("byWeatherID", weather);
 			String result = this.request("OFFLINE", "result.get", args);
 
 			Document doc = FNX.getDOMDocument(result);
@@ -458,6 +460,7 @@ public class eSportsAPI
 			connection.setRequestMethod("POST"); connection.setDoOutput(true);
 			tx = new DataOutputStream(connection.getOutputStream());
 			tx.writeBytes(postdata); tx.flush(); tx.close();
+			// System.out.println(postdata);
 
 			int code = connection.getResponseCode();
 			String msg = connection.getResponseMessage();
