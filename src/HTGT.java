@@ -1571,6 +1571,7 @@ public class HTGT
 		catch(eSportsAPIException e)
 		{
 			APIError(e, "Upload fehlgeschlagen...");
+			return false;
 		}
 
 		for(int i = 0; i < ghostIDs.length; i++)
