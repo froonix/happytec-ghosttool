@@ -80,8 +80,8 @@ public class HTGT
 	final private static String    APPLICATION_TITLE   = "HTGT (HAPPYTEC Ghosttool)";
 	final private static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
 	final private static String    APPLICATION_IDENT   = "HTGT <https://github.com/froonix/happytec-ghosttool>";
-	final private static Dimension WINDOW_SIZE_START   = new Dimension(900, 400);
-	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(450, 200);
+	final private static Dimension WINDOW_SIZE_START   = new Dimension(900, 600);
+	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
