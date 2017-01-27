@@ -6,6 +6,7 @@ Schritte für eine neue Veröffentlichung:
 * `make clean && make && make sig` (GPG-Sig!)
 * Neuen Tag anlegen. (z.B. `release-0.0.0`)
 * Neues Release auf GitHub eintragen.
+* Zurück zum `master` Branch wechseln.
 
 ----
 
@@ -24,11 +25,12 @@ git push origin release-0.0.0-alpha2
 make clean && make && make sig
 # edit new release/tag on github
 # upload binary files to github
+git checkout master
 ```
 
 ----
 
-* HAPPYTEC-Downloads: ZIP/JAR/GPG-Dateien aktualisieren.
+* HAPPYTEC-Downloads: ZIP/JAR/SIG-Dateien aktualisieren.
 * HAPPYTEC-Forum: Ersten Beitrag des Threads aktualisieren.
 * HAPPYTEC-Forum: Neuen Beitrag als Hinweis veröffentlichen.
 * HAPPYTEC-eSports-API: Config für `offline/update.check` anpassen.
