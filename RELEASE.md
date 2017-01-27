@@ -25,6 +25,7 @@ git push origin release-0.0.0-alpha2
 make clean && make && make sig
 # edit new release/tag on github
 # upload binary files to github
+# protect release branch on github
 git checkout master
 ```
 
