@@ -359,9 +359,31 @@ public abstract class gmHelper
 
 	public static String[] getTracks(boolean lc)
 	{
-		String[] values = {
-			"Bcr", "Gro", "Bor", "Wen", "Kiz", "Gar", "Mor",
-			"Vdi", "Soc", "Schl"
+		return getTracksByGameMode(GAMEMODE_DEFAULT, lc);
+	}
+
+	public static String[] getTracksByGameMode(int mode)
+	{
+		return getTracksByGameMode(mode, false);
+	}
+
+	public static String[] getTracksByGameMode(int mode, boolean lc)
+	{
+		String[] values;
+
+		if(mode == GAMEMODE_MM_TIMEATTACK || mode == GAMEMODE_MM_ARCADE)
+		{
+			values = new String[]{
+				"Bcr", "Gro", "Bor", "Wen", "Kiz", "Gar", /*"Mor",*/
+				"Vdi", "Soc", "Schl"
+			};
+		}
+		else
+		{
+			values = new String[]{
+				"Bcr", "Gro", "Bor", "Wen", "Kiz", "Gar", "Mor",
+				"Vdi", "Soc", "Schl"
+			};
 		};
 
 		if(lc)

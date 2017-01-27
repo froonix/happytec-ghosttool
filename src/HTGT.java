@@ -1791,7 +1791,7 @@ public class HTGT
 		Integer input;
 		String selection;
 
-		String[]   tracks     = gmHelper.getTracks();
+		String[]   tracks     = gmHelper.getTracksByGameMode(mode);
 		int[]      weathers   = gmHelper.getWeatherIDs();
 
 		String[]   values;
