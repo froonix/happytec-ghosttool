@@ -61,9 +61,6 @@ public class GhostElement
 	private String  Nickname;
 	private int[]   Ski;
 
-	// TODO: UID?
-	// ...
-
 	GhostElement()
 	{
 
@@ -315,6 +312,19 @@ public class GhostElement
 	public int[] getSki()
 	{
 		return this.Ski;
+	}
+
+	public String getConditions()
+	{
+		try
+		{
+			return String.format("%s.%s.%s", gmHelper.getGameMode(this.GameMode).toUpperCase(), gmHelper.getWeather(this.Weather).toUpperCase(), this.getTrack().toUpperCase());
+		}
+		catch(gmException e)
+		{
+			e.printStackTrace();
+			return "undefined";
+		}
 	}
 
 	public void printDetails()

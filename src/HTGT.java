@@ -283,7 +283,7 @@ public class HTGT
 				menu.add(registerDynMenuItem("Einfügen",                            HTGT.class.getName(), "copyFromClipboard"));
 				menu.add(registerDynMenuItem("Löschen",                             HTGT.class.getName(), "deleteRows"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Nach Strecke/Wetter sortieren",       HTGT.class.getName(), "resort"));
+				menu.add(registerDynMenuItem("Geistliste sortieren",                HTGT.class.getName(), "resort"));
 				menu.addSeparator(); // --------------------------------
 				menu.add(registerDynMenuItem("Aus Datei importieren",               HTGT.class.getName(), "importFile"));
 				menu.add(registerDynMenuItem("In Datei exportieren",                HTGT.class.getName(), "exportFile"));
@@ -406,6 +406,15 @@ public class HTGT
 		maintable.addRowSelectionInterval(start, end);
 	}
 
+	private static void highlightRows(int[] rows)
+	{
+		maintable.clearSelection();
+		for(int i = 0; i < rows.length; i++)
+		{
+			maintable.addRowSelectionInterval(rows[i], rows[i]);
+		}
+	}
+
 	public static void updateWindowTitle()
 	{
 		String filename = "";
@@ -464,6 +473,7 @@ public class HTGT
 	public static int ghostImport(GhostElement[] ghosts, boolean force)
 	{
 		dbg("ghosts.length: " + ghosts.length);
+		ArrayList<Integer> selection;
 		boolean delete = false;
 
 		if(ghosts.length > 0)
@@ -480,7 +490,7 @@ public class HTGT
 
 				if(delete)
 				{
-					if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
+					if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
 					{
 						return -1;
 					}
@@ -498,16 +508,20 @@ public class HTGT
 					deleteGhost(ghostDel[h]);
 				}
 			}
-		}
 
-		// messageDialog(null, "Importierte Geister: " + ghosts.length);
-
-		/*
-		if(ghosts.length > 0)
-		{
-			highlightLastRows(ghosts.length);
+			selection = new ArrayList<Integer>();
+			for(int i = 0; i < ghosts.length; i++)
+			{
+				for(int h = 0; h < OfflineProfiles.getGhostCount(); h++)
+				{
+					if(OfflineProfiles.getGhost(h).getConditions().equals(ghosts[i].getConditions()))
+					{
+						selection.add(h);
+					}
+				}
+			}
+			highlightRows(selection.stream().mapToInt(i -> i).toArray());
 		}
-		*/
 
 		return ghosts.length;
 	}
@@ -937,7 +951,7 @@ public class HTGT
 
 			if((ghosts = OfflineProfiles.getAllGhosts(true)) == null)
 			{
-				if(confirmDialog(null, String.format("Es kann nur einen Geist pro Strecke/Wetter geben. Wenn du fortfährst, werden doppelte Einträge gelöscht!%n%nBist du sicher, dass du die Sortierung durchführen möchtest?")))
+				if(confirmDialog(null, String.format("Es kann nur einen Geist pro Spielmodus/Strecke/Wetter geben. Wenn du fortfährst, werden doppelte Einträge gelöscht!%n%nBist du sicher, dass du die Sortierung durchführen möchtest?")))
 				{
 					ghosts = OfflineProfiles.getAllGhosts(false);
 				}
