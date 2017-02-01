@@ -36,7 +36,7 @@ public abstract class gmHelper
 	// ----------------------- //
 	// GentleMagic Wetter IDs: //
 	//   2=ice; 3=sun; 4=snow  //
-	// -----------------------
+	// ----------------------- //
 
 	// Interne Minimode-IDs von HAPPYTEC.
 	public final static int GAMEMODE_DEFAULT          = 0;
@@ -46,6 +46,13 @@ public abstract class gmHelper
 	public final static int GAMEMODE_MM_EXTREME       = 4;
 	public final static int GAMEMODE_MM_EXTREMEICE    = 5; // ACHTUNG: Nur bei Eis verfügbar!
 	public final static int GAMEMODE_MM_LASTDOWNSWING = 6;
+
+	// ----------------------------------- //
+	// GentleMagic Spielmodus IDs:         //
+	//   1=default; 4=rowdy; 5=extremeice  //
+	//   6=timeattack; 8=arcade; 9=extreme //
+	//   ???=lastdownswing                 //
+	// ----------------------------------- //
 
 	private static DateFormat ResultFormat;
 
