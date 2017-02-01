@@ -33,6 +33,11 @@ public abstract class gmHelper
 	//                     QUALIFICATION = 1
 	//                     RACE          = 5
 
+	// ----------------------- //
+	// GentleMagic Wetter IDs: //
+	//   2=ice; 3=sun; 4=snow  //
+	// -----------------------
+
 	// Interne Minimode-IDs von HAPPYTEC.
 	public final static int GAMEMODE_DEFAULT          = 0;
 	public final static int GAMEMODE_MM_ROWDY         = 1;
