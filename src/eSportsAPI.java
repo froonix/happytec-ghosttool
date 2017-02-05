@@ -238,9 +238,14 @@ public class eSportsAPI
 
 	public List<Map<String,Object>> getResultsByCondition(String mode, String track, String weather) throws eSportsAPIException
 	{
+		return this.getResultsByCondition(mode, track, weather, false);
+	}
+
+	public List<Map<String,Object>> getResultsByCondition(String mode, String track, String weather, boolean forceWeather) throws eSportsAPIException
+	{
 		try
 		{
-			return this.getResultsByCondition(gmHelper.parseGameMode(mode), track, gmHelper.parseWeather(weather));
+			return this.getResultsByCondition(gmHelper.parseGameMode(mode), track, gmHelper.parseWeather(weather), forceWeather);
 		}
 		catch(gmException e)
 		{
@@ -250,12 +255,18 @@ public class eSportsAPI
 
 	public List<Map<String,Object>> getResultsByCondition(int mode, String track, int weather) throws eSportsAPIException
 	{
+		return this.getResultsByCondition(mode, track, weather, false);
+	}
+
+	public List<Map<String,Object>> getResultsByCondition(int mode, String track, int weather, boolean forceWeather) throws eSportsAPIException
+	{
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
 			args.put("byGameModeID", mode);
 			args.put("byTrack", track);
 			args.put("byWeatherID", weather);
+			args.put("forceWeather", (forceWeather) ? 1 : 0);
 			String result = this.request("OFFLINE", "result.get", args);
 
 			Document doc = FNX.getDOMDocument(result);
@@ -434,6 +445,7 @@ public class eSportsAPI
 		String postdata = (data != null) ? FNX.buildQueryString(data) : "";
 		String url = String.format(API_REQUEST, API_MAINURL, API_VERSION, module, method);
 		System.err.printf("HTTP POST: %s (%d byte)%n", url, postdata.length());
+		// System.err.printf("POST DATA: %s%n", postdata);
 
 		try
 		{

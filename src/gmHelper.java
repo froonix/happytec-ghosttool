@@ -27,11 +27,11 @@ public abstract class gmHelper
 	// Die von GT waren immer schon anders!
 	// Das ist leider historisch bedingt...
 	public final static int WEATHER_NONE = 0;
+	//    QUALIFICATION                  = 1
 	public final static int WEATHER_SUN  = 2;
 	public final static int WEATHER_SNOW = 3;
 	public final static int WEATHER_ICE  = 4;
-	//                     QUALIFICATION = 1
-	//                     RACE          = 5
+	public final static int WEATHER_RACE = 5;
 
 	// ----------------------- //
 	// GentleMagic Wetter IDs: //
@@ -226,6 +226,10 @@ public abstract class gmHelper
 				weatherString = "ice";
 				break;
 
+			case WEATHER_RACE:
+				weatherString = "race";
+				break;
+
 			default:
 				throw new gmException(String.format("Invalid weather type: %d", weatherType));
 		}
@@ -251,6 +255,10 @@ public abstract class gmHelper
 				weatherName = "Eis";
 				break;
 
+			case WEATHER_RACE:
+				weatherName = "Rennen";
+				break;
+
 			default:
 				throw new gmException(String.format("Invalid weather type: %d", weatherType));
 		}
@@ -274,6 +282,10 @@ public abstract class gmHelper
 
 			case "ice":
 				weatherType = WEATHER_ICE;
+				break;
+
+			case "race":
+				weatherType = WEATHER_RACE;
 				break;
 
 			default:
@@ -414,6 +426,18 @@ public abstract class gmHelper
 		int[] values = {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE};
 
 		return values;
+	}
+
+	public static int[] getWeatherIDs(boolean race)
+	{
+		if(race)
+		{
+			int[] values = {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE};
+
+			return values;
+		}
+
+		return getWeatherIDs();
 	}
 
 	public static int[] getGameModeIDs()

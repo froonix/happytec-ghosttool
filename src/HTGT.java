@@ -85,6 +85,7 @@ public class HTGT
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
+	final private static boolean   ENABLE_RACE         = true;
 
 	// Konfigurationsnamen für java.util.prefs
 	private static String CFG_DC      = "dll-check";
@@ -1806,15 +1807,25 @@ public class HTGT
 		String selection;
 
 		String[]   tracks     = gmHelper.getTracksByGameMode(mode);
-		int[]      weathers   = gmHelper.getWeatherIDs();
+		int[]      weathers   = gmHelper.getWeatherIDs(ENABLE_RACE);
+		int        addition   = 0;
 
 		String[]   values;
 		String[][] conditions;
 
 		if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 		{
-			values     = new String[tracks.length];
-			conditions = new String[tracks.length][3];
+			if(ENABLE_RACE)
+			{
+				values     = new String[tracks.length * 2];
+				conditions = new String[tracks.length * 2][3];
+				addition++;
+			}
+			else
+			{
+				values     = new String[tracks.length];
+				conditions = new String[tracks.length][3];
+			}
 		}
 		else
 		{
@@ -1836,19 +1847,34 @@ public class HTGT
 
 					if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 					{
-						if(weathers[h] != gmHelper.WEATHER_ICE)
+						key = i * (addition + 1);
+
+						if(weathers[h] == gmHelper.WEATHER_RACE)
+						{
+							key++;
+						}
+						else if(weathers[h] != gmHelper.WEATHER_ICE)
 						{
 							continue;
 						}
-
-						key = i;
 					}
 
 					try
 					{
 						if(mode == gmHelper.GAMEMODE_DEFAULT)
 						{
-							values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+							if(weathers[h] == gmHelper.WEATHER_RACE)
+							{
+								values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+							}
+							else
+							{
+								values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+							}
+						}
+						else if(weathers[h] == gmHelper.WEATHER_RACE)
+						{
+							values[key] = String.format("%s: %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
 						}
 						else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 						{
@@ -1882,7 +1908,7 @@ public class HTGT
 				lastTrack = cfg(CFG_TRACK, conditions[input][1]);
 				lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
 
-				if(ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather)))
+				if(ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather), false, ENABLE_RACE))
 				{
 					return true;
 				}
@@ -1905,8 +1931,13 @@ public class HTGT
 		return ghostSelect(mode, track, weather, false);
 	}
 
-	// Ermöglicht alle Rückfragen zu umgehen, die beim Download auftreten.
 	public static boolean ghostSelect(int mode, String track, int weather, boolean force)
+	{
+		return ghostSelect(mode, track, weather, force, false);
+	}
+
+	// Ermöglicht alle Rückfragen zu umgehen, die beim Download auftreten.
+	public static boolean ghostSelect(int mode, String track, int weather, boolean force, boolean forceWeather)
 	{
 		try
 		{
@@ -1915,7 +1946,7 @@ public class HTGT
 
 			if(OfflineProfiles != null && prepareAPI())
 			{
-				results = api.getResultsByCondition(mode, track, weather);
+				results = api.getResultsByCondition(mode, track, weather, forceWeather);
 
 				if(results.size() > 0)
 				{
