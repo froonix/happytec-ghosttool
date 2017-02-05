@@ -76,6 +76,7 @@ public class eSportsAPIException extends Exception
 				case "PLAYER_SUSPENDED":          return "Dein Spieler wurde suspendiert!";
 				case "GHOST_UNKNOWN":             return "Es wurden keine Geister gefunden.";
 				case "GHOST_PRIVATE":             return "Dieser Geist ist nicht öffentlich.";
+				case "GHOST_DUPLICATE":           return String.format("Der Geist wurde schon einmal verwendet.%n%nEin anderer Teilnehmer verwendete diesen Geist bereits für die Rangliste.%nBitte wende dich an die eSports-Moderatoren im Forum, falls das ein Fehler ist.");
 				case "GHOST_DOPING":              return String.format("Die Dopingkontrolle verlief positiv!%n%nFür einen fairen Bewerb sind bestimmte Aktionen z.B. beim Rennen verboten.%nDazu kann u.a. das Zurücksetzen, Stürzen oder Auslassen der Tore zählen.%n%nFür weitere Informationen wende dich bitte an die eSports-Moderatoren im Forum.");
 				case "RESULT_WORSE":              return String.format("Die neue Zeit ist nicht schneller.%n%nDu kannst nur Ergebnisse übernehmen, die besser als dein existierendes sind.");
 				case "TOKEN_UNKNOWN":             return String.format("Unbekannter API-Token!%n%nBitte kontrolliere den API-Token.");
