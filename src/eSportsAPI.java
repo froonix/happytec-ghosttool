@@ -386,6 +386,93 @@ public class eSportsAPI
 		return results;
 	}
 
+	public int[][] getRaceWeather() throws eSportsAPIException
+	{
+		int[] modes = gmHelper.getGameModeIDs();
+		String[] tracks = gmHelper.getTracks(true);
+		int[] weathers = gmHelper.getWeatherIDs(true);
+		int results[][] = new int[modes.length][tracks.length];
+
+		for(int m = 0; m < modes.length; m++)
+		{
+			for(int t = 0; t < tracks.length; t++)
+			{
+				results[m][t] = gmHelper.WEATHER_NONE;
+			}
+		}
+
+		try
+		{
+			// Diese Methode liefert weit mehr, als aktuell gebraucht wird.
+			String result = this.request("OFFLINE", "track.list", null);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList Tracks = doc.getElementsByTagName("Track");
+
+			if(Tracks.getLength() > 0)
+			{
+				for(int i = 0; i < Tracks.getLength(); i++)
+				{
+					Element Track = (Element) Tracks.item(i);
+
+					if(!Track.getAttribute("Race").toLowerCase().equals("true"))
+					{
+						continue;
+					}
+
+					String track = Track.getAttribute("Track").toLowerCase();
+					String weather = Track.getAttribute("Weather").toLowerCase();
+					String gamemode = Track.getAttribute("GameMode").toLowerCase();
+
+					int m = -1;
+					int t = -1;
+					int w = -1;
+
+					for(int h = 0; h < modes.length; h++)
+					{
+						if(gmHelper.getGameMode(modes[h]).equals(gamemode))
+						{
+							m = h;
+							break;
+						}
+					}
+
+					for(int h = 0; h < tracks.length; h++)
+					{
+						if(tracks[h].equals(track))
+						{
+							t = h;
+							break;
+						}
+					}
+
+					for(int h = 0; h < weathers.length; h++)
+					{
+						if(gmHelper.getWeather(weathers[h]).equals(weather))
+						{
+							w = weathers[h];
+							break;
+						}
+					}
+
+					if(m == -1 || t == -1 || w == -1 || results[m][t] != gmHelper.WEATHER_NONE)
+					{
+						throw new eSportsAPIException();
+					}
+
+					results[m][t] = w;
+				}
+			}
+
+		}
+		catch(SAXException|ParserConfigurationException|IOException|NullPointerException|gmException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+
+		return results;
+	}
+
 	public boolean updateAvailable(String app, String version, boolean autocheck) throws eSportsAPIException
 	{
 		try

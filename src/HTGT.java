@@ -83,6 +83,7 @@ public class HTGT
 	final private static Dimension WINDOW_SIZE_START   = new Dimension(900, 600);
 	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
+	final private static long      WEATHER_INTERVAL    = 900000L; // 15 minutes
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
 	final private static boolean   ENABLE_RACE         = true;
@@ -97,6 +98,8 @@ public class HTGT
 	private static String CFG_MODE    = "last-gamemode";
 	private static String CFG_WEATHER = "last-weather";
 	private static String CFG_TRACK   = "last-track";
+	private static String CFG_WC      = "weather-check";
+	private static String CFG_RACE    = "race.%s.%s";
 
 	private static Preferences                cfg;
 	private static File                       dll;
@@ -1806,9 +1809,10 @@ public class HTGT
 		Integer input;
 		String selection;
 
-		String[]   tracks     = gmHelper.getTracksByGameMode(mode);
-		int[]      weathers   = gmHelper.getWeatherIDs(ENABLE_RACE);
-		int        addition   = 0;
+		String[]   tracks      = gmHelper.getTracksByGameMode(mode);
+		int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE);
+		int        raceWeather = gmHelper.WEATHER_NONE;
+		int        addition    = 0;
 
 		String[]   values;
 		String[][] conditions;
@@ -1836,89 +1840,116 @@ public class HTGT
 		String lastTrack   = cfg(CFG_TRACK);
 		String lastWeather = cfg(CFG_WEATHER);
 
-		while(true)
+		if(ENABLE_RACE && !updateRaceWeather())
 		{
-			selection = null;
-			for(int i = 0; i < tracks.length; i++)
-			{
-				for(int h = 0; h < weathers.length; h++)
-				{
-					int key = (i * weathers.length) + h;
+			return false;
+		}
 
-					if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+		try
+		{
+			while(true)
+			{
+				selection = null;
+				for(int i = 0; i < tracks.length; i++)
+				{
+					for(int h = 0; h < weathers.length; h++)
 					{
-						key = i * (addition + 1);
+						int key = (i * weathers.length) + h;
+
+						if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+						{
+							key = i * (addition + 1);
+
+							if(weathers[h] == gmHelper.WEATHER_RACE)
+							{
+								key++;
+							}
+							else if(weathers[h] != gmHelper.WEATHER_ICE)
+							{
+								continue;
+							}
+						}
 
 						if(weathers[h] == gmHelper.WEATHER_RACE)
 						{
-							key++;
-						}
-						else if(weathers[h] != gmHelper.WEATHER_ICE)
-						{
-							continue;
-						}
-					}
+							raceWeather = cfg.getInt(String.format(CFG_RACE, gmHelper.getGameMode(mode, true), tracks[i].toUpperCase()), gmHelper.WEATHER_NONE);
 
-					try
-					{
-						if(mode == gmHelper.GAMEMODE_DEFAULT)
-						{
-							if(weathers[h] == gmHelper.WEATHER_RACE)
+							if(raceWeather == gmHelper.WEATHER_NONE)
 							{
-								values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+								values[key] = null;
+								continue;
 							}
-							else
-							{
-								values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
-							}
-						}
-						else if(weathers[h] == gmHelper.WEATHER_RACE)
-						{
-							values[key] = String.format("%s: %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
-						}
-						else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
-						{
-							values[key] = String.format("%s: %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]));
 						}
 						else
 						{
-							values[key] = String.format("%s: %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+							raceWeather = gmHelper.WEATHER_NONE;
+						}
+
+						try
+						{
+							if(mode == gmHelper.GAMEMODE_DEFAULT)
+							{
+								if(weathers[h] == gmHelper.WEATHER_RACE)
+								{
+									values[key] = String.format("%s – %s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
+								}
+								else
+								{
+									values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+								}
+							}
+							else if(weathers[h] == gmHelper.WEATHER_RACE)
+							{
+								values[key] = String.format("%s: %s – %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
+							}
+							else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+							{
+								values[key] = String.format("%s: %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]));
+							}
+							else
+							{
+								values[key] = String.format("%s: %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+							}
+						}
+						catch(gmException e)
+						{
+							e.printStackTrace();
+							values[key] = "";
+						}
+
+						conditions[key][0] = values[key];
+						conditions[key][1] = tracks[i];
+						conditions[key][2] = Integer.toString(weathers[h]);
+
+						// TODO: Eigentlich nicht ganz korrekt, da das Wetter als "int" verglichen werden müsste. So ist es aber einheitlich und einfacher.
+						if(lastTrack != null && lastTrack.toLowerCase().equals(tracks[i].toLowerCase()) && lastWeather != null && lastWeather.equals(Integer.toString(weathers[h])))
+						{
+							selection = values[key];
 						}
 					}
-					catch(gmException e)
-					{
-						e.printStackTrace();
-						values[key] = "";
-					}
-
-					conditions[key][0] = values[key];
-					conditions[key][1] = tracks[i];
-					conditions[key][2] = Integer.toString(weathers[h]);
-
-					// TODO: Eigentlich nicht ganz korrekt, da das Wetter als "int" verglichen werden müsste. So ist es aber einheitlich und einfacher.
-					if(lastTrack != null && lastTrack.toLowerCase().equals(tracks[i].toLowerCase()) && lastWeather != null && lastWeather.equals(Integer.toString(weathers[h])))
-					{
-						selection = values[key];
-					}
 				}
-			}
 
-			if((input = (Integer) inputDialog(APPLICATION_API, "Wähle nun die gewünschte Strecke und das Wetter aus:", values, selection)) != null)
-			{
-				lastTrack = cfg(CFG_TRACK, conditions[input][1]);
-				lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
-
-				if(ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather), false, ENABLE_RACE))
+				if((input = (Integer) inputDialog(APPLICATION_API, "Wähle nun die gewünschte Strecke und das Wetter aus:", values, selection)) != null)
 				{
-					return true;
-				}
-				else
-				{
-					continue;
-				}
-			}
+					lastTrack = cfg(CFG_TRACK, conditions[input][1]);
+					lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
 
-			break;
+					if(ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather), false, ENABLE_RACE))
+					{
+						return true;
+					}
+					else
+					{
+						continue;
+					}
+				}
+
+				break;
+			}
+		}
+		catch(gmException e)
+		{
+			e.printStackTrace();
 		}
 
 		return false;
@@ -2025,6 +2056,52 @@ public class HTGT
 		{
 			APIError(e, null);
 		}
+	}
+
+	public static boolean updateRaceWeather()
+	{
+		Date date = new Date();
+		long lastWeatherCheck = cfg.getLong(CFG_WC, 0L);
+		dbg(String.format("Current time: %d", date.getTime()));
+		dbg(String.format("Last weather check: %d", lastWeatherCheck));
+		dbg(String.format("Check interval: %d", WEATHER_INTERVAL));
+
+		if(lastWeatherCheck <= 0L || date.getTime() > (lastWeatherCheck + WEATHER_INTERVAL))
+		{
+			if(prepareAPI())
+			{
+				try
+				{
+					int[] modes = gmHelper.getGameModeIDs();
+					String[] tracks = gmHelper.getTracks(true);
+					int[][] test = api.getRaceWeather();
+
+					for(int m = 0; m < modes.length; m++)
+					{
+						for(int t = 0; t < tracks.length; t++)
+						{
+							dbg(String.format("Race weather: %s @ %s = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), test[m][t]));
+							cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase()), test[m][t]);
+						}
+					}
+
+					cfg.putLong(CFG_WC, date.getTime());
+					return true;
+				}
+				catch(eSportsAPIException e)
+				{
+					APIError(e, "Die Streckendetails konnten nicht geladen werden.");
+				}
+				catch(gmException e)
+				{
+					e.printStackTrace();
+				}
+			}
+
+			return false;
+		}
+
+		return true;
 	}
 
 /***********************************************************************
