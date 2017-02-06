@@ -1880,10 +1880,6 @@ public class HTGT
 								continue;
 							}
 						}
-						else
-						{
-							raceWeather = gmHelper.WEATHER_NONE;
-						}
 
 						try
 						{
@@ -1898,17 +1894,27 @@ public class HTGT
 									values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
 								}
 							}
-							else if(weathers[h] == gmHelper.WEATHER_RACE)
-							{
-								values[key] = String.format("%s: %s – %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
-							}
 							else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 							{
-								values[key] = String.format("%s: %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]));
+								if(weathers[h] == gmHelper.WEATHER_RACE)
+								{
+									values[key] = String.format("%s: %s – %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+								}
+								else
+								{
+									values[key] = String.format("%s: %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]));
+								}
 							}
 							else
 							{
-								values[key] = String.format("%s: %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+								if(weathers[h] == gmHelper.WEATHER_RACE)
+								{
+									values[key] = String.format("%s: %s – %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
+								}
+								else
+								{
+									values[key] = String.format("%s: %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
+								}
 							}
 						}
 						catch(gmException e)
