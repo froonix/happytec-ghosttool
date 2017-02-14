@@ -1987,28 +1987,10 @@ public class HTGT
 
 				if(results.size() > 0)
 				{
-					String preSelection = null;
-					int[] currentGhosts = OfflineProfiles.getGhostsByCondition(mode, track, weather);
-					int currentResult = -1;
-
-					if(currentGhosts.length > 1)
-					{
-						for(int i = 0; i < currentGhosts.length; i++)
-						{
-							if(currentResult == -1 || OfflineProfiles.getGhost(currentGhosts[0]).getTime() < currentResult)
-							{
-								currentResult = OfflineProfiles.getGhost(currentGhosts[0]).getTime();
-							}
-						}
-					}
-					else if(currentGhosts.length > 0)
-					{
-						currentResult = OfflineProfiles.getGhost(currentGhosts[0]).getTime();
-					}
-
 					dbg(String.format("Got %d results.", results.size()));
 					Integer[] ghosts = new Integer[results.size()];
 					String[] values = new String[results.size()];
+					String preSelection = null;
 
 					for(int i = 0; i < results.size(); i++)
 					{
@@ -2016,7 +1998,7 @@ public class HTGT
 						ghosts[i] = Integer.parseInt(result.get("GhostID").toString());
 						values[i] = String.format("%0" + Integer.toString(FNX.strlen(results.size())) + "d. %s – %s", result.get("Position"), gmHelper.getResult(Integer.parseInt(result.get("Result").toString())), result.get("Nickname"));
 
-						if(Integer.parseInt(result.get("Result").toString()) < currentResult)
+						if(i == api.getNextResultIndex())
 						{
 							preSelection = values[i];
 						}

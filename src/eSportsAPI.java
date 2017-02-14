@@ -62,6 +62,10 @@ public class eSportsAPI
 	private String useragent;
 	private String osdata;
 
+	private final static int RESULT_TYPE_NEXT = 0;
+	private final static int RESULT_TYPE_PREV = 1;
+	private int[] lastTypeIndex = new int[2];
+
 	public eSportsAPI(String token)
 	{
 		setToken(token);
@@ -81,6 +85,16 @@ public class eSportsAPI
 	public void setUseragent(String useragent)
 	{
 		this.useragent = useragent;
+	}
+
+	public int getNextResultIndex()
+	{
+		return this.lastTypeIndex[RESULT_TYPE_NEXT];
+	}
+
+	public int getPrevResultIndex()
+	{
+		return this.lastTypeIndex[RESULT_TYPE_PREV];
 	}
 
 	public GhostElement getGhostByID(int id) throws eSportsAPIException
@@ -284,6 +298,21 @@ public class eSportsAPI
 					hm.put("Result", Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent()));
 					hm.put("Position", Integer.parseInt(OfflineResult.getElementsByTagName("Position").item(0).getTextContent()));
 					hm.put("GhostID", Integer.parseInt(((Element) OfflineResult.getElementsByTagName("Ghost").item(0)).getAttribute("ID")));
+
+					switch(OfflineResult.getAttribute("Type").toLowerCase())
+					{
+						case "next":
+							this.lastTypeIndex[RESULT_TYPE_NEXT] = i;
+							break;
+
+						case "prev":
+							this.lastTypeIndex[RESULT_TYPE_PREV] = i;
+							break;
+
+						// "same" not implemented
+						// because it's not unique
+						// ...
+					}
 
 					values.add(i, hm);
 				}
