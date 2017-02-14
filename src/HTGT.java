@@ -148,7 +148,7 @@ public class HTGT
 			+ "(at your option) any later version.<br /><br />"
 			+ "This program is distributed in the hope that it will be useful,<br />"
 			+ "but WITHOUT ANY WARRANTY; without even the implied warranty of<br />"
-			+ "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the<br />"
+			+ "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the<br />"
 			+ "GNU General Public License for more details.<br /><br />"
 			+ "You should have received a copy of the GNU General Public License<br />"
 			+ "along with this program; if not, write to the Free Software Foundation,<br />"
