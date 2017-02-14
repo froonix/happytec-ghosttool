@@ -427,8 +427,8 @@ public class HTGT
 
 		if(OfflineProfiles != null)
 		{
-			filename = " – " + file.getAbsolutePath();
 			profilename = " – " + nickname;
+			filename = " – " + file.getAbsolutePath();
 
 			if(OfflineProfiles.changed())
 			{
@@ -436,7 +436,7 @@ public class HTGT
 			}
 		}
 
-		mainWindow.setTitle(APPLICATION_TITLE + filename + profilename + suffix);
+		mainWindow.setTitle(APPLICATION_TITLE + profilename + filename + suffix);
 	}
 
 	public static int ghostImport(File f) throws Exception
