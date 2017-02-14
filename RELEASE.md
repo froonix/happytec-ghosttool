@@ -12,15 +12,16 @@ Schritte für eine neue Veröffentlichung:
 
 ```bash
 # Example commands...
-git branch v0.0.0-alpha2
-git checkout v0.0.0-alpha2
-nano src/HTGT.java
+RELEASE="0.0.0-beta8"
+git branch "v${RELEASE}"
+git checkout "v${RELEASE}"
+sed -i -r "s/(APPLICATION_VERSION) = \"git-master\";\$/\1 = \"${RELEASE}\";/" src/HTGT.java
 
-git commit -a -S -m 'Prepare v0.0.0-alpha2 release'
-git push origin v0.0.0-alpha2
+git commit -a -S -m "Prepare v${RELEASE} release"
+git push origin "v${RELEASE}"
 
-git tag release-0.0.0-alpha2
-git push origin release-0.0.0-alpha2
+git tag "release-${RELEASE}"
+git push origin "release-${RELEASE}"
 
 make clean && make && make sig
 # edit new release/tag on github
