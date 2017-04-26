@@ -170,6 +170,7 @@ public class HTGT
 
 	private static void exceptionHandler(Exception e, String msg)
 	{
+		FNX.windowToFront(mainWindow);
 		FNX.displayExceptionSummary(e, "Fehler", msg, "Weitere Details stehen im Stacktrace in der Konsolenausgabe.");
 	}
 
@@ -1229,21 +1230,7 @@ public class HTGT
 
 	private static boolean confirmDialog(int type, String title, String msg)
 	{
-		if(mainWindow != null)
-		{
-			if(mainWindow.isAlwaysOnTopSupported())
-			{
-				// http://stackoverflow.com/a/18015090
-				boolean aot = mainWindow.isAlwaysOnTop();
-				mainWindow.setAlwaysOnTop(true);
-				mainWindow.setAlwaysOnTop(aot);
-			}
-			else
-			{
-				// fallback solution
-				mainWindow.toFront();
-			}
-		}
+		FNX.windowToFront(mainWindow);
 
 		dbg(String.format("New yes/no confirm dialog: %s", title));
 		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type))
@@ -1290,6 +1277,7 @@ public class HTGT
 
 	private static void messageDialog(int type, String title, String msg)
 	{
+		FNX.windowToFront(mainWindow); // <-- APIError, errorMessage, ...
 		JOptionPane.showMessageDialog(mainWindow, msg, title, type);
 	}
 

@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
 
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
@@ -307,5 +308,26 @@ public abstract class FNX
 		}
 
 		return hash;
+	}
+
+	public static void windowToFront(JFrame window)
+	{
+		if(window == null)
+		{
+			return;
+		}
+
+		if(window.isAlwaysOnTopSupported())
+		{
+			// http://stackoverflow.com/a/18015090
+			boolean aot = window.isAlwaysOnTop();
+			window.setAlwaysOnTop(true);
+			window.setAlwaysOnTop(aot);
+		}
+		else
+		{
+			// fallback solution
+			window.toFront();
+		}
 	}
 }
