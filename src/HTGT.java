@@ -86,6 +86,7 @@ public class HTGT
 	final private static long      WEATHER_INTERVAL    = 900000L; // 15 minutes
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
+	final private static String    VIDEO_PROFILE       = "VIDEO";
 	final private static boolean   ENABLE_RACE         = true;
 
 	// Konfigurationsnamen für java.util.prefs
@@ -471,12 +472,13 @@ public class HTGT
 	public static int ghostImport(GhostElement[] ghosts, boolean force)
 	{
 		dbg("ghosts.length: " + ghosts.length);
-		ArrayList<Integer> selection;
+		ArrayList<Integer> selection = new ArrayList<Integer>();
+		boolean deleteDuplicates = isVideoProfile() ? false : true;
 		boolean delete = false;
 
 		if(ghosts.length > 0)
 		{
-			if(!force)
+			if(!force && deleteDuplicates)
 			{
 				for(int i = 0; i < ghosts.length; i++)
 				{
@@ -500,25 +502,35 @@ public class HTGT
 				addGhost(ghosts[i], true);
 				ghosts[i].printDetails();
 
-				int[] ghostDel = OfflineProfiles.getGhostsByCondition(ghosts[i]);
-				for(int h = ghostDel.length - 2; h > -1; h--)
+				if(deleteDuplicates)
 				{
-					deleteGhost(ghostDel[h]);
-				}
-			}
-
-			selection = new ArrayList<Integer>();
-			for(int i = 0; i < ghosts.length; i++)
-			{
-				for(int h = 0; h < OfflineProfiles.getGhostCount(); h++)
-				{
-					if(OfflineProfiles.getGhost(h).getConditions().equals(ghosts[i].getConditions()))
+					int[] ghostDel = OfflineProfiles.getGhostsByCondition(ghosts[i]);
+					for(int h = ghostDel.length - 2; h > -1; h--)
 					{
-						selection.add(h);
+						deleteGhost(ghostDel[h]);
 					}
 				}
 			}
-			highlightRows(selection.stream().mapToInt(i -> i).toArray());
+
+			if(!deleteDuplicates)
+			{
+				highlightLastRows(ghosts.length);
+			}
+			else
+			{
+				for(int i = 0; i < ghosts.length; i++)
+				{
+					for(int h = 0; h < OfflineProfiles.getGhostCount(); h++)
+					{
+						if(OfflineProfiles.getGhost(h).getConditions().equals(ghosts[i].getConditions()))
+						{
+							selection.add(h);
+						}
+					}
+				}
+
+				highlightRows(selection.stream().mapToInt(i -> i).toArray());
+			}
 		}
 
 		return ghosts.length;
@@ -529,6 +541,7 @@ public class HTGT
 		// TODO: Zuletzt genutzes Profil in CFG abspeichern und auslesen
 		// ...
 
+		String suffix = null;
 		String selection = null;
 		String[] profiles;
 		String[] values;
@@ -540,7 +553,25 @@ public class HTGT
 
 			for(int i = 0; i < profiles.length; i++)
 			{
-				values[i] = String.format("[%0" + Integer.toString(FNX.strlen(profiles.length)) + "d] %s%s", i + 1, profiles[i], ((i == OfflineProfiles.defaultProfile()) ? " (Standardprofil)" : ""));
+				if(i == OfflineProfiles.defaultProfile())
+				{
+					suffix = "Standardprofil";
+				}
+				else if(isVideoProfile(profiles[i]))
+				{
+					suffix = "Spezialprofil";
+				}
+				else
+				{
+					suffix = "";
+				}
+
+				if(suffix.length() > 0)
+				{
+					suffix = String.format(" (%s)", suffix);
+				}
+
+				values[i] = String.format("[%0" + Integer.toString(FNX.strlen(profiles.length)) + "d] %s%s", i + 1, profiles[i], suffix);
 
 				if(profile == i)
 				{
@@ -943,6 +974,12 @@ public class HTGT
 
 	public static void resort()
 	{
+		if(isVideoProfile())
+		{
+			infoDialog("Die Sortierfunktion ist beim Videoprofil leider (noch) nicht verfügbar.");
+			return;
+		}
+
 		if(OfflineProfiles != null)
 		{
 			GhostElement[][][] ghosts;
@@ -2084,6 +2121,45 @@ public class HTGT
 		}
 
 		return true;
+	}
+
+	public static boolean isVideoProfile()
+	{
+		return isVideoProfile(null);
+	}
+
+	public static boolean isVideoProfile(int i)
+	{
+		try
+		{
+			if(OfflineProfiles != null && OfflineProfiles.getProfileCount() >= i)
+			{
+				return isVideoProfile(OfflineProfiles.getProfiles()[i]);
+			}
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+
+		return false;
+	}
+
+	public static boolean isVideoProfile(String nick)
+	{
+		if(nick == null)
+		{
+			if(OfflineProfiles != null && nickname != null)
+			{
+				nick = nickname;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		return nick.equals(VIDEO_PROFILE);
 	}
 
 /***********************************************************************

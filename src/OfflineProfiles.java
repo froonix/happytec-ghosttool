@@ -203,6 +203,8 @@ public class OfflineProfiles
 		return this.getAllGhosts(false);
 	}
 
+	// ACHTUNG: Falls es mehrere Geister je Bedingung gibt, wird nur
+	// der erste Geist zurückgegeben! Das Array ist somit immer sauber.
 	public GhostElement[][][] getAllGhosts(boolean warn)
 	{
 		int[] modes = gmHelper.getGameModeIDs();
