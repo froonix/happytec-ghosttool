@@ -90,6 +90,7 @@ public class HTGT
 	final private static boolean   ENABLE_RACE         = true;
 
 	// Konfigurationsnamen für java.util.prefs
+	private static String CFG_API     = "api-host";
 	private static String CFG_DC      = "dll-check";
 	private static String CFG_UC      = "update-check";
 	private static String CFG_DEFAULT = "default-file";
@@ -198,6 +199,13 @@ public class HTGT
 		// account. Das heißt, dass mehrere unterschiedliche Bewerbe und
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
+
+		String apihost = cfg(CFG_API);
+		if(apihost != null && apihost.length() > 0)
+		{
+			dbg("API FQDN: " + apihost);
+			eSportsAPI.setHost(apihost);
+		}
 
 		mainWindow = new JFrame(APPLICATION_TITLE);
 		mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);

@@ -55,8 +55,11 @@ public class eSportsAPI
 {
 	private final static String API_VERSION = "1.0";
 	private final static String API_REQUEST = "%s/%s/%s/%s";
-	private final static String API_MAINURL = "https://www.esports.happytec.at/api";
+	private final static String API_MAINURL = "https://%s/api";
+	private final static String API_HOST    = "www.esports.happytec.at";
 	private final static int    API_TIMEOUT = 10000;
+
+	private static String host;
 
 	private String token;
 	private String useragent;
@@ -68,13 +71,26 @@ public class eSportsAPI
 
 	public eSportsAPI(String token)
 	{
-		setToken(token);
+		this.setToken(token);
 	}
 
 	public eSportsAPI(String token, String useragent)
 	{
-		setToken(token);
-		setUseragent(useragent);
+		this.setToken(token);
+		this.setUseragent(useragent);
+	}
+
+	public static void setHost(String fqdn)
+	{
+		if(fqdn == null)
+		{
+			host = API_HOST;
+		}
+		else
+		{
+			// TODO: Validation?
+			host = fqdn;
+		}
 	}
 
 	public void setToken(String token)
@@ -555,11 +571,14 @@ public class eSportsAPI
 		BufferedReader rx;
 		String line;
 
+		if(host == null) { setHost(null); }
+		String apihost = String.format(API_MAINURL, host);
+
 		module = module.toLowerCase();
 		method = method.toLowerCase();
 
 		String postdata = (data != null) ? FNX.buildQueryString(data) : "";
-		String url = String.format(API_REQUEST, API_MAINURL, API_VERSION, module, method);
+		String url = String.format(API_REQUEST, apihost, API_VERSION, module, method);
 		System.err.printf("HTTP POST: %s (%d byte)%n", url, postdata.length());
 		// System.err.printf("POST DATA: %s%n", postdata);
 
