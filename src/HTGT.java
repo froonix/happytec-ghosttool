@@ -696,7 +696,7 @@ public class HTGT
 	{
 		if(OfflineProfiles != null && !unsavedChanges())
 		{
-			if(profile != OfflineProfiles.defaultProfile())
+			if(profile != OfflineProfiles.defaultProfile() && !isSpecialProfile())
 			{
 				try
 				{
@@ -917,7 +917,7 @@ public class HTGT
 			}
 			else
 			{
-				infoDialog(FF_TITLE, "Dieser Modus funktioniert nur, wenn du nicht das Standardprofil ausgewählt hast.");
+				infoDialog(FF_TITLE, "Dieser Modus funktioniert nur, wenn du nicht das Spezial-/Standardprofil ausgewählt hast.");
 			}
 		}
 	}
