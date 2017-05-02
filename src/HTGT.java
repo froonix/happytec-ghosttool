@@ -86,7 +86,7 @@ public class HTGT
 	final private static long      WEATHER_INTERVAL    = 900000L; // 15 minutes
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
-	final private static String    VIDEO_PROFILE       = "VIDEO";
+	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
 	final private static boolean   ENABLE_RACE         = true;
 
 	// Konfigurationsnamen für java.util.prefs
@@ -482,7 +482,7 @@ public class HTGT
 	{
 		dbg("ghosts.length: " + ghosts.length);
 		ArrayList<Integer> selection = new ArrayList<Integer>();
-		boolean deleteDuplicates = isVideoProfile() ? false : true;
+		boolean deleteDuplicates = isSpecialProfile() ? false : true;
 		boolean delete = false;
 
 		if(ghosts.length > 0)
@@ -566,7 +566,7 @@ public class HTGT
 				{
 					suffix = "Standardprofil";
 				}
-				else if(isVideoProfile(profiles[i]))
+				else if(isSpecialProfile(profiles[i]))
 				{
 					suffix = "Spezialprofil";
 				}
@@ -983,9 +983,9 @@ public class HTGT
 
 	public static void resort()
 	{
-		if(isVideoProfile())
+		if(isSpecialProfile())
 		{
-			infoDialog("Die Sortierfunktion ist beim Videoprofil leider (noch) nicht verfügbar.");
+			infoDialog("Die Sortierfunktion ist bei Spezialprofilen leider (noch) nicht verfügbar.");
 			return;
 		}
 
@@ -2119,18 +2119,18 @@ public class HTGT
 		return true;
 	}
 
-	public static boolean isVideoProfile()
+	public static boolean isSpecialProfile()
 	{
-		return isVideoProfile(null);
+		return isSpecialProfile(null);
 	}
 
-	public static boolean isVideoProfile(int i)
+	public static boolean isSpecialProfile(int i)
 	{
 		try
 		{
 			if(OfflineProfiles != null && OfflineProfiles.getProfileCount() >= i)
 			{
-				return isVideoProfile(OfflineProfiles.getProfiles()[i]);
+				return isSpecialProfile(OfflineProfiles.getProfiles()[i]);
 			}
 		}
 		catch(Exception e)
@@ -2141,7 +2141,7 @@ public class HTGT
 		return false;
 	}
 
-	public static boolean isVideoProfile(String nick)
+	public static boolean isSpecialProfile(String nick)
 	{
 		if(nick == null)
 		{
@@ -2155,7 +2155,7 @@ public class HTGT
 			}
 		}
 
-		return nick.equals(VIDEO_PROFILE);
+		return nick.equals(SPECIAL_PROFILE);
 	}
 
 /***********************************************************************
