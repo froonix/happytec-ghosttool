@@ -25,7 +25,7 @@ compile: $(classes)
 %.class: %.java
 	$(JC) $(JFLAGS) $<
 
-jar:
+jar: compile
 	@echo Packaging version $(version)
 
 	@echo "Manifest-Version: 1.0" > $(MFFILE)
@@ -37,7 +37,7 @@ jar:
 	$(JAR) -cmf ../$(MFFILE) ../$(JARFILE) ./*.class && \
 	chmod +x ../$(JARFILE) && $(RM) ../$(MFFILE)
 
-zip:
+zip: jar
 	@echo Zipping version $(version)
 
 	cp -af HTGT.sh $(SHFILE)
@@ -52,7 +52,7 @@ zip:
 	zip -j $(ZIPFILE) $(LICENCEFILE) $(JARFILE) $(SHFILE) $(BATFILE)
 	$(RM) $(LICENCEFILE) $(SHFILE) $(BATFILE)
 
-sig:
+sig: zip
 	@echo Signing version $(version)
 
 	sha512sum $(JARFILE) $(ZIPFILE) > $(CSUMFILE)
