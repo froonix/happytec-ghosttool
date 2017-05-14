@@ -88,7 +88,8 @@ public class eSportsAPI
 		}
 		else
 		{
-			// TODO: Validation?
+			// TODO: Validation hinzufügen?
+			// (host oder host:port Format!)
 			host = fqdn;
 		}
 	}
