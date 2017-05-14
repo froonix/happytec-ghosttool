@@ -52,6 +52,7 @@ public class GhostElement
 	private static Pattern GhostsPattern;
 
 	private Element XML;
+	private boolean Ticket;
 	private int     GameMode;
 	private String  Track;
 	private int     Weather;
@@ -149,7 +150,7 @@ public class GhostElement
 
 		if(GhostPattern == null)
 		{
-			this.GhostPattern = Pattern.compile("\030.\042.(?:\010(?<c>.))?(?:\020(?<g>.))?(?:\030(?<s>.))?\042.*?\062.\012.(?<n>.{1,32})\022\016(?<e>.{1,32})\030(?<v>.)\100.$", Pattern.DOTALL);
+			this.GhostPattern = Pattern.compile("\030.\042.(?:\010(?<c>.))?(?:\020(?<g>.))?(?:\030(?<s>.))?\042..+?\\\050.\060.(?:\010(?<b>.{1,5})\\\052)?.*?\062.\012.(?<n>.{1,32})\022\016(?<e>.{1,32})\030(?<v>.)\100.$", Pattern.DOTALL);
 		}
 
 		try
@@ -173,12 +174,6 @@ public class GhostElement
 			{
 				throw new GhostException("Attribute \"Weather\" is missing or empty.");
 			}
-			/*
-			else if(!this.GameMode.equals("DEFAULT"))
-			{
-				throw new GhostException("Attribute \"GameMode\" is missing, empty or value is unsupported.");
-			}
-			*/
 			else if(gameModeString.length() == 0)
 			{
 				throw new GhostException("Attribute \"GameMode\" is missing or empty.");
@@ -198,6 +193,8 @@ public class GhostElement
 
 			if(m.find())
 			{
+				this.Ticket = (m.group("b") != null) ? true : false;
+
 				this.Nickname = m.group("n");
 				// this.edition = m.group("e");
 				// this.flag = m.group("v");
@@ -314,6 +311,11 @@ public class GhostElement
 		return this.Ski;
 	}
 
+	public boolean hasTicket()
+	{
+		return this.Ticket;
+	}
+
 	public String getConditions()
 	{
 		try
@@ -338,6 +340,7 @@ public class GhostElement
 			System.out.printf(" Weather: [%s] %s (%d)%n", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
 			System.out.printf(" Mode:    [%s] %s (%d)%n", gmHelper.getGameMode(this.GameMode).toUpperCase(), this.getGameModeName(), this.getGameMode());
 			System.out.printf(" Ski:     %d-%d-%d%n", this.Ski[0], this.Ski[1], this.Ski[2]);
+			System.out.printf(" Ticket:  %s%n", this.Ticket ? "Yes" : "No");
 			// System.out.printf("%n%s%n", DataRaw);
 			System.out.printf("--------------------------------%n");
 		}
