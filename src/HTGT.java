@@ -102,6 +102,7 @@ public class HTGT
 	final private static String CFG_WEATHER = "last-weather";
 	final private static String CFG_TRACK   = "last-track";
 	final private static String CFG_NDG     = "never-download";
+	final private static String CFG_ARG     = "always-replace";
 	final private static String CFG_WC      = "weather-check";
 	final private static String CFG_RACE    = "race.%s.%s";
 
@@ -511,7 +512,7 @@ public class HTGT
 
 				if(delete)
 				{
-					if(OfflineProfiles == null || !confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination in einem Profil geben.%nBeim Import werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?")))
+					if(OfflineProfiles == null || !confirmGhostReplacement())
 					{
 						return -1;
 					}
@@ -755,6 +756,34 @@ public class HTGT
 		{
 			exceptionHandler(e, "Der Geist konnte nicht gelöscht werden!");
 		}
+	}
+
+	private static boolean confirmGhostReplacement()
+	{
+		int action;
+
+		if(cfg(CFG_ARG) != null)
+		{
+			dbg("Forcing ghost replacement because of previous choice...");
+			action = BUTTON_YES;
+		}
+		else
+		{
+			action = threesomeDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination in einem Profil geben.%nBei der gewünschten Aktion werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?"), true);
+		}
+
+		if(action == BUTTON_ALWAYS)
+		{
+			cfg(CFG_ARG, "true");
+			action = BUTTON_YES;
+		}
+
+		if(action == BUTTON_YES)
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	public static void fastFollowForce()
@@ -1091,7 +1120,7 @@ public class HTGT
 
 			if((ghosts = OfflineProfiles.getAllGhosts(true)) == null)
 			{
-				if(confirmDialog(null, String.format("Es kann nur einen Geist pro Spielmodus/Strecke/Wetter geben. Wenn du fortfährst, werden doppelte Einträge gelöscht!%n%nBist du sicher, dass du die Sortierung durchführen möchtest?")))
+				if(confirmGhostReplacement())
 				{
 					ghosts = OfflineProfiles.getAllGhosts(false);
 				}
@@ -2172,7 +2201,7 @@ public class HTGT
 						}
 					}
 
-					if((selection = (Integer) inputDialog(APPLICATION_API, "Nachfolgend alle verfügbaren Geister der gewählten Strecke:", values, preSelection)) != null)
+					if((selection = (Integer) inputDialog(APPLICATION_API, String.format("Bitte beachte, dass es nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination geben kann!%nEin eventuell bereits vorhandener Geist wird dadurch ohne Rückfrage aus dem aktuellen Profil gelöscht.%n%nNachfolgend alle verfügbaren Geister der gewählten Strecke:"), values, preSelection)) != null)
 					{
 						Integer ghost = ghosts[selection];
 						ghostDownload(ghost, true);
