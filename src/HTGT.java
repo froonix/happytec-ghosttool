@@ -108,6 +108,12 @@ public class HTGT
 	final private static int PROFILE_DEFAULT = -1;
 	final private static int PROFILE_SPECIAL = -2;
 
+	final private static int BUTTON_ALWAYS =  2;
+	final private static int BUTTON_YES    =  1;
+	final private static int BUTTON_CLOSED =  0;
+	final private static int BUTTON_NO     = -1;
+	final private static int BUTTON_NEVER  = -2;
+
 	private static Preferences                cfg;
 	private static File                       dll;
 	private static File                       file;
@@ -240,6 +246,10 @@ public class HTGT
 		mainWindow.setSize(WINDOW_SIZE_START);
 		mainWindow.setMinimumSize(WINDOW_SIZE_MIN);
 		mainWindow.setVisible(true);
+
+		// DEBUG / TEST
+		System.out.printf("threesomeDialog: result %d%n", threesomeDialog(JOptionPane.QUESTION_MESSAGE, "Development", "Foo bar?", false));
+		System.out.printf("threesomeDialog: result %d%n", threesomeDialog(JOptionPane.QUESTION_MESSAGE, "Development", "Foo bar?", true));
 
 		// Die automatische Updateprüfung wird im Hintergrund ausgeführt...
 		new Thread(new HTGT_Background(HTGT_Background.EXEC_UPDATECHECK)).start();
@@ -1326,6 +1336,41 @@ public class HTGT
 		{
 			dbg("return FALSE (not confirmed)");
 			return false;
+		}
+	}
+
+	private static int threesomeDialog(int type, String title, String msg, boolean appendix)
+	{
+		String[] buttons;
+		Integer[] values;
+		Object defaultButton;
+
+		if(appendix)
+		{
+			dbg(String.format("New threesome (yes/always/no) dialog: %s", title));
+			values = new Integer[]{BUTTON_YES, BUTTON_ALWAYS, BUTTON_NO};
+			buttons = new String[]{"Ja", "Immer", "Nein"};
+			defaultButton = buttons[0];
+		}
+		else
+		{
+			dbg(String.format("New threesome (yes/never/no) dialog: %s", title));
+			values = new Integer[]{BUTTON_YES, BUTTON_NEVER, BUTTON_NO};
+			buttons = new String[]{"Ja", "Nie", "Nein"};
+			defaultButton = buttons[0];
+		}
+
+		int result = JOptionPane.showOptionDialog(mainWindow, msg, title, JOptionPane.YES_NO_CANCEL_OPTION, type, null, buttons, defaultButton);
+
+		if(result == JOptionPane.CLOSED_OPTION)
+		{
+			dbg("return BUTTON_CLOSED");
+			return BUTTON_CLOSED;
+		}
+		else
+		{
+			dbg(String.format("return [%d] (%s)%n", values[result], buttons[result]));
+			return values[result].intValue();
 		}
 	}
 
