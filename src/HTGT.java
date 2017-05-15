@@ -101,6 +101,7 @@ public class HTGT
 	final private static String CFG_MODE    = "last-gamemode";
 	final private static String CFG_WEATHER = "last-weather";
 	final private static String CFG_TRACK   = "last-track";
+	final private static String CFG_NDG     = "never-download";
 	final private static String CFG_WC      = "weather-check";
 	final private static String CFG_RACE    = "race.%s.%s";
 
@@ -246,10 +247,6 @@ public class HTGT
 		mainWindow.setSize(WINDOW_SIZE_START);
 		mainWindow.setMinimumSize(WINDOW_SIZE_MIN);
 		mainWindow.setVisible(true);
-
-		// DEBUG / TEST
-		System.out.printf("threesomeDialog: result %d%n", threesomeDialog(JOptionPane.QUESTION_MESSAGE, "Development", "Foo bar?", false));
-		System.out.printf("threesomeDialog: result %d%n", threesomeDialog(JOptionPane.QUESTION_MESSAGE, "Development", "Foo bar?", true));
 
 		// Die automatische Updateprüfung wird im Hintergrund ausgeführt...
 		new Thread(new HTGT_Background(HTGT_Background.EXEC_UPDATECHECK)).start();
@@ -961,15 +958,28 @@ public class HTGT
 									currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
 								}
 
-								if(confirmDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(weathers[lastUploadedWeather]), currentGhost)))
+								if(cfg(CFG_NDG) == null)
 								{
-									if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], weathers[lastUploadedWeather], true))
+									int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(weathers[lastUploadedWeather]), currentGhost), false);
+
+									if(action == BUTTON_NEVER)
 									{
-										if(OfflineProfiles.changed() && !saveFile(true))
+										cfg(CFG_NDG, "true");
+									}
+									else if(action == BUTTON_YES)
+									{
+										if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], weathers[lastUploadedWeather], true))
 										{
-											errorMessage("Die Änderungen konnten nicht gespeichert werden!");
+											if(OfflineProfiles.changed() && !saveFile(true))
+											{
+												errorMessage("Die Änderungen konnten nicht gespeichert werden!");
+											}
 										}
 									}
+								}
+								else
+								{
+									dbg("Skipping ghost download because of previous choice...");
 								}
 							}
 
@@ -1337,6 +1347,16 @@ public class HTGT
 			dbg("return FALSE (not confirmed)");
 			return false;
 		}
+	}
+
+	private static int threesomeDialog(String msg, boolean appendix)
+	{
+		return threesomeDialog(null, msg, appendix);
+	}
+
+	private static int threesomeDialog(String title, String msg, boolean appendix)
+	{
+		return threesomeDialog(JOptionPane.QUESTION_MESSAGE, title, msg, appendix);
 	}
 
 	private static int threesomeDialog(int type, String title, String msg, boolean appendix)
