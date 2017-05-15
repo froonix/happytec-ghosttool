@@ -90,18 +90,23 @@ public class HTGT
 	final private static boolean   ENABLE_RACE         = true;
 
 	// Konfigurationsnamen für java.util.prefs
-	private static String CFG_API     = "api-host";
-	private static String CFG_DC      = "dll-check";
-	private static String CFG_UC      = "update-check";
-	private static String CFG_DEFAULT = "default-file";
-	private static String CFG_TOKEN   = "esports-token";
-	private static String CFG_CWD     = "last-directory";
-	private static String CFG_CWDPORT = "last-port-directory";
-	private static String CFG_MODE    = "last-gamemode";
-	private static String CFG_WEATHER = "last-weather";
-	private static String CFG_TRACK   = "last-track";
-	private static String CFG_WC      = "weather-check";
-	private static String CFG_RACE    = "race.%s.%s";
+	final private static String CFG_API     = "api-host";
+	final private static String CFG_DC      = "dll-check";
+	final private static String CFG_UC      = "update-check";
+	final private static String CFG_DEFAULT = "default-file";
+	final private static String CFG_TOKEN   = "esports-token";
+	final private static String CFG_CWD     = "last-directory";
+	final private static String CFG_CWDPORT = "last-port-directory";
+	final private static String CFG_PROFILE = "last-profile";
+	final private static String CFG_MODE    = "last-gamemode";
+	final private static String CFG_WEATHER = "last-weather";
+	final private static String CFG_TRACK   = "last-track";
+	final private static String CFG_WC      = "weather-check";
+	final private static String CFG_RACE    = "race.%s.%s";
+
+	final private static int PROFILE_NONE    = 0;
+	final private static int PROFILE_DEFAULT = -1;
+	final private static int PROFILE_SPECIAL = -2;
 
 	private static Preferences                cfg;
 	private static File                       dll;
@@ -547,9 +552,6 @@ public class HTGT
 
 	public static void selectProfile()
 	{
-		// TODO: Zuletzt genutzes Profil in CFG abspeichern und auslesen
-		// ...
-
 		String suffix = null;
 		String selection = null;
 		String[] profiles;
@@ -619,10 +621,76 @@ public class HTGT
 		{
 			OfflineProfiles.selectProfile(index);
 			nickname = OfflineProfiles.getProfiles()[index];
+			int lastProfile = PROFILE_NONE;
+
+			if(OfflineProfiles.defaultProfile() == index)
+			{
+				lastProfile = PROFILE_DEFAULT;
+			}
+			else if(isSpecialProfile(index))
+			{
+				lastProfile = PROFILE_SPECIAL;
+			}
+			else
+			{
+				lastProfile = index + 1;
+			}
+
+			cfg(CFG_PROFILE, Integer.toString(lastProfile));
 		}
 
 		profile = index;
 		syncGUI();
+	}
+
+	public static void selectLastProfile()
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
+		try
+		{
+			int lastProfile = FNX.intval(cfg(CFG_PROFILE));
+			int selectedProfile = PROFILE_NONE;
+
+			if(lastProfile == PROFILE_DEFAULT)
+			{
+				selectedProfile = OfflineProfiles.defaultProfile();
+				dbg(String.format("Last used profile: DEFAULT (%d)", selectedProfile));
+			}
+			else if(lastProfile == PROFILE_SPECIAL)
+			{
+				String[] profiles = OfflineProfiles.getProfiles();
+
+				for(int i = 0; i < profiles.length; i++)
+				{
+					if(isSpecialProfile(profiles[i]))
+					{
+						selectedProfile = i;
+						dbg(String.format("Last used profile: SPECIAL (%d)", selectedProfile));
+						break;
+					}
+				}
+			}
+			else if(lastProfile != PROFILE_NONE)
+			{
+				selectedProfile = lastProfile - 1;
+				selectedProfile = (selectedProfile < 0 || selectedProfile >= OfflineProfiles.getProfileCount()) ? PROFILE_NONE : selectedProfile;
+				dbg(String.format("Last used profile: %d", selectedProfile));
+			}
+			else
+			{
+				dbg("Last used profile unknown...");
+			}
+
+			selectProfile(selectedProfile);
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und kann nicht geladen werden!");
+		}
 	}
 
 	public static void syncGUI()
@@ -2186,7 +2254,7 @@ public class HTGT
 		try
 		{
 			OfflineProfiles = new OfflineProfiles(file);
-			selectProfile(0); updateWindowTitle(); enableMenuItems();
+			selectLastProfile(); updateWindowTitle(); enableMenuItems();
 			dbg("Successfully loaded XML file! Let's rumble...");
 		}
 		catch(Exception e)
