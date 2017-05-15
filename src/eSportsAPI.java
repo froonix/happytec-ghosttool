@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 
+import java.lang.IndexOutOfBoundsException;
 import java.lang.NullPointerException;
 import java.lang.RuntimeException;
 
@@ -345,6 +346,11 @@ public class eSportsAPI
 
 	public int[][][] getAllResults() throws eSportsAPIException
 	{
+		return this.getSelectiveResults(null);
+	}
+
+	public int[][][] getSelectiveResults(int[][] filter) throws eSportsAPIException
+	{
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs();
@@ -366,9 +372,28 @@ public class eSportsAPI
 
 		try
 		{
+			Map<String,Object> args = new HashMap<String,Object>();
+
+			if(filter != null)
+			{
+				for(int i = 0; i < filter.length; i++)
+				{
+					if(filter[i].length != 3 || filter[i][1] < 0 || filter[i][1] >= tracks.length)
+					{
+						throw new eSportsAPIException(new IndexOutOfBoundsException());
+					}
+
+					String m = gmHelper.getGameMode(filter[i][0], true);
+					String t = tracks[filter[i][1]].toUpperCase();
+					String w = gmHelper.getWeather(filter[i][2], true);
+
+					args.put(String.format("filter_%d", i + 1), String.format("%s.%s.%s",  m, t, w));
+				}
+			}
+
 			// Diese Methode liefert aber nur aktive Strecken zurück!
 			// Allerdings mit automatischer Qualifikation/Rennen Erkennung.
-			String result = this.request("OFFLINE", "result.dump", null);
+			String result = this.request("OFFLINE", "result.dump", args);
 
 			Document doc = FNX.getDOMDocument(result);
 			NodeList OfflineResults = doc.getElementsByTagName("OfflineResult");

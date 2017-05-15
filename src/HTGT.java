@@ -907,7 +907,15 @@ public class HTGT
 
 							if(ghosts.size() > 0)
 							{
-								results = api.getAllResults();
+								int[][] filter = new int[ghosts.size()][3];
+								for(int i = 0; i < ghosts.size(); i++)
+								{
+									filter[i][0] = modes[(int) ghosts.get(i).get(0)];
+									filter[i][1] = (int) ghosts.get(i).get(1);
+									filter[i][2] = weathers[(int) ghosts.get(i).get(2)];
+								}
+
+								results = api.getSelectiveResults(filter);
 
 								for(int i = 0; i < ghosts.size(); i++)
 								{
