@@ -103,6 +103,7 @@ public class HTGT
 	final private static String CFG_TRACK   = "last-track";
 	final private static String CFG_NDG     = "never-download";
 	final private static String CFG_ARG     = "always-replace";
+	final private static String CFG_AAR     = "always-apply";
 	final private static String CFG_WC      = "weather-check";
 	final private static String CFG_RACE    = "race.%s.%s";
 
@@ -1794,29 +1795,50 @@ public class HTGT
 			GhostElement ghost = ghosts[i];
 			dbg(String.format("Item #%d uploaded as ghost ID %d: %s", i, ghostIDs[i], ghost.getDebugDetails()));
 
-			if(!doNotApply && confirmDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nSpiemodus: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult())))
+			if(!doNotApply)
 			{
-				try
-				{
-					if(api.applyResultByGhostID(ghostIDs[i]))
-					{
-						dbg(String.format("Successfully applied result from ghost with ID %d.", ghostIDs[i]));
+				int action;
 
-						if(!silent)
+				if(cfg(CFG_AAR) != null)
+				{
+					dbg("Forcing result registration because of previous choice...");
+					action = BUTTON_YES;
+				}
+				else
+				{
+					action = threesomeDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nSpiemodus: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult()), true);
+				}
+
+				if(action == BUTTON_ALWAYS)
+				{
+					cfg(CFG_AAR, "true");
+					action = BUTTON_YES;
+				}
+
+				if(action == BUTTON_YES)
+				{
+					try
+					{
+						if(api.applyResultByGhostID(ghostIDs[i]))
 						{
-							infoDialog(APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
+							dbg(String.format("Successfully applied result from ghost with ID %d.", ghostIDs[i]));
+
+							if(!silent)
+							{
+								infoDialog(APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
+							}
+						}
+						else
+						{
+							throw new eSportsAPIException();
 						}
 					}
-					else
+					catch(eSportsAPIException e)
 					{
-						throw new eSportsAPIException();
+						error = true;
+						dbg(String.format("Failed to apply ghost with ID %d.", ghostIDs[i]));
+						APIError(e, String.format("Der Geist mit der ID %d konnte nicht übernommen werden!", ghostIDs[i]));
 					}
-				}
-				catch(eSportsAPIException e)
-				{
-					error = true;
-					dbg(String.format("Failed to apply ghost with ID %d.", ghostIDs[i]));
-					APIError(e, String.format("Der Geist mit der ID %d konnte nicht übernommen werden!", ghostIDs[i]));
 				}
 			}
 		}
