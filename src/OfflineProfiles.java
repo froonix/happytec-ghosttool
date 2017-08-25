@@ -24,6 +24,9 @@ import java.lang.IndexOutOfBoundsException;
 
 import java.util.ArrayList;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
@@ -40,6 +43,7 @@ public class OfflineProfiles
 	final private static String XML_TAG_GHOSTS  = "TrainingGhosts";
 	final private static String XML_TAG_GHOST   = "GhostDataPair";
 	final private static String XML_TAG_NICK    = "Nickname";
+	final private static String XML_TAG_TOKEN   = "Token";
 
 	private File     file     = null;
 	private Document document = null;
@@ -305,6 +309,50 @@ public class OfflineProfiles
 		}
 
 		return profiles;
+	}
+
+	public String getToken() throws Exception
+	{
+		NodeList token = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
+
+		if(token.getLength() > 0)
+		{
+			return ((Element) token.item(0)).getTextContent();
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	public void setToken(String token) throws Exception
+	{
+		NodeList TokenNode = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
+
+		if(TokenNode.getLength() > 0)
+		{
+			Element TokenElement = (Element) TokenNode.item(0);
+			TokenElement.getParentNode().removeChild(TokenElement);
+			this.changed = true;
+		}
+
+		if(token != null)
+		{
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+
+			Document doc = dBuilder.newDocument();
+			Element node = doc.createElement(this.XML_TAG_TOKEN);
+			node.setTextContent(token);
+
+			this.OfflineProfile.appendChild(this.document.importNode((Element) node, true));
+			this.changed = true;
+		}
+	}
+
+	public void deleteToken() throws Exception
+	{
+		this.setToken(null);
 	}
 
 	public void selectProfile(int index) throws Exception
