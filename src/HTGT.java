@@ -289,46 +289,49 @@ public class HTGT
 		switch(key)
 		{
 			case "file":
-				menu.add(new DynamicMenuItem("XML-Datei öffnen",                    HTGT.class.getName(), "openFile"));
-				menu.add(new DynamicMenuItem("Standardpfad öffnen",                 HTGT.class.getName(), "openDefaultFile"));
+				menu.add(new DynamicMenuItem("XML-Datei öffnen",                     HTGT.class.getName(), "openFile"));
+				menu.add(new DynamicMenuItem("Standardpfad öffnen",                  HTGT.class.getName(), "openDefaultFile"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Speichern",                           HTGT.class.getName(), "saveFile"));
-				menu.add(registerDynMenuItem("Speichern unter",                     HTGT.class.getName(), "saveFileAs"));
+				menu.add(registerDynMenuItem("Speichern",                            HTGT.class.getName(), "saveFile"));
+				menu.add(registerDynMenuItem("Speichern unter",                      HTGT.class.getName(), "saveFileAs"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Schließen",                           HTGT.class.getName(), "closeFile"));
-				menu.add(new DynamicMenuItem("Beenden",                             HTGT.class.getName(), "quit"));
+				menu.add(registerDynMenuItem("Schließen",                            HTGT.class.getName(), "closeFile"));
+				menu.add(new DynamicMenuItem("Beenden",                              HTGT.class.getName(), "quit"));
 				break;
 
 			case "edit":
-				menu.add(registerDynMenuItem("Ausschneiden",                        HTGT.class.getName(), "cutToClipboard"));
-				menu.add(registerDynMenuItem("Kopieren",                            HTGT.class.getName(), "copyToClipboard"));
-				menu.add(registerDynMenuItem("Einfügen",                            HTGT.class.getName(), "copyFromClipboard"));
-				menu.add(registerDynMenuItem("Löschen",                             HTGT.class.getName(), "deleteRows"));
+				menu.add(registerDynMenuItem("Ausschneiden",                         HTGT.class.getName(), "cutToClipboard"));
+				menu.add(registerDynMenuItem("Kopieren",                             HTGT.class.getName(), "copyToClipboard"));
+				menu.add(registerDynMenuItem("Einfügen",                             HTGT.class.getName(), "copyFromClipboard"));
+				menu.add(registerDynMenuItem("Löschen",                              HTGT.class.getName(), "deleteRows"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Geistliste sortieren",                HTGT.class.getName(), "resort"));
+				menu.add(registerDynMenuItem("Geistliste sortieren",                 HTGT.class.getName(), "resort"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aus Datei importieren",               HTGT.class.getName(), "importFile"));
-				menu.add(registerDynMenuItem("In Datei exportieren",                HTGT.class.getName(), "exportFile"));
+				menu.add(registerDynMenuItem("Aus Datei importieren",                HTGT.class.getName(), "importFile"));
+				menu.add(registerDynMenuItem("In Datei exportieren",                 HTGT.class.getName(), "exportFile"));
 				break;
 
 			case "view":
-				menu.add(registerDynMenuItem("Profil auswählen",                    HTGT.class.getName(), "selectProfile"));
+				menu.add(registerDynMenuItem("Profil auswählen",                     HTGT.class.getName(), "selectProfile"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aktualisieren",                       HTGT.class.getName(), "reloadFile"));
+				menu.add(registerDynMenuItem("Aktualisieren",                        HTGT.class.getName(), "reloadFile"));
 				break;
 
 			case "api":
-				menu.add(registerDynMenuItem("Geister hochladen",                   HTGT.class.getName(), "ghostUpload"));
-				menu.add(registerDynMenuItem("Geister durch ID(s) herunterladen",   HTGT.class.getName(), "ghostDownload"));
-				menu.add(registerDynMenuItem("Geist auswählen und herunterladen",   HTGT.class.getName(), "ghostSelect"));
+				menu.add(registerDynMenuItem("Geister hochladen",                    HTGT.class.getName(), "ghostUpload"));
+				menu.add(registerDynMenuItem("Geister durch ID(s) herunterladen",    HTGT.class.getName(), "ghostDownload"));
+				menu.add(registerDynMenuItem("Geist auswählen und herunterladen",    HTGT.class.getName(), "ghostSelect"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem(FF_TITLE + " (nur pB's hochladen)",    HTGT.class.getName(), "fastFollow"));
-				menu.add(registerDynMenuItem(FF_TITLE + " (immer alles hochladen)", HTGT.class.getName(), "fastFollowForce"));
+				menu.add(registerDynMenuItem(FF_TITLE + " (nur pB's hochladen)",     HTGT.class.getName(), "fastFollow"));
+				menu.add(registerDynMenuItem(FF_TITLE + " (immer alles hochladen)",  HTGT.class.getName(), "fastFollowForce"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails anzeigen",    HTGT.class.getName(), "playerInfo"));
+				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails anzeigen",     HTGT.class.getName(), "playerInfo"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("API-Token ändern",                    HTGT.class.getName(), "setupToken"));
-				menu.add(new DynamicMenuItem("API-Token löschen",                   HTGT.class.getName(), "deleteToken"));
+				menu.add(registerDynMenuItem("Token ins aktuelle Profil kopieren",   HTGT.class.getName(), "copyTokenToProfile"));
+				menu.add(registerDynMenuItem("Token aus aktuellem Profil entfernen", HTGT.class.getName(), "removeTokenFromProfile"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(new DynamicMenuItem("API-Token ändern",                     HTGT.class.getName(), "setupToken"));
+				menu.add(new DynamicMenuItem("API-Token löschen",                    HTGT.class.getName(), "deleteToken"));
 				break;
 
 			case "help":
@@ -1648,6 +1651,79 @@ public class HTGT
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	public static void copyTokenToProfile()
+	{
+		if(OfflineProfiles == null || !prepareAPI())
+		{
+			return;
+		}
+		else if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
+		{
+			infoDialog("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!\n\nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus.");
+		}
+		else
+		{
+			try
+			{
+				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, "Soll der hinterlegte API-Token wirklich ins aktuelle Profil der XML-Datei kopiert werden?\n\nFür manche Rennen (z.B. mit limitierten Startversuchen) ist das zwingend erforderlich.\nDu darfst die OfflineProfiles.xml danach aber nicht mehr öffentlich mit anderen teilen!\nAndere könnten ansonsten in deinem Namen Zeiten eintragen und Fahrkarten lösen."))
+				{
+					dbg("Copying token to active profile...");
+					OfflineProfiles.setToken(token);
+
+					if(!token.equals(OfflineProfiles.getToken()))
+					{
+						throw new Exception("Could not copy token");
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e, "Ups, da ist etwas ordentlich schief gelaufen...");
+			}
+
+			updateWindowTitle();
+		}
+	}
+
+	public static void removeTokenFromProfile()
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+		else if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
+		{
+			infoDialog("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!\n\nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus.");
+		}
+		else
+		{
+			try
+			{
+				if(OfflineProfiles.getToken() == null)
+				{
+					dbg("No token in active profile!");
+					infoDialog("Im aktuellen Profil ist kein Token vorhanden.");
+				}
+				else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei wirklich gelöscht werden?\n\nDu kannst dann nicht mehr an Rennen teilnehmen, bei denen es z.B. limitierte Startversuche gibt.")))
+				{
+					dbg("Removing token from active profile...");
+					OfflineProfiles.deleteToken();
+
+					if(OfflineProfiles.getToken() != null)
+					{
+						throw new Exception("Could not remove token");
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e, "Ups, da ist etwas ordentlich schief gelaufen...");
+			}
+
+			updateWindowTitle();
 		}
 	}
 
