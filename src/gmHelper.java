@@ -121,7 +121,8 @@ public abstract class gmHelper
 		switch(gameModeType)
 		{
 			case GAMEMODE_DEFAULT:
-				gameModeName = "Standard";
+				// gameModeName = "Standard";
+				gameModeName = "Zeitrennen";
 				break;
 
 			case GAMEMODE_MM_ROWDY:
@@ -138,6 +139,7 @@ public abstract class gmHelper
 
 			case GAMEMODE_MM_EXTREME:
 				gameModeName = "Extrem";
+				// gameModeName = "Extreme";
 				break;
 
 			case GAMEMODE_MM_EXTREMEICE:
