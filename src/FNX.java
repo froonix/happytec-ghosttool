@@ -114,8 +114,8 @@ public abstract class FNX
 
 	public static String urlencode(String s)
 	{
-        try
-        {
+		try
+		{
 			return URLEncoder.encode(s, "UTF-8");
 		}
 		catch(UnsupportedEncodingException e)
