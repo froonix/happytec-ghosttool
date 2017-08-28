@@ -1662,13 +1662,13 @@ public class HTGT
 		}
 		else if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
 		{
-			infoDialog("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!\n\nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus.");
+			infoDialog(String.format("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!%n%nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus."));
 		}
 		else
 		{
 			try
 			{
-				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, "Soll der hinterlegte API-Token wirklich ins aktuelle Profil der XML-Datei kopiert werden?\n\nFür manche Rennen (z.B. mit limitierten Startversuchen) ist das zwingend erforderlich.\nDu darfst die OfflineProfiles.xml danach aber nicht mehr öffentlich mit anderen teilen!\nAndere könnten ansonsten in deinem Namen Zeiten eintragen und Fahrkarten lösen."))
+				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der hinterlegte API-Token wirklich ins aktuelle Profil der XML-Datei kopiert werden?%n%nFür manche Rennen (z.B. mit limitierten Startversuchen) ist das zwingend erforderlich.%nDu darfst die OfflineProfiles.xml danach aber nicht mehr öffentlich mit anderen teilen!%nAndere könnten ansonsten in deinem Namen Zeiten eintragen und Fahrkarten lösen.")))
 				{
 					dbg("Copying token to active profile...");
 					OfflineProfiles.setToken(token);
@@ -1696,7 +1696,7 @@ public class HTGT
 		}
 		else if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
 		{
-			infoDialog("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!\n\nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus.");
+			infoDialog(String.format("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!%n%nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus."));
 		}
 		else
 		{
@@ -1707,7 +1707,7 @@ public class HTGT
 					dbg("No token in active profile!");
 					infoDialog("Im aktuellen Profil ist kein Token vorhanden.");
 				}
-				else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei wirklich gelöscht werden?\n\nDu kannst dann nicht mehr an Rennen teilnehmen, bei denen es z.B. limitierte Startversuche gibt.")))
+				else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei wirklich gelöscht werden?%n%nDu kannst dann nicht mehr an Rennen teilnehmen, bei denen es z.B. limitierte Startversuche gibt.")))
 				{
 					dbg("Removing token from active profile...");
 					OfflineProfiles.deleteToken();
