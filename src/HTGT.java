@@ -88,6 +88,7 @@ public class HTGT
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
 	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
 	final private static boolean   ENABLE_RACE         = true;
+	final private static boolean   ENABLE_3TC          = true;
 
 	// Konfigurationsnamen für java.util.prefs
 	final private static String CFG_API     = "api-host";
@@ -2105,8 +2106,9 @@ public class HTGT
 		String selection;
 
 		String[]   tracks      = gmHelper.getTracksByGameMode(mode);
-		int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE);
+		int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE, ENABLE_3TC);
 		int        raceWeather = gmHelper.WEATHER_NONE;
+		int        tickets     = ENABLE_3TC ? 1 : 0;
 		int        addition    = 0;
 
 		String[]   values;
@@ -2116,8 +2118,8 @@ public class HTGT
 		{
 			if(ENABLE_RACE)
 			{
-				values     = new String[tracks.length * 2];
-				conditions = new String[tracks.length * 2][3];
+				values     = new String[tracks.length * (2 + tickets)];
+				conditions = new String[tracks.length * (2 + tickets)][3];
 				addition++;
 			}
 			else
@@ -2153,11 +2155,15 @@ public class HTGT
 
 						if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 						{
-							key = i * (addition + 1);
+							key = i * (addition + 1 + tickets);
 
 							if(weathers[h] == gmHelper.WEATHER_RACE)
 							{
 								key++;
+							}
+							else if(weathers[h] == gmHelper.WEATHER_TICKET)
+							{
+								key += 2;
 							}
 							else if(weathers[h] != gmHelper.WEATHER_ICE)
 							{
@@ -2165,9 +2171,10 @@ public class HTGT
 							}
 						}
 
-						if(weathers[h] == gmHelper.WEATHER_RACE)
+						if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
 						{
-							raceWeather = cfg.getInt(String.format(CFG_RACE, gmHelper.getGameMode(mode, true), tracks[i].toUpperCase()), gmHelper.WEATHER_NONE);
+							String suffix = (weathers[h] == gmHelper.WEATHER_TICKET) ? "-T" : "";
+							raceWeather = cfg.getInt(String.format(CFG_RACE, gmHelper.getGameMode(mode, true), tracks[i].toUpperCase() + suffix), gmHelper.WEATHER_NONE);
 
 							if(raceWeather == gmHelper.WEATHER_NONE)
 							{
@@ -2180,7 +2187,7 @@ public class HTGT
 						{
 							if(mode == gmHelper.GAMEMODE_DEFAULT)
 							{
-								if(weathers[h] == gmHelper.WEATHER_RACE)
+								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
 								{
 									values[key] = String.format("%s – %s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
 								}
@@ -2191,7 +2198,7 @@ public class HTGT
 							}
 							else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 							{
-								if(weathers[h] == gmHelper.WEATHER_RACE)
+								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
 								{
 									values[key] = String.format("%s: %s – %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
 								}
@@ -2202,7 +2209,7 @@ public class HTGT
 							}
 							else
 							{
-								if(weathers[h] == gmHelper.WEATHER_RACE)
+								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
 								{
 									values[key] = String.format("%s: %s – %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
 								}
@@ -2357,14 +2364,17 @@ public class HTGT
 				{
 					int[] modes = gmHelper.getGameModeIDs();
 					String[] tracks = gmHelper.getTracks(true);
-					int[][] test = api.getRaceWeather();
+					int[][][] test = api.getRaceWeather();
 
-					for(int m = 0; m < modes.length; m++)
+					for(int i = 0; i < test.length; i++)
 					{
-						for(int t = 0; t < tracks.length; t++)
+						for(int m = 0; m < modes.length; m++)
 						{
-							dbg(String.format("Race weather: %s @ %s = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), test[m][t]));
-							cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase()), test[m][t]);
+							for(int t = 0; t < tracks.length; t++)
+							{
+								dbg(String.format("Race weather: %s @ %s (%d) = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), i, test[i][m][t]));
+								cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase() + (i != 0 ? "-T" : "")), test[i][m][t]);
+							}
 						}
 					}
 

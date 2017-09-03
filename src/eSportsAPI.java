@@ -70,6 +70,11 @@ public class eSportsAPI
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
 
+//	private final static int FO_REV    = -1;
+	private final static int FO_NONE   =  0;
+	private final static int FO_TICKET =  1;
+//	private final static int FO_ALL    =  1;
+
 	public eSportsAPI(String token)
 	{
 		this.setToken(token);
@@ -373,6 +378,7 @@ public class eSportsAPI
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
+			args.put("includeTicket", "false"); // DO NOT USE TRUE!
 
 			if(filter != null)
 			{
@@ -457,25 +463,35 @@ public class eSportsAPI
 		return results;
 	}
 
-	public int[][] getRaceWeather() throws eSportsAPIException
+	// ACHTUNG: Das erste Array ist nun für this.FO_* reserviert!
+	public int[][][] getRaceWeather() throws eSportsAPIException
 	{
+		// TODO: forceOption implementieren!
+		// ...
+
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
-		int[] weathers = gmHelper.getWeatherIDs(true);
-		int results[][] = new int[modes.length][tracks.length];
+		int[] weathers = gmHelper.getWeatherIDs(true, true);
+		int results[][][] = new int[2][modes.length][tracks.length];
 
-		for(int m = 0; m < modes.length; m++)
+		for(int o = 0; o <= 1; o++)
 		{
-			for(int t = 0; t < tracks.length; t++)
+			for(int m = 0; m < modes.length; m++)
 			{
-				results[m][t] = gmHelper.WEATHER_NONE;
+				for(int t = 0; t < tracks.length; t++)
+				{
+					results[o][m][t] = gmHelper.WEATHER_NONE;
+				}
 			}
 		}
 
 		try
 		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			args.put("includeTicket", "true"); // DO NOT USE FALSE!
+
 			// Diese Methode liefert weit mehr, als aktuell gebraucht wird.
-			String result = this.request("OFFLINE", "track.list", null);
+			String result = this.request("OFFLINE", "track.list", args);
 
 			Document doc = FNX.getDOMDocument(result);
 			NodeList Tracks = doc.getElementsByTagName("Track");
@@ -495,6 +511,7 @@ public class eSportsAPI
 					String weather = Track.getAttribute("Weather").toLowerCase();
 					String gamemode = Track.getAttribute("GameMode").toLowerCase();
 
+					int o = this.FO_NONE;
 					int m = -1;
 					int t = -1;
 					int w = -1;
@@ -526,12 +543,17 @@ public class eSportsAPI
 						}
 					}
 
-					if(m == -1 || t == -1 || w == -1 || results[m][t] != gmHelper.WEATHER_NONE)
+					if(m == -1 || t == -1 || w == -1 || results[o][m][t] != gmHelper.WEATHER_NONE)
 					{
 						throw new eSportsAPIException();
 					}
 
-					results[m][t] = w;
+					if(Track.getAttribute("Ticket").toLowerCase().equals("true"))
+					{
+						o = this.FO_TICKET;
+					}
+
+					results[o][m][t] = w;
 				}
 			}
 

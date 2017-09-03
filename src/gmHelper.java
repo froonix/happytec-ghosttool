@@ -26,12 +26,15 @@ public abstract class gmHelper
 	// Interne Wetter-IDs von HAPPYTEC.
 	// Die von GT waren immer schon anders!
 	// Das ist leider historisch bedingt...
-	public final static int WEATHER_NONE = 0;
-	//    QUALIFICATION                  = 1
-	public final static int WEATHER_SUN  = 2;
-	public final static int WEATHER_SNOW = 3;
-	public final static int WEATHER_ICE  = 4;
-	public final static int WEATHER_RACE = 5;
+	public final static int WEATHER_NONE =  0;
+	//    QUALIFICATION                  =  1
+	public final static int WEATHER_SUN  =  2;
+	public final static int WEATHER_SNOW =  3;
+	public final static int WEATHER_ICE  =  4;
+	public final static int WEATHER_RACE =  5;
+
+	// Wird für eSportsAPI.FO_* benötigt...
+	public final static int WEATHER_TICKET = -6;
 
 	// ----------------------- //
 	// GentleMagic Wetter IDs: //
@@ -261,6 +264,10 @@ public abstract class gmHelper
 				weatherName = "Rennen";
 				break;
 
+			case WEATHER_TICKET:
+				weatherName = "3TC Rennen";
+				break;
+
 			default:
 				throw new gmException(String.format("Invalid weather type: %d", weatherType));
 		}
@@ -432,9 +439,23 @@ public abstract class gmHelper
 
 	public static int[] getWeatherIDs(boolean race)
 	{
+		return getWeatherIDs(race, false);
+	}
+
+	public static int[] getWeatherIDs(boolean race, boolean option)
+	{
 		if(race)
 		{
-			int[] values = {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE};
+			int[] values;
+
+			if(option)
+			{
+				values = new int[]  {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE, WEATHER_TICKET};
+			}
+			else
+			{
+				values = new int[] {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE};
+			}
 
 			return values;
 		}
