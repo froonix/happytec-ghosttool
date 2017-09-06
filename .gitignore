@@ -1,4 +1,5 @@
 example/*
 src/*.class
 HTGT.geany
+htgt-version.txt
 *.swp

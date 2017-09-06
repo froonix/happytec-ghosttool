@@ -18,8 +18,13 @@
  */
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.InputStream;
+import java.io.Reader;
 
 import java.lang.IndexOutOfBoundsException;
 
@@ -88,6 +93,7 @@ public class HTGT
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
 	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
+	final private static String    VERSION_FILE        = "htgt-version.txt";
 	final private static boolean   ENABLE_RACE         = true;
 	final private static boolean   ENABLE_3TC          = true;
 
@@ -177,7 +183,7 @@ public class HTGT
 		// http://stackoverflow.com/questions/8348063/clickable-links-in-joptionpane
 		// ...
 
-		messageDialog(APPLICATION_TITLE, String.format("<html><body>Application: %s<br />Version: %s<br /><br />Website: <a href='https://github.com/froonix/happytec-ghosttool'>github.com/froonix/happytec-ghosttool</a><br />%s by <a href='https://www.esports.happytec.at/'>esports.happytec.at</a><hr><pre style='padding: 10px; color: #AAAAAA;'>%s</pre></body></html>", APPLICATION_NAME, APPLICATION_VERSION, APPLICATION_API, licence));
+		messageDialog(APPLICATION_TITLE, String.format("<html><body>Application: %s<br />Version: %s<br /><br />Website: <a href='https://github.com/froonix/happytec-ghosttool'>github.com/froonix/happytec-ghosttool</a><br />%s by <a href='https://www.esports.happytec.at/'>esports.happytec.at</a><hr><pre style='padding: 10px; color: #AAAAAA;'>%s</pre></body></html>", APPLICATION_NAME, getVersion(true), APPLICATION_API, licence));
 	}
 
 	private static void exceptionHandler(Exception e)
@@ -191,14 +197,58 @@ public class HTGT
 		FNX.displayExceptionSummary(e, "Fehler", msg, "Weitere Details stehen im Stacktrace in der Konsolenausgabe.");
 	}
 
+	public static String getVersion(boolean full)
+	{
+		if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
+		{
+			try
+			{
+				Reader r;
+				BufferedReader b;
+				InputStream i;
+				String v;
+
+				if((i = HTGT.class.getResourceAsStream("/" + VERSION_FILE)) != null)
+				{
+					r = new InputStreamReader(i);
+				}
+				else
+				{
+					r = new FileReader("./" + VERSION_FILE);
+				}
+
+				b = new BufferedReader(r);
+				v = b.readLine();
+
+				if(v != null && v.length() > 0)
+				{
+					if(full)
+					{
+						return String.format("%s (%s)", v, APPLICATION_VERSION);
+					}
+					else
+					{
+						return v;
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				/* ... */
+			}
+		}
+
+		return APPLICATION_VERSION;
+	}
+
 	public static void main(String[] args)
 	{
 		if(args.length > 0)
 		{
 			if(args[0].equals("-v"))
 			{
-				// Required for Makefile! (jar/zip target)
-				System.out.println(APPLICATION_VERSION);
+				// Required for Makefile!
+				System.out.println(getVersion(false));
 				System.exit(0);
 			}
 			else if(args[0].equals("-d"))

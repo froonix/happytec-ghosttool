@@ -7,6 +7,7 @@ SIGFILE     = build/HTGT_$(version).sha512.sig
 CSUMFILE    = build/HTGT_$(version).sha512
 JARFILE     = build/HTGT_$(version).jar
 ZIPFILE     = build/HTGT_$(version).zip
+VFILE       = htgt-version.txt
 
 JFLAGS  = -g -sourcepath ./src -classpath ./classes -d ./classes
 VMFLAGS = -classpath ./classes
@@ -17,10 +18,13 @@ JAR     = jar
 sources = $(wildcard src/*.java)
 classes = $(sources:.java=.class)
 version = $(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
+commit  = $(shell git describe --always)
 
 all: clean compile jar zip
 
 compile: $(classes)
+	echo Original version: $(version)
+	@echo git-$(commit) > $(VFILE)
 
 %.class: %.java
 	$(JC) $(JFLAGS) $<
@@ -34,7 +38,7 @@ jar: compile
 	@echo "Permissions: all-permissions" >> $(MFFILE)
 
 	cd ./classes && \
-	$(JAR) -cmf ../$(MFFILE) ../$(JARFILE) ./*.class && \
+	$(JAR) -cmf ../$(MFFILE) ../$(JARFILE) ./*.class ../$(VFILE) && \
 	chmod +x ../$(JARFILE) && $(RM) ../$(MFFILE)
 
 zip: jar
@@ -61,5 +65,5 @@ sig: zip
 
 clean:
 	$(RM) build/HTGT_*.*
-	$(RM) $(MFFILE) $(LICENCEFILE)
+	$(RM) $(MFFILE) $(VFILE) $(LICENCEFILE)
 	$(RM) classes/*.class src/*.class
