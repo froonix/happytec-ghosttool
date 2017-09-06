@@ -244,6 +244,8 @@ public class OfflineProfiles
 		return result;
 	}
 
+	// Gibt im Gegensatz zu getAllGhosts() wirklich
+	// alle Geister zurück, auch mehrere je Bedingung.
 	public ArrayList<GhostElement>[][][] getGhostList()
 	{
 		int[] modes = gmHelper.getGameModeIDs();
@@ -251,7 +253,6 @@ public class OfflineProfiles
 		int[] weathers = gmHelper.getWeatherIDs();
 
 		ArrayList<GhostElement> result[][][] = new ArrayList[modes.length][tracks.length][weathers.length];
-
 
 		for(int m = 0; m < modes.length; m++)
 		{
