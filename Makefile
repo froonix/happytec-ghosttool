@@ -16,7 +16,7 @@ JAR     = jar
 
 sources = $(wildcard src/*.java)
 classes = $(sources:.java=.class)
-version=$(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
+version = $(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
 
 all: clean compile jar zip
 
