@@ -8,24 +8,19 @@ CSUMFILE    = build/HTGT_$(version).sha512
 JARFILE     = build/HTGT_$(version).jar
 ZIPFILE     = build/HTGT_$(version).zip
 
-JFLAGS  = -g -sourcepath ./classes -classpath ./classes -d ./classes
+JFLAGS  = -g -sourcepath ./src -classpath ./classes -d ./classes
 VMFLAGS = -classpath ./classes
 JC      = javac
 JAVA    = java
 JAR     = jar
 
-sources = $(wildcard classes/*.java)
+sources = $(wildcard src/*.java)
 classes = $(sources:.java=.class)
-version = $(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
-commit  = $(shell git rev-parse --short HEAD)
+version=$(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
 
-all: clean patch compile jar zip
+all: clean compile jar zip
 
-patch: clean
-	cp -fav src/*.java classes/
-	sed -i -r "s/(APPLICATION_VERSION) = \"git-master\";\$$/\1 = \"git-$(commit)\";/" classes/HTGT.java
-
-compile: patch $(classes)
+compile: $(classes)
 
 %.class: %.java
 	$(JC) $(JFLAGS) $<
@@ -67,4 +62,4 @@ sig: zip
 clean:
 	$(RM) build/HTGT_*.*
 	$(RM) $(MFFILE) $(LICENCEFILE)
-	$(RM) classes/*.java classes/*.class
+	$(RM) classes/*.class src/*.class
