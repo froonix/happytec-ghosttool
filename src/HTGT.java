@@ -33,6 +33,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -1113,42 +1114,67 @@ public class HTGT
 
 	public static void resort()
 	{
-		if(isSpecialProfile())
-		{
-			infoDialog("Die Sortierfunktion ist bei Spezialprofilen leider (noch) nicht verfügbar.");
-			return;
-		}
-
 		if(OfflineProfiles != null)
 		{
-			GhostElement[][][] ghosts;
-
-			if((ghosts = OfflineProfiles.getAllGhosts(true)) == null)
+			if(isSpecialProfile())
 			{
-				if(confirmGhostReplacement())
+				ArrayList<GhostElement>[][][] ghosts = OfflineProfiles.getGhostList();
+
+				for(int i = (OfflineProfiles.getGhostCount() - 1); i > -1; i--)
 				{
-					ghosts = OfflineProfiles.getAllGhosts(false);
+					deleteGhost(i);
 				}
-				else
-				{
-					return;
-				}
-			}
 
-			for(int i = (OfflineProfiles.getGhostCount() - 1); i > -1; i--)
-			{
-				deleteGhost(i);
-			}
-
-			for(int m = 0; m < ghosts.length; m++)
-			{
-				for(int t = 0; t < ghosts[m].length; t++)
+				for(int m = 0; m < ghosts.length; m++)
 				{
-					for(int w = 0; w < ghosts[m][t].length; w++)
+					for(int t = 0; t < ghosts[m].length; t++)
 					{
-						if(ghosts[m][t][w] != null)
+						for(int w = 0; w < ghosts[m][t].length; w++)
 						{
-							addGhost(ghosts[m][t][w], true);
+							if(ghosts[m][t][w] != null)
+							{
+								ghosts[m][t][w].sort(Comparator.comparing(GhostElement::getTime));
+
+								for(int i = 0; i < ghosts[m][t][w].size(); i++)
+								{
+									addGhost(ghosts[m][t][w].get(i), true);
+								}
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				GhostElement[][][] ghosts;
+
+				if((ghosts = OfflineProfiles.getAllGhosts(true)) == null)
+				{
+					if(confirmGhostReplacement())
+					{
+						ghosts = OfflineProfiles.getAllGhosts(false);
+					}
+					else
+					{
+						return;
+					}
+				}
+
+				for(int i = (OfflineProfiles.getGhostCount() - 1); i > -1; i--)
+				{
+					deleteGhost(i);
+				}
+
+				for(int m = 0; m < ghosts.length; m++)
+				{
+					for(int t = 0; t < ghosts[m].length; t++)
+					{
+						for(int w = 0; w < ghosts[m][t].length; w++)
+						{
+							if(ghosts[m][t][w] != null)
+							{
+								addGhost(ghosts[m][t][w], true);
+							}
 						}
 					}
 				}

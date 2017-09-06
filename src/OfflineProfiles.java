@@ -244,6 +244,39 @@ public class OfflineProfiles
 		return result;
 	}
 
+	public ArrayList<GhostElement>[][][] getGhostList()
+	{
+		int[] modes = gmHelper.getGameModeIDs();
+		String[] tracks = gmHelper.getTracks(true);
+		int[] weathers = gmHelper.getWeatherIDs();
+
+		ArrayList<GhostElement> result[][][] = new ArrayList[modes.length][tracks.length][weathers.length];
+
+
+		for(int m = 0; m < modes.length; m++)
+		{
+			for(int t = 0; t < tracks.length; t++)
+			{
+				for(int w = 0; w < weathers.length; w++)
+				{
+					if(result[m][t][w] == null)
+					{
+						result[m][t][w] = new ArrayList<GhostElement>();
+					}
+
+					int[] ghosts = this.getGhostsByCondition(modes[m], tracks[t], weathers[w]);
+
+					for(int i = 0; i < ghosts.length; i++)
+					{
+						result[m][t][w].add(this.getGhost(ghosts[i]));
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+
 	public void deleteGhost(int index) throws Exception
 	{
 		this.changed = true;
