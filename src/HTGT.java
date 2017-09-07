@@ -214,6 +214,7 @@ public class HTGT
 				}
 				else
 				{
+					// Schmutziger Hack fürs Makefile...
 					r = new FileReader("./" + VERSION_FILE);
 				}
 
