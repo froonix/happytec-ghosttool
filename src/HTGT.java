@@ -85,7 +85,7 @@ public class HTGT
 	final private static String    APPLICATION_NAME    = "HTGT"; // cfg, updates, …
 	final private static String    APPLICATION_TITLE   = "HTGT (HAPPYTEC Ghosttool)";
 	final private static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
-	final private static String    APPLICATION_IDENT   = "HTGT <https://github.com/froonix/happytec-ghosttool>";
+	final private static String    APPLICATION_IDENT   = "HTGT %s <https://github.com/froonix/happytec-ghosttool>";
 	final private static Dimension WINDOW_SIZE_START   = new Dimension(900, 600);
 	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
@@ -195,6 +195,11 @@ public class HTGT
 	{
 		FNX.windowToFront(mainWindow);
 		FNX.displayExceptionSummary(e, "Fehler", msg, "Weitere Details stehen im Stacktrace in der Konsolenausgabe.");
+	}
+
+	public static String getIdent()
+	{
+		return String.format(APPLICATION_IDENT, getVersion(false));
 	}
 
 	public static String getVersion(boolean full)
@@ -1272,7 +1277,7 @@ public class HTGT
 			if(anonAPI == null)
 			{
 				// Der Token wird absichtlich nicht mitgesendet!
-				anonAPI = new eSportsAPI(null, APPLICATION_IDENT);
+				anonAPI = new eSportsAPI(null, getIdent());
 			}
 
 			try
@@ -1698,7 +1703,7 @@ public class HTGT
 			if(anonAPI == null)
 			{
 				// Der Token wird absichtlich nicht mitgesendet!
-				anonAPI = new eSportsAPI(null, APPLICATION_IDENT);
+				anonAPI = new eSportsAPI(null, getIdent());
 			}
 
 			try
@@ -1857,7 +1862,7 @@ public class HTGT
 				if(oldToken == null || !oldToken.equals(token))
 				{
 					dbg("Token changed! Resetting API instance...");
-					api = new eSportsAPI(token, APPLICATION_IDENT);
+					api = new eSportsAPI(token, getIdent());
 				}
 
 				return true;
