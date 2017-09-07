@@ -1,5 +1,6 @@
 example/*
 src/*.class
 HTGT.geany
+HTGT-Debug.log
 htgt-version.txt
 *.swp

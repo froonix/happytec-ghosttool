@@ -6,6 +6,9 @@ then
 	exit 1
 fi
 
+echo "executable: $java"
+"$java" -version
+
 cd "$(dirname $0)" && \
 "$java" -jar "HTGT.jar" -d 2>> HTGT-Debug.log && \
 exit $? || status=$?
