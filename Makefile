@@ -1,8 +1,8 @@
 GPGKEY      ="8038DEBE14AD09A4"
 MFFILE      = build/manifest.mf
 LICENCEFILE = build/LICENCE.txt
-SHFILE      = build/HTGT_$(version).sh
-BATFILE     = build/HTGT_$(version).bat
+SHFILE      = build/HTGT-Unix_$(version)
+BATFILE     = build/HTGT-Windows_$(version).bat
 SIGFILE     = build/HTGT_$(version).sha512.sig
 CSUMFILE    = build/HTGT_$(version).sha512
 JARFILE     = build/HTGT_$(version).jar
@@ -44,10 +44,10 @@ jar: compile
 zip: jar
 	@echo Zipping version $(version)
 
-	cp -af HTGT.sh $(SHFILE)
+	cp -af HTGT-Unix $(SHFILE)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(SHFILE)
 
-	cp -af HTGT.bat $(BATFILE)
+	cp -af HTGT-Windows.bat $(BATFILE)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(BATFILE)
 
 	cp -af LICENCE $(LICENCEFILE)
