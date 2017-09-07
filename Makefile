@@ -18,7 +18,7 @@ JAR     = jar
 sources = $(wildcard src/*.java)
 classes = $(sources:.java=.class)
 version = $(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
-commit  = $(shell git describe --always)
+commit  = $(shell git rev-parse --short HEAD)
 
 all: clean compile jar zip
 
