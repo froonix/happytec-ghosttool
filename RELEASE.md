@@ -12,7 +12,7 @@ Schritte für eine neue Veröffentlichung:
 
 ```bash
 # Example commands...
-RELEASE="0.0.0-beta8"
+RELEASE="0.0.0-beta10"
 git checkout -b "v${RELEASE}"
 sed -i -r "s/(APPLICATION_VERSION) = \"git-master\";\$/\1 = \"${RELEASE}\";/" src/HTGT.java
 
@@ -22,7 +22,7 @@ git push origin "v${RELEASE}"
 git tag "release-${RELEASE}"
 git push origin "release-${RELEASE}"
 
-make clean && make && make sig
+make clean && make sig
 # edit new release/tag on github
 # upload binary files to github
 # protect release branch on github
