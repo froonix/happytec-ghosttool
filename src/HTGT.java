@@ -1658,7 +1658,7 @@ public class HTGT
 		if(e.getErrorCode().equals("TOKEN_INVALID"))
 		{
 			dbg("API token invalid: Removed from prefs!");
-			cfg(CFG_TOKEN, null);
+			updateToken(null);
 		}
 
 		msg = (msg == null) ? "Der Server gab bei der API-Anfrage einen Fehler zurück!" : msg;
@@ -1813,10 +1813,17 @@ public class HTGT
 		}
 	}
 
+	// Token aktualisieren und Cache leeren.
+	private static void updateToken(String t)
+	{
+		removeConfig(CFG_WC);
+		cfg(CFG_TOKEN, t);
+	}
+
 	// API-Token aus der Konfiguration löschen.
 	public static void deleteToken()
 	{
-		cfg(CFG_TOKEN, null);
+		updateToken(null);
 		infoDialog(APPLICATION_API, String.format("Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!%n%nDu kannst ihn über das Menü jederzeit erneut eintragen."));
 	}
 
@@ -1840,7 +1847,7 @@ public class HTGT
 				}
 				else if(oldToken == null || !oldToken.equals(newToken))
 				{
-					cfg(CFG_TOKEN, newToken);
+					updateToken(newToken);
 				}
 				else
 				{
