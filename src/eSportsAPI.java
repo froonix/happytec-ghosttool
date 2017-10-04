@@ -543,14 +543,14 @@ public class eSportsAPI
 						}
 					}
 
-					if(m == -1 || t == -1 || w == -1 || results[o][m][t] != gmHelper.WEATHER_NONE)
-					{
-						throw new eSportsAPIException();
-					}
-
 					if(Track.getAttribute("Ticket").toLowerCase().equals("true"))
 					{
 						o = this.FO_TICKET;
+					}
+
+					if(m == -1 || t == -1 || w == -1 || results[o][m][t] != gmHelper.WEATHER_NONE || true)
+					{
+						throw new eSportsAPIException("SERVER_DUMB");
 					}
 
 					results[o][m][t] = w;

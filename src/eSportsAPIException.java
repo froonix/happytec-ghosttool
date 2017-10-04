@@ -86,6 +86,7 @@ public class eSportsAPIException extends Exception
 				case "SEASON_OVER":               return String.format("Die Saison ist schon beendet.%n%nSchau ins Forum, wann es wieder los geht!");
 				case "INTERNAL_CLIENT_EXCEPTION": return String.format("Interne Exception im Java-Programm.%n%nSiehe Stacktrace in der Konsolenausgabe.");
 				case "INTERNAL_NETWORK_ERROR":    return "Überprüfe deine Internetverbindung.";
+				case "SERVER_DUMB":               return "Der Server hat Schluckauf!";
 			}
 		}
 
