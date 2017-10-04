@@ -1652,6 +1652,8 @@ public class HTGT
 	// Fehlermeldung der API formatiert ausgeben.
 	private static void APIError(eSportsAPIException e, String msg)
 	{
+		e.printStackTrace();
+
 		if(e.getErrorCode().equals("TOKEN_INVALID"))
 		{
 			dbg("API token invalid: Removed from prefs!");
