@@ -18,6 +18,7 @@
  */
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -2550,6 +2551,10 @@ public class HTGT
 			OfflineProfiles = new OfflineProfiles(file);
 			selectLastProfile(); updateWindowTitle(); enableMenuItems();
 			dbg("Successfully loaded XML file! Let's rumble...");
+		}
+		catch(FileNotFoundException e)
+		{
+			errorMessage(String.format("Datei nicht gefunden: %s", e.getMessage()));
 		}
 		catch(Exception e)
 		{
