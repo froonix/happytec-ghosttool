@@ -33,7 +33,8 @@ public abstract class gmHelper
 	public final static int WEATHER_ICE  =  4;
 	public final static int WEATHER_RACE =  5;
 
-	// Wird für eSportsAPI.FO_* benötigt...
+	// Wird für eSportsAPI.FO_* benötigt.
+	// Bitte niemals "-1" dafür verwenden!
 	public final static int WEATHER_TICKET = -6;
 
 	// ----------------------- //

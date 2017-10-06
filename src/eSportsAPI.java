@@ -70,10 +70,11 @@ public class eSportsAPI
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
 
-//	private final static int FO_REV    = -1;
-	private final static int FO_NONE   =  0;
-	private final static int FO_TICKET =  1;
-//	private final static int FO_ALL    =  1;
+	public final static int FOS       =  2;
+//	public final static int FO_REV    = -1;
+	public final static int FO_NONE   =  0;
+	public final static int FO_TICKET =  1;
+//	public final static int FO_ALL    =  1;
 
 	public eSportsAPI(String token)
 	{
@@ -349,12 +350,12 @@ public class eSportsAPI
 		}
 	}
 
-	public int[][][] getAllResults() throws eSportsAPIException
+	public int[][][][] getAllResults() throws eSportsAPIException
 	{
 		return this.getSelectiveResults(null);
 	}
 
-	public int[][][] getSelectiveResults(int[][] filter) throws eSportsAPIException
+	public int[][][][] getSelectiveResults(int[][] filter) throws eSportsAPIException
 	{
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
@@ -362,15 +363,18 @@ public class eSportsAPI
 
 		// Es ist intern wesentlich einfacher mit numerischen Schlüsseln zu arbeiten.
 		// Eine Map würde nur unnötigen Overhead erzeugen, der nicht notwendig ist.
-		int results[][][] = new int[modes.length][tracks.length][weathers.length];
+		int results[][][][] = new int[this.FOS][modes.length][tracks.length][weathers.length];
 
-		for(int m = 0; m < modes.length; m++)
+		for(int o = 0; o < this.FOS; o++)
 		{
-			for(int t = 0; t < tracks.length; t++)
+			for(int m = 0; m < modes.length; m++)
 			{
-				for(int w = 0; w < weathers.length; w++)
+				for(int t = 0; t < tracks.length; t++)
 				{
-					results[m][t][w] = -1;
+					for(int w = 0; w < weathers.length; w++)
+					{
+						results[o][m][t][w] = -1;
+					}
 				}
 			}
 		}
@@ -378,7 +382,7 @@ public class eSportsAPI
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
-			args.put("includeTicket", "false"); // DO NOT USE TRUE!
+			args.put("includeTicket", "true"); // DO NOT USE FALSE!
 
 			if(filter != null)
 			{
@@ -415,6 +419,7 @@ public class eSportsAPI
 					String weather = OfflineResult.getAttribute("Weather").toLowerCase();
 					String gamemode = OfflineResult.getAttribute("GameMode").toLowerCase();
 
+					int o = this.FO_NONE;
 					int m = -1;
 					int t = -1;
 					int w = -1;
@@ -446,12 +451,17 @@ public class eSportsAPI
 						}
 					}
 
-					if(m == -1 || t == -1 || w == -1 || results[m][t][w] != -1)
+					if(OfflineResult.getAttribute("Ticket").toLowerCase().equals("true"))
+					{
+						o = this.FO_TICKET;
+					}
+
+					if(m == -1 || t == -1 || w == -1 || results[o][m][t][w] != -1)
 					{
 						throw new eSportsAPIException();
 					}
 
-					results[m][t][w] = Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent());
+					results[o][m][t][w] = Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent());
 				}
 			}
 		}
@@ -474,7 +484,7 @@ public class eSportsAPI
 		int[] weathers = gmHelper.getWeatherIDs(true, true);
 		int results[][][] = new int[2][modes.length][tracks.length];
 
-		for(int o = 0; o <= 1; o++)
+		for(int o = 0; o < this.FOS; o++)
 		{
 			for(int m = 0; m < modes.length; m++)
 			{

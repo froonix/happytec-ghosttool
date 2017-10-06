@@ -875,7 +875,7 @@ public class HTGT
 					// Diese API-Anfrage ist hier noch nicht notwendig.
 					// Dadurch wird aber schon hier geprüft, ob der Token
 					// gültig ist und ob aktive Strecken verfügbar sind.
-					int[][][] results = api.getAllResults();
+					int[][][][] results = api.getAllResults();
 
 					while(true)
 					{
@@ -970,6 +970,11 @@ public class HTGT
 											lastUploadedMode = m;
 											lastUploadedTrack = t;
 											lastUploadedWeather = w;
+
+											if(newProfileGhosts[m][t][w].hasTicket())
+											{
+												lastUploadedWeather = gmHelper.WEATHER_TICKET;
+											}
 										}
 									}
 								}
@@ -998,6 +1003,11 @@ public class HTGT
 												lastUploadedTrack = t;
 												lastUploadedWeather = w;
 												lastFromDefault = true;
+
+												if(newDefaultGhosts[m][t][w].hasTicket())
+												{
+													lastUploadedWeather = gmHelper.WEATHER_TICKET;
+												}
 											}
 										}
 									}
@@ -1023,8 +1033,14 @@ public class HTGT
 									int w = (int) item.get(2);
 									int t = (int) item.get(1);
 									int m = (int) item.get(0);
+									int o = eSportsAPI.FO_NONE;
 
-									if(results[m][t][w] == -1|| ghost.hasTicket() || (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[m][t][w]))
+									if(ghost.hasTicket())
+									{
+										o = eSportsAPI.FO_TICKET;
+									}
+
+									if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
 									{
 										dbg(String.format("Uploading ghost: %s", ghost.getDebugDetails()));
 										ghostUpload(ghost, true);
@@ -1032,7 +1048,7 @@ public class HTGT
 									}
 									else
 									{
-										dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[m][t][w], ghost.getDebugDetails()));
+										dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails()));
 
 										if(force)
 										{
@@ -1043,16 +1059,17 @@ public class HTGT
 								}
 							}
 
-							if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather > -1)
+							if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1)
 							{
-								if(/*lastFromDefault &&*/ newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
+								if(/*lastFromDefault &&*/ lastUploadedWeather > 0 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
 								{
 									currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
 								}
 
 								if(cfg(CFG_NDG) == null)
 								{
-									int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(weathers[lastUploadedWeather]), currentGhost), false);
+									int realWeather = (lastUploadedWeather == gmHelper.WEATHER_TICKET) ? gmHelper.WEATHER_TICKET : weathers[lastUploadedWeather];
+									int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather), currentGhost), false);
 
 									if(action == BUTTON_NEVER)
 									{
@@ -1060,7 +1077,7 @@ public class HTGT
 									}
 									else if(action == BUTTON_YES)
 									{
-										if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], weathers[lastUploadedWeather], true))
+										if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather == gmHelper.WEATHER_TICKET) ? true : false)))
 										{
 											if(OfflineProfiles.changed() && !saveFile(true))
 											{
