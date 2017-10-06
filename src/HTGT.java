@@ -268,6 +268,8 @@ public class HTGT
 			}
 		}
 
+		dbg(String.format("%s version: %s", APPLICATION_NAME, getVersion(true)));
+
 		// Aktuell gibt es nur eine Konfiguration für den ganzen User-
 		// account. Das heißt, dass mehrere unterschiedliche Bewerbe und
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
