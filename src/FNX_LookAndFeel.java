@@ -1,5 +1,5 @@
 /**
- * ProfileException.java: (Offline)Profiles exception
+ * FNX_LookAndFeel.java: Context menu for everything
  * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,45 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-public class ProfileException extends Exception
+import javax.swing.LookAndFeel;
+
+public class FNX_LookAndFeel extends LookAndFeel
 {
-	public ProfileException(String message)
+	private final FNX_UIDefaults defaults = new FNX_UIDefaults();
+
+	@Override
+	public FNX_UIDefaults getDefaults()
 	{
-		super(message);
+		return defaults;
+	};
+
+	@Override
+	public String getID()
+	{
+		return "FNX_ContextMenu";
+	}
+
+	@Override
+	public String getName()
+	{
+		return getID();
+	}
+
+	@Override
+	public String getDescription()
+	{
+		return getID();
+	}
+
+	@Override
+	public boolean isNativeLookAndFeel()
+	{
+		return false;
+	}
+
+	@Override
+	public boolean isSupportedLookAndFeel()
+	{
+		return true;
 	}
 }

@@ -451,7 +451,7 @@ public class eSportsAPI
 						}
 					}
 
-					if(OfflineResult.getAttribute("Ticket").toLowerCase().equals("true"))
+					if(OfflineResult.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
 						o = this.FO_TICKET;
 					}
@@ -512,7 +512,7 @@ public class eSportsAPI
 				{
 					Element Track = (Element) Tracks.item(i);
 
-					if(!Track.getAttribute("Race").toLowerCase().equals("true"))
+					if(!Track.getAttribute("Race").equalsIgnoreCase("true"))
 					{
 						continue;
 					}
@@ -553,7 +553,7 @@ public class eSportsAPI
 						}
 					}
 
-					if(Track.getAttribute("Ticket").toLowerCase().equals("true"))
+					if(Track.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
 						o = this.FO_TICKET;
 					}

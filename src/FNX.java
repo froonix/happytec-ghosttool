@@ -39,7 +39,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
 
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
@@ -56,8 +58,13 @@ import javax.xml.transform.dom.DOMSource;
 
 import javax.xml.transform.stream.StreamResult;
 
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -329,5 +336,41 @@ public abstract class FNX
 			// fallback solution
 			window.toFront();
 		}
+	}
+
+	public static String getCleanXML(Document doc)
+	{
+		String XML;
+
+		try
+		{
+			doc.getDocumentElement().normalize();
+			XPathExpression xpath = XPathFactory.newInstance().newXPath().compile("//text()[normalize-space(.) = '']");
+			NodeList blankTextNodes = (NodeList) xpath.evaluate(doc, XPathConstants.NODESET);
+
+			for(int i = 0; i < blankTextNodes.getLength(); i++)
+			{
+				blankTextNodes.item(i).getParentNode().removeChild(blankTextNodes.item(i));
+			}
+
+			return FNX.getStringFromDOM(doc, true);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	public static JEditorPane getHTMLPane(String html)
+	{
+		JLabel label = new JLabel();
+		JEditorPane e = new JEditorPane("text/html", html);
+		e.addHyperlinkListener(new FNX_HyperlinkListener());
+		e.setBackground(label.getBackground());
+		e.setEditable(false);
+
+		return e;
 	}
 }

@@ -1,5 +1,5 @@
 /**
- * ProfileException.java: (Offline)Profiles exception
+ * FNX_HyperlinkListener: Open HTML hyperlinks in browser
  * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-public class ProfileException extends Exception
+import java.awt.Desktop;
+
+import java.net.URI;
+
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+
+public class FNX_HyperlinkListener implements HyperlinkListener
 {
-	public ProfileException(String message)
+	@Override
+	public void hyperlinkUpdate(HyperlinkEvent e)
 	{
-		super(message);
+		if(e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED))
+		{
+			if(Desktop.isDesktopSupported())
+			{
+				try
+				{
+					Desktop.getDesktop().browse(new URI(e.getURL().toString()));
+				}
+				catch(Exception err)
+				{
+					err.printStackTrace();
+				}
+			}
+		}
 	}
 }

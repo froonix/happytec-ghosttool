@@ -19,6 +19,7 @@
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.StringReader;
 
 import java.lang.IndexOutOfBoundsException;
 
@@ -27,23 +28,24 @@ import java.util.ArrayList;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
 
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathFactory;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import org.xml.sax.InputSource;
+
 public class OfflineProfiles
 {
-	final private static String XML_TAG_DEFAULT = "DefaultProfile";
-	final private static String XML_TAG_PROFILE = "OfflineProfile";
-	final private static String XML_TAG_GHOSTS  = "TrainingGhosts";
-	final private static String XML_TAG_GHOST   = "GhostDataPair";
-	final private static String XML_TAG_NICK    = "Nickname";
-	final private static String XML_TAG_TOKEN   = "Token";
+	final private static String XML_TAG_PROFILES = "ProfilList";
+	final private static String XML_TAG_DEFAULT  = "DefaultProfile";
+	final private static String XML_TAG_PROFILE  = "OfflineProfile";
+	final private static String XML_TAG_GHOSTS   = "TrainingGhosts";
+	final private static String XML_TAG_GHOST    = "GhostDataPair";
+	final private static String XML_TAG_NICK     = "Nickname";
+	final private static String XML_TAG_TOKEN    = "Token";
+
+	final private static String DEFAULT_TOKEN    = "DefaultToken";
 
 	private File     file     = null;
 	private Document document = null;
@@ -103,7 +105,7 @@ public class OfflineProfiles
 		this.postParsing();
 	}
 
-	private void postParsing() throws Exception
+	private void postParsing() throws ProfileException, GhostException
 	{
 		this.document.setXmlStandalone(true);
 
@@ -181,14 +183,13 @@ public class OfflineProfiles
 
 	public int[] getGhostsByCondition(int mode, String track, int weather)
 	{
-		track = track.toLowerCase();
 		ArrayList<Integer> ghosts = new ArrayList<Integer>();
 
 		for(int i = 0; i < this.getGhostCount(); i++)
 		{
 			GhostElement ghost = this.getGhost(i);
 
-			if(ghost.getGameMode() == mode && ghost.getTrack().toLowerCase().equals(track) && ghost.getWeather() == weather)
+			if(ghost.getGameMode() == mode && ghost.getTrack().equalsIgnoreCase(track) && ghost.getWeather() == weather)
 			{
 				ghosts.add(i);
 			}
@@ -278,7 +279,7 @@ public class OfflineProfiles
 		return result;
 	}
 
-	public void deleteGhost(int index) throws Exception
+	public void deleteGhost(int index) throws ProfileException
 	{
 		this.changed = true;
 		this.GhostElements.remove(index);
@@ -287,16 +288,16 @@ public class OfflineProfiles
 
 		if(this.GhostElements.size() != this.TrainingGhosts.getLength())
 		{
-			throw new Exception(String.format("GhostElements(%d) != TrainingGhosts(%d)", this.GhostElements.size(), this.TrainingGhosts.getLength()));
+			throw new ProfileException(String.format("GhostElements(%d) != TrainingGhosts(%d)", this.GhostElements.size(), this.TrainingGhosts.getLength()));
 		}
 	}
 
-	public int addGhost(String ghost) throws Exception
+	public int addGhost(String ghost) throws ProfileException, GhostException
 	{
 		return this.addGhost(new GhostElement(ghost));
 	}
 
-	public int addGhost(GhostElement ghost) throws Exception
+	public int addGhost(GhostElement ghost) throws ProfileException, GhostException
 	{
 		this.changed = true;
 		Node importedNode = this.document.importNode(ghost.getElement(), false);
@@ -306,13 +307,13 @@ public class OfflineProfiles
 
 		if(this.GhostElements.size() != this.TrainingGhosts.getLength())
 		{
-			throw new Exception(String.format("GhostElements(%d) != TrainingGhosts(%d)", this.GhostElements.size(), this.TrainingGhosts.getLength()));
+			throw new ProfileException(String.format("GhostElements(%d) != TrainingGhosts(%d)", this.GhostElements.size(), this.TrainingGhosts.getLength()));
 		}
 
 		return this.getGhostCount() - 1;
 	}
 
-	public String[] getProfiles() throws Exception
+	public String[] getProfiles() throws ProfileException
 	{
 		String[] profiles = new String[this.getProfileCount()];
 
@@ -329,58 +330,210 @@ public class OfflineProfiles
 				profile = (Element) OfflineProfiles.item(i);
 			}
 
-			NodeList nick = profile.getElementsByTagName(this.XML_TAG_NICK);
-
-			if(nick.getLength() > 0)
-			{
-				Element nickname = (Element) nick.item(0);
-				profiles[i] = nickname.getTextContent();
-			}
-			else
-			{
-				throw new ProfileException(String.format("No <%s> tag in profile #%d", this.XML_TAG_NICK, i));
-			}
+			profiles[i] = ((Element) this.getNickNode(profile)).getTextContent();
 		}
 
 		return profiles;
 	}
 
-	public String getToken() throws Exception
+	private Node getNickNode(Element profile) throws ProfileException
+	{
+		NodeList nick = profile.getElementsByTagName(this.XML_TAG_NICK);
+
+		if(nick.getLength() > 0)
+		{
+			return nick.item(0);
+		}
+
+		throw new ProfileException(String.format("No <%s> tag in profile", this.XML_TAG_NICK));
+	}
+
+	public int getProfileByNick(String nickname)
+	{
+		return this.getProfileByNick(nickname, false);
+	}
+
+	public int getProfileByNick(String nickname, boolean includeDefault)
+	{
+		try
+		{
+			if(nickname != null && nickname.length() > 0)
+			{
+				int defaultIndex = defaultProfile();
+				String[] profiles = this.getProfiles();
+
+				for(int i = 0; i < profiles.length; i++)
+				{
+					if(!includeDefault && i == defaultIndex)
+					{
+						continue;
+					}
+
+					if(profiles[i].equalsIgnoreCase(nickname))
+					{
+						return i;
+					}
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+
+		return -1;
+	}
+
+	public void addProfile(String nickname) throws Exception
+	{
+		// TODO: In eigene Datei auslagern, einlesen und Nicknamen ersetzen.
+		// Siehe auch die Verwendung von VERSION_FILE in HTGT.getVersion()!
+		// ...
+
+		String xml = String.format("<OfflineProfile xsi:type=\"GameOfflineProfile\"><Nickname>%s</Nickname><Token>%s</Token><ReceivedAchievements>false</ReceivedAchievements><TrainingGhosts /><DuelReplays /><DuelNicks /><IgnoredFriendDuels /><IgnoredOpenFriends /><PendingPts /><PendingDuelSelection><DuelSelection /></PendingDuelSelection></OfflineProfile>", nickname, this.DEFAULT_TOKEN);
+
+		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+
+		Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
+		NodeList profileNodes = profileDoc.getElementsByTagName(this.XML_TAG_PROFILE);
+
+		if(profileNodes.getLength() != 1)
+		{
+			throw new ProfileException(String.format("Missing <%s> tag", XML_TAG_PROFILE));
+		}
+
+		Element profileElement = (Element) profileNodes.item(0);
+		Node importedNode = this.document.importNode(profileElement, true);
+
+		NodeList profilesNodes = this.document.getElementsByTagName(this.XML_TAG_PROFILES);
+
+		if(profilesNodes.getLength() == 0)
+		{
+			throw new ProfileException(String.format("Missing <%s> tag", XML_TAG_PROFILES));
+		}
+
+		Node profiles = profilesNodes.item(0);
+
+		this.changed = true;
+		profiles.insertBefore(importedNode, profiles.getFirstChild());
+	}
+
+	public void deleteProfile(String nickname) throws ProfileException
+	{
+		for(int i = 0; i < this.getProfileCount(); i++)
+		{
+			if(i == this.defaultProfile())
+			{
+				continue;
+			}
+
+			if(nickname.equals(((Element) this.getNickNode((Element) OfflineProfiles.item(i)))))
+			{
+				this.deleteProfile(i);
+				return;
+			}
+		}
+
+		throw new ProfileException(String.format("Profile not found: %s", nickname));
+	}
+
+	public void deleteProfile(int index) throws ProfileException
+	{
+		if(index >= 0 && index < this.getProfileCount() && index != this.defaultProfile())
+		{
+			this.changed = true;
+			Element profile = (Element) OfflineProfiles.item(index);
+			profile.getParentNode().removeChild(profile);
+			return;
+		}
+
+		throw new ProfileException(String.format("Profile not found: #%d", index));
+	}
+
+	public void renameProfile(String nickname) throws ProfileException
+	{
+		this.renameProfile(this.profile, nickname);
+	}
+
+	public void renameProfile(String oldNickname, String newNickname) throws ProfileException
+	{
+		for(int i = 0; i < this.getProfileCount(); i++)
+		{
+			if(i == this.defaultProfile())
+			{
+				continue;
+			}
+
+			if(oldNickname.equals(((Element) this.getNickNode((Element) OfflineProfiles.item(i))).getTextContent()))
+			{
+				this.renameProfile(i, newNickname);
+				return;
+			}
+		}
+
+		throw new ProfileException(String.format("Profile not found: %s", oldNickname));
+	}
+
+	public void renameProfile(int index, String nickname) throws ProfileException
+	{
+		if(index >= 0 && index < this.getProfileCount() && index != this.defaultProfile())
+		{
+			this.changed = true;
+			this.getNickNode((Element) OfflineProfiles.item(index)).setTextContent(nickname);
+
+			return;
+		}
+
+		throw new ProfileException(String.format("Profile not found: #%d", index));
+	}
+
+	public String getToken() throws ProfileException
 	{
 		NodeList token = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
 
 		if(token.getLength() > 0)
 		{
-			return ((Element) token.item(0)).getTextContent();
+			String t = ((Element) token.item(0)).getTextContent();
+
+			if(!t.equalsIgnoreCase(this.DEFAULT_TOKEN))
+			{
+				return t;
+			}
 		}
-		else
-		{
-			return null;
-		}
+
+		return null;
 	}
 
 	public void setToken(String token) throws Exception
 	{
 		NodeList TokenNode = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
+		Element TokenElement = null;
+		boolean create = false;
 
 		if(TokenNode.getLength() > 0)
 		{
-			Element TokenElement = (Element) TokenNode.item(0);
-			TokenElement.getParentNode().removeChild(TokenElement);
-			this.changed = true;
+			TokenElement = (Element) TokenNode.item(0);
 		}
 
-		if(token != null)
+		if(TokenElement == null)
 		{
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
 			Document doc = dBuilder.newDocument();
-			Element node = doc.createElement(this.XML_TAG_TOKEN);
-			node.setTextContent(token);
+			TokenElement = doc.createElement(this.XML_TAG_TOKEN);
 
-			this.OfflineProfile.appendChild(this.document.importNode((Element) node, true));
-			this.changed = true;
+			create = true;
+		}
+
+		token = (token != null) ? token : this.DEFAULT_TOKEN;
+		TokenElement.setTextContent(token);
+		this.changed = true;
+
+		if(create)
+		{
+			this.OfflineProfile.appendChild(this.document.importNode(TokenElement, true));
 		}
 	}
 
@@ -389,7 +542,7 @@ public class OfflineProfiles
 		this.setToken(null);
 	}
 
-	public void selectProfile(int index) throws Exception
+	public void selectProfile(int index) throws GhostException
 	{
 		if(index >= this.getProfileCount())
 		{
@@ -442,27 +595,7 @@ public class OfflineProfiles
 
 	public String toString()
 	{
-		String XML;
-
-		try
-		{
-			this.document.getDocumentElement().normalize();
-			XPathExpression xpath = XPathFactory.newInstance().newXPath().compile("//text()[normalize-space(.) = '']");
-			NodeList blankTextNodes = (NodeList) xpath.evaluate(this.document, XPathConstants.NODESET);
-
-			for(int i = 0; i < blankTextNodes.getLength(); i++)
-			{
-				blankTextNodes.item(i).getParentNode().removeChild(blankTextNodes.item(i));
-			}
-
-			return FNX.getWinNL(FNX.getStringFromDOM(this.document, true));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-
-		return null;
+		return FNX.getWinNL(FNX.getCleanXML(this.document));
 	}
 
 	public boolean changed()

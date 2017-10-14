@@ -52,6 +52,7 @@ import java.util.regex.Pattern;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.Font;
 
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -68,6 +69,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -94,9 +96,17 @@ public class HTGT
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    FF_TITLE            = "Fast-Follow-Modus";
 	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
+	final private static String    DEFAULT_PROFILE     = "DefaultUser";
 	final private static String    VERSION_FILE        = "htgt-version.txt";
+	final private static String    NICKNAME_REGEX      = "^(?i:[A-Z0-9_]{3,13})$";
 	final private static boolean   ENABLE_RACE         = true;
 	final private static boolean   ENABLE_3TC          = true;
+	final private static int       FONTSIZE            = 13;
+
+	// Diverse Links ohne https:// davor!
+	private final static String    URL_HELP = "www.forum.happytec.at/viewtopic.php?t=2831";
+	private final static String    URL_WWW  = "github.com/froonix/happytec-ghosttool";
+	private final static String    URL_API  = "www.esports.happytec.at";
 
 	// Konfigurationsnamen für java.util.prefs
 	final private static String CFG_API     = "api-host";
@@ -116,7 +126,7 @@ public class HTGT
 	final private static String CFG_WC      = "weather-check";
 	final private static String CFG_RACE    = "race.%s.%s";
 
-	final private static int PROFILE_NONE    = 0;
+	final private static int PROFILE_NONE    =  0;
 	final private static int PROFILE_DEFAULT = -1;
 	final private static int PROFILE_SPECIAL = -2;
 
@@ -180,11 +190,21 @@ public class HTGT
 			+ "Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA"
 		);
 
-		// TODO: Links klickbar machen!
-		// http://stackoverflow.com/questions/8348063/clickable-links-in-joptionpane
+		String content =
+			  "<html>"
+			+ "	<body style='font-family: sans-serif;'>"
+			+ "		<b>Application:</b> %1$s<br /><b>Version:</b> %3$s"
+			+ "		<br /><br />Website: <a href='https://%5$s'>%5$s</a><br />%2$s: <a href='https://%6$s'>%6$s</a>"
+			+ "		<br /><br /><pre style='font-family: monospace; padding: 10px; color: #AAAAAA; border: 1px solid #CCCCCC;'>%4$s</pre>"
+			+ "		<br /><br /><div align='center'><i>Probleme? Vorschläge? Wünsche?</i><br /><br /><a href='https://%7$s' style='text-decoration: none;'><b>Hier geht's zum Forenthread!</b></a></div>"
+			+ "	</body>"
+			+ "</html>"
+		;
+
+		// TODO: HTML-Ressource und Lizenz auslagern und hier nur ersetzen?
 		// ...
 
-		messageDialog(APPLICATION_TITLE, String.format("<html><body>Application: %s<br />Version: %s<br /><br />Website: <a href='https://github.com/froonix/happytec-ghosttool'>github.com/froonix/happytec-ghosttool</a><br />%s by <a href='https://www.esports.happytec.at/'>esports.happytec.at</a><hr><pre style='padding: 10px; color: #AAAAAA;'>%s</pre></body></html>", APPLICATION_NAME, getVersion(true), APPLICATION_API, licence));
+		JOptionPane.showOptionDialog(mainWindow, FNX.getHTMLPane(String.format(content, APPLICATION_NAME, APPLICATION_API, getVersion(true), licence, URL_WWW, URL_API, URL_HELP)), "Über diese App", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{}, null);
 	}
 
 	private static void exceptionHandler(Exception e)
@@ -282,6 +302,21 @@ public class HTGT
 			eSportsAPI.setHost(apihost);
 		}
 
+		// Wird u.a. für das Kontextmenü bei Eingaben benötigt.
+		UIManager.addAuxiliaryLookAndFeel(new FNX_LookAndFeel());
+
+		// http://nadeausoftware.com/articles/2008/11/all_ui_defaults_names_common_java_look_and_feels_windows_mac_os_x_and_linux
+		UIManager.put("Menu.font",              new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
+		UIManager.put("MenuItem.font",          new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+		UIManager.put("Button.font",            new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
+		UIManager.put("OptionPane.buttonFont",  new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
+		UIManager.put("OptionPane.messageFont", new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+		UIManager.put("TableHeader.font",       new Font(Font.SANS_SERIF, Font.PLAIN, FONTSIZE));
+		UIManager.put("Table.font",             new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+		UIManager.put("TextField.font",         new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+		UIManager.put("ComboBox.font",          new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+		UIManager.put("List.font",              new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+
 		mainWindow = new JFrame(APPLICATION_TITLE);
 		mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		mainWindow.setJMenuBar(getMenubar());
@@ -301,6 +336,10 @@ public class HTGT
 		// Spalten dürfen nicht verschoben oder verkleinert werden!
 		maintable.getTableHeader().setReorderingAllowed(false);
 		maintable.getTableHeader().setResizingAllowed(false);
+
+		// macOS würde z.B. gar keine Rahmen anzeigen.
+		maintable.setShowHorizontalLines(true);
+		maintable.setShowVerticalLines(true);
 
 		JScrollPane scrollPane = new JScrollPane(maintable);
 		mainWindow.add(scrollPane, BorderLayout.CENTER);
@@ -375,6 +414,10 @@ public class HTGT
 			case "view":
 				menu.add(registerDynMenuItem("Profil auswählen",                     HTGT.class.getName(), "selectProfile"));
 				menu.addSeparator(); // --------------------------------
+				menu.add(registerDynMenuItem("Profil hinzufügen",                    HTGT.class.getName(), "createProfile"));
+				menu.add(registerDynMenuItem("Profil umbenennen",                    HTGT.class.getName(), "renameProfile"));
+				menu.add(registerDynMenuItem("Profil entfernen",                     HTGT.class.getName(), "deleteProfile"));
+				menu.addSeparator(); // --------------------------------
 				menu.add(registerDynMenuItem("Aktualisieren",                        HTGT.class.getName(), "reloadFile"));
 				break;
 
@@ -396,14 +439,16 @@ public class HTGT
 				break;
 
 			case "help":
-				menu.add(new DynamicMenuItem("Prüfung auf Updates",                 HTGT.class.getName(), "updateCheck"));
-				menu.add(registerDynMenuItem("DLL-Datei überprüfen",                HTGT.class.getName(), "updateCheckDLL"));
+				menu.add(new DynamicMenuItem("Prüfung auf Updates",                  HTGT.class.getName(), "updateCheck"));
+				menu.add(registerDynMenuItem("DLL-Datei überprüfen",                 HTGT.class.getName(), "updateCheckDLL"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Standardpfad einstellen",             HTGT.class.getName(), "changeDefaultFile"));
-				menu.add(new DynamicMenuItem("Standardpfad zurücksetzen",           HTGT.class.getName(), "resetDefaultFile"));
-				menu.add(new DynamicMenuItem("Konfiguration löschen",               HTGT.class.getName(), "clearConfigDialog"));
+				menu.add(new DynamicMenuItem("Standardpfad einstellen",              HTGT.class.getName(), "changeDefaultFile"));
+				menu.add(new DynamicMenuItem("Standardpfad zurücksetzen",            HTGT.class.getName(), "resetDefaultFile"));
+				menu.add(registerDynMenuItem("Datei als Standardpfad nutzen",        HTGT.class.getName(), "applyDefaultFile"));
 				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Über diese App",                      HTGT.class.getName(), "about"));
+				menu.add(new DynamicMenuItem("Konfiguration löschen",                HTGT.class.getName(), "clearConfigDialog"));
+				menu.addSeparator(); // --------------------------------
+				menu.add(new DynamicMenuItem("Über diese App",                       HTGT.class.getName(), "about"));
 				break;
 		}
 
@@ -851,6 +896,17 @@ public class HTGT
 		return false;
 	}
 
+	private static boolean checkProfile()
+	{
+		if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
+		{
+			infoDialog(null, String.format("Diese Funktion kann nur genutzt werden, wenn nicht das Spezial-/Standardprofil ausgewählt ist.%n%nWähle über das Menü »Ansicht« ein anderes Profil und versuche es erneut."));
+			return true;
+		}
+
+		return false;
+	}
+
 	public static void fastFollowForce()
 	{
 		fastFollow(true);
@@ -863,269 +919,264 @@ public class HTGT
 
 	public static void fastFollow(boolean force)
 	{
-		if(OfflineProfiles != null && !unsavedChanges())
+		if(OfflineProfiles == null || checkProfile() || unsavedChanges())
 		{
-			if(profile != OfflineProfiles.defaultProfile() && !isSpecialProfile())
+			return;
+		}
+
+		try
+		{
+			if(!prepareAPI())
 			{
-				try
+				return;
+			}
+
+			// Diese API-Anfrage ist hier noch nicht notwendig.
+			// Dadurch wird aber schon hier geprüft, ob der Token
+			// gültig ist und ob aktive Strecken verfügbar sind.
+			int[][][][] results = api.getAllResults();
+
+			while(true)
+			{
+				JOptionPane msg = new JOptionPane(String.format(
+					"Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%n" +
+					"Sobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%n" +
+					"Wichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%n" +
+					"Änderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%n" +
+					"Du kannst diesen Modus jederzeit beenden..."
+				), JOptionPane.PLAIN_MESSAGE);
+				msg.setOptions(new String[]{"Abbrechen"});
+				ffDialog = msg.createDialog(mainWindow, FF_TITLE);
+
+				ffState = true;
+				dbg("Starting worker thread...");
+				new Thread(new HTGT_Background(HTGT_Background.EXEC_FASTFOLLOW)).start();
+				dbg("Opening blocking info dialog...");
+				ffDialog.setVisible(true);
+				ffState = false;
+
+				if(ffChanged)
 				{
-					if(!prepareAPI())
+					dbg("We are back in the main thread!");
+
+					GhostElement[][][] oldProfileGhosts = null;
+					GhostElement[][][] oldDefaultGhosts = null;
+					int oldProfileCount = OfflineProfiles.getProfileCount();
+					int oldDefaultProfile = OfflineProfiles.defaultProfile();
+
+					oldProfileGhosts = OfflineProfiles.getAllGhosts();
+
+					if(oldDefaultProfile > -1)
 					{
+						OfflineProfiles.selectProfile(oldDefaultProfile);
+						oldDefaultGhosts = OfflineProfiles.getAllGhosts();
+						OfflineProfiles.selectProfile(profile);
+					}
+
+					reloadFile(true);
+
+					GhostElement[][][] newProfileGhosts = null;
+					GhostElement[][][] newDefaultGhosts = null;
+					int newProfileCount = OfflineProfiles.getProfileCount();
+					int newDefaultProfile = OfflineProfiles.defaultProfile();
+
+					if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
+					{
+						dbg(String.format("Unsupported changes: %d != %d || %d != %d%n", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile));
+						errorMessage(FF_TITLE, "Es wurden nicht unterstützte Änderungen festgestellt!");
 						return;
 					}
 
-					// Diese API-Anfrage ist hier noch nicht notwendig.
-					// Dadurch wird aber schon hier geprüft, ob der Token
-					// gültig ist und ob aktive Strecken verfügbar sind.
-					int[][][][] results = api.getAllResults();
+					newProfileGhosts = OfflineProfiles.getAllGhosts();
 
-					while(true)
+					if(newDefaultProfile > -1)
 					{
-						JOptionPane msg = new JOptionPane(String.format(
-							"Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%n" +
-							"Sobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%n" +
-							"Wichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%n" +
-							"Änderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%n" +
-							"Du kannst diesen Modus jederzeit beenden..."
-						), JOptionPane.PLAIN_MESSAGE);
-						msg.setOptions(new String[]{"Abbrechen"});
-						ffDialog = msg.createDialog(mainWindow, FF_TITLE);
+						OfflineProfiles.selectProfile(newDefaultProfile);
+						newDefaultGhosts = OfflineProfiles.getAllGhosts();
+						OfflineProfiles.selectProfile(profile);
+					}
 
-						ffState = true;
-						dbg("Starting worker thread...");
-						new Thread(new HTGT_Background(HTGT_Background.EXEC_FASTFOLLOW)).start();
-						dbg("Opening blocking info dialog...");
-						ffDialog.setVisible(true);
-						ffState = false;
+					int[] modes = gmHelper.getGameModeIDs();
+					String[] tracks = gmHelper.getTracks(true);
+					int[] weathers = gmHelper.getWeatherIDs();
 
-						if(ffChanged)
+					String currentGhost = "";
+					int lastUploadedMode = -1;
+					int lastUploadedTrack = -1;
+					int lastUploadedWeather = -1;
+					boolean lastFromDefault = false;
+					boolean realUpload = false;
+
+					ArrayList<ArrayList> ghosts = new ArrayList<ArrayList>();
+
+					for(int m = 0; m < modes.length; m++)
+					{
+						for(int t = 0; t < tracks.length; t++)
 						{
-							dbg("We are back in the main thread!");
-
-							GhostElement[][][] oldProfileGhosts = null;
-							GhostElement[][][] oldDefaultGhosts = null;
-							int oldProfileCount = OfflineProfiles.getProfileCount();
-							int oldDefaultProfile = OfflineProfiles.defaultProfile();
-
-							oldProfileGhosts = OfflineProfiles.getAllGhosts();
-
-							if(oldDefaultProfile > -1)
+							for(int w = 0; w < weathers.length; w++)
 							{
-								OfflineProfiles.selectProfile(oldDefaultProfile);
-								oldDefaultGhosts = OfflineProfiles.getAllGhosts();
-								OfflineProfiles.selectProfile(profile);
-							}
-
-							reloadFile(true);
-
-							GhostElement[][][] newProfileGhosts = null;
-							GhostElement[][][] newDefaultGhosts = null;
-							int newProfileCount = OfflineProfiles.getProfileCount();
-							int newDefaultProfile = OfflineProfiles.defaultProfile();
-
-							if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
-							{
-								dbg(String.format("Unsupported changes: %d != %d || %d != %d%n", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile));
-								errorMessage(FF_TITLE, "Es wurden nicht unterstützte Änderungen festgestellt!");
-								return;
-							}
-
-							newProfileGhosts = OfflineProfiles.getAllGhosts();
-
-							if(newDefaultProfile > -1)
-							{
-								OfflineProfiles.selectProfile(newDefaultProfile);
-								newDefaultGhosts = OfflineProfiles.getAllGhosts();
-								OfflineProfiles.selectProfile(profile);
-							}
-
-							int[] modes = gmHelper.getGameModeIDs();
-							String[] tracks = gmHelper.getTracks(true);
-							int[] weathers = gmHelper.getWeatherIDs();
-
-							String currentGhost = "";
-							int lastUploadedMode = -1;
-							int lastUploadedTrack = -1;
-							int lastUploadedWeather = -1;
-							boolean lastFromDefault = false;
-							boolean realUpload = false;
-
-							ArrayList<ArrayList> ghosts = new ArrayList<ArrayList>();
-
-							for(int m = 0; m < modes.length; m++)
-							{
-								for(int t = 0; t < tracks.length; t++)
+								if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
 								{
-									for(int w = 0; w < weathers.length; w++)
+									dbg(String.format("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+
+									// ghostUpload(newProfileGhosts[t][w], true);
+
+									ArrayList<Object> item = new ArrayList<Object>(4);
+									item.add(m); item.add(t); item.add(w);
+									item.add(newProfileGhosts[m][t][w]);
+									ghosts.add(item);
+
+									lastUploadedMode = m;
+									lastUploadedTrack = t;
+									lastUploadedWeather = w;
+
+									if(newProfileGhosts[m][t][w].hasTicket())
 									{
-										if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
+										lastUploadedWeather = gmHelper.WEATHER_TICKET;
+									}
+								}
+							}
+						}
+					}
+
+					if(newDefaultProfile > -1)
+					{
+						for(int m = 0; m < modes.length; m++)
+						{
+							for(int t = 0; t < tracks.length; t++)
+							{
+								for(int w = 0; w < weathers.length; w++)
+								{
+									if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
+									{
+										dbg(String.format("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+
+										// ghostUpload(newDefaultGhosts[t][w], true);
+
+										ArrayList<Object> item = new ArrayList<Object>(4);
+										item.add(m); item.add(t); item.add(w);
+										item.add(newDefaultGhosts[m][t][w]);
+										ghosts.add(item);
+
+										lastUploadedMode = m;
+										lastUploadedTrack = t;
+										lastUploadedWeather = w;
+										lastFromDefault = true;
+
+										if(newDefaultGhosts[m][t][w].hasTicket())
 										{
-											dbg(String.format("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
-
-											// ghostUpload(newProfileGhosts[t][w], true);
-
-											ArrayList<Object> item = new ArrayList<Object>(4);
-											item.add(m); item.add(t); item.add(w);
-											item.add(newProfileGhosts[m][t][w]);
-											ghosts.add(item);
-
-											lastUploadedMode = m;
-											lastUploadedTrack = t;
-											lastUploadedWeather = w;
-
-											if(newProfileGhosts[m][t][w].hasTicket())
-											{
-												lastUploadedWeather = gmHelper.WEATHER_TICKET;
-											}
+											lastUploadedWeather = gmHelper.WEATHER_TICKET;
 										}
 									}
 								}
 							}
+						}
+					}
 
-							if(newDefaultProfile > -1)
+					if(ghosts.size() > 0)
+					{
+						int[][] filter = new int[ghosts.size()][3];
+						for(int i = 0; i < ghosts.size(); i++)
+						{
+							filter[i][0] = modes[(int) ghosts.get(i).get(0)];
+							filter[i][1] = (int) ghosts.get(i).get(1);
+							filter[i][2] = weathers[(int) ghosts.get(i).get(2)];
+						}
+
+						results = api.getSelectiveResults(filter);
+
+						for(int i = 0; i < ghosts.size(); i++)
+						{
+							ArrayList item = ghosts.get(i);
+							GhostElement ghost = (GhostElement) item.get(3);
+							int w = (int) item.get(2);
+							int t = (int) item.get(1);
+							int m = (int) item.get(0);
+							int o = eSportsAPI.FO_NONE;
+
+							if(ghost.hasTicket())
 							{
-								for(int m = 0; m < modes.length; m++)
+								o = eSportsAPI.FO_TICKET;
+							}
+
+							if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
+							{
+								dbg(String.format("Uploading ghost: %s", ghost.getDebugDetails()));
+								ghostUpload(ghost, true);
+								realUpload = true;
+							}
+							else
+							{
+								dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails()));
+
+								if(force)
 								{
-									for(int t = 0; t < tracks.length; t++)
+									dbg("Still uploading it because we are in FORCE mode...");
+									ghostUpload(new GhostElement[]{ghost}, true, true);
+								}
+							}
+						}
+					}
+
+					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1)
+					{
+						if(/*lastFromDefault &&*/ lastUploadedWeather > 0 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
+						{
+							currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
+						}
+
+						if(cfg(CFG_NDG) == null)
+						{
+							int realWeather = (lastUploadedWeather == gmHelper.WEATHER_TICKET) ? gmHelper.WEATHER_TICKET : weathers[lastUploadedWeather];
+							int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather), currentGhost), false);
+
+							if(action == BUTTON_NEVER)
+							{
+								cfg(CFG_NDG, "true");
+							}
+							else if(action == BUTTON_YES)
+							{
+								if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather == gmHelper.WEATHER_TICKET) ? true : false)))
+								{
+									if(OfflineProfiles.changed() && !saveFile(true))
 									{
-										for(int w = 0; w < weathers.length; w++)
-										{
-											if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
-											{
-												dbg(String.format("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
-
-												// ghostUpload(newDefaultGhosts[t][w], true);
-
-												ArrayList<Object> item = new ArrayList<Object>(4);
-												item.add(m); item.add(t); item.add(w);
-												item.add(newDefaultGhosts[m][t][w]);
-												ghosts.add(item);
-
-												lastUploadedMode = m;
-												lastUploadedTrack = t;
-												lastUploadedWeather = w;
-												lastFromDefault = true;
-
-												if(newDefaultGhosts[m][t][w].hasTicket())
-												{
-													lastUploadedWeather = gmHelper.WEATHER_TICKET;
-												}
-											}
-										}
+										errorMessage("Die Änderungen konnten nicht gespeichert werden!");
 									}
 								}
 							}
-
-							if(ghosts.size() > 0)
-							{
-								int[][] filter = new int[ghosts.size()][3];
-								for(int i = 0; i < ghosts.size(); i++)
-								{
-									filter[i][0] = modes[(int) ghosts.get(i).get(0)];
-									filter[i][1] = (int) ghosts.get(i).get(1);
-									filter[i][2] = weathers[(int) ghosts.get(i).get(2)];
-								}
-
-								results = api.getSelectiveResults(filter);
-
-								for(int i = 0; i < ghosts.size(); i++)
-								{
-									ArrayList item = ghosts.get(i);
-									GhostElement ghost = (GhostElement) item.get(3);
-									int w = (int) item.get(2);
-									int t = (int) item.get(1);
-									int m = (int) item.get(0);
-									int o = eSportsAPI.FO_NONE;
-
-									if(ghost.hasTicket())
-									{
-										o = eSportsAPI.FO_TICKET;
-									}
-
-									if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
-									{
-										dbg(String.format("Uploading ghost: %s", ghost.getDebugDetails()));
-										ghostUpload(ghost, true);
-										realUpload = true;
-									}
-									else
-									{
-										dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails()));
-
-										if(force)
-										{
-											dbg("Still uploading it because we are in FORCE mode...");
-											ghostUpload(new GhostElement[]{ghost}, true, true);
-										}
-									}
-								}
-							}
-
-							if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1)
-							{
-								if(/*lastFromDefault &&*/ lastUploadedWeather > 0 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
-								{
-									currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
-								}
-
-								if(cfg(CFG_NDG) == null)
-								{
-									int realWeather = (lastUploadedWeather == gmHelper.WEATHER_TICKET) ? gmHelper.WEATHER_TICKET : weathers[lastUploadedWeather];
-									int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather), currentGhost), false);
-
-									if(action == BUTTON_NEVER)
-									{
-										cfg(CFG_NDG, "true");
-									}
-									else if(action == BUTTON_YES)
-									{
-										if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather == gmHelper.WEATHER_TICKET) ? true : false)))
-										{
-											if(OfflineProfiles.changed() && !saveFile(true))
-											{
-												errorMessage("Die Änderungen konnten nicht gespeichert werden!");
-											}
-										}
-									}
-								}
-								else
-								{
-									dbg("Skipping ghost download because of previous choice...");
-								}
-							}
-
-							continue;
 						}
 						else
 						{
-							dbg("Dialog canceled or closed.");
-							break;
+							dbg("Skipping ghost download because of previous choice...");
 						}
-
-						// Thread.sleep(1000);
 					}
+
+					continue;
 				}
-				catch(eSportsAPIException e)
+				else
 				{
-					APIError(e, "Da ist etwas schief gegangen...");
+					dbg("Dialog canceled or closed.");
+					break;
 				}
-				catch(InterruptedException e)
-				{
-					e.printStackTrace();
-				}
-				catch(Exception e)
-				{
-					exceptionHandler(e);
-				}
-				finally
-				{
-					return;
-				}
+
+				// Thread.sleep(1000);
 			}
-			else
-			{
-				infoDialog(FF_TITLE, "Dieser Modus funktioniert nur, wenn du nicht das Spezial-/Standardprofil ausgewählt hast.");
-			}
+		}
+		catch(eSportsAPIException e)
+		{
+			APIError(e, "Da ist etwas schief gegangen...");
+		}
+		catch(InterruptedException e)
+		{
+			e.printStackTrace();
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+		finally
+		{
+			return;
 		}
 	}
 
@@ -1186,6 +1237,270 @@ public class HTGT
 			ffDialog.setVisible(false);
 			dbg("Cleanup. Goodbye...");
 		}
+	}
+
+	private static Profiles getProfileHandle(String nick)
+	{
+		File profilesFile = new File(String.format("%2$s%1$s%3$s", File.separator, file.getParent().toString(), "Profiles.xml"));
+
+		if(profilesFile == null || !profilesFile.exists() || !profilesFile.isFile())
+		{
+			dbg(String.format("Other XML file not found: %s", profilesFile));
+			errorMessage(null, "Die Datei Profiles.xml wurde nicht gefunden!");
+		}
+		else
+		{
+			dbg(String.format("Other XML file: %s", profilesFile));
+
+			try
+			{
+				Profiles profileHandle = new Profiles(profilesFile);
+
+				if(nick != null && !profileHandle.profileExists(nick))
+				{
+					errorMessage(null, "Die XML-Dateien sind fehlerhaft.");
+				}
+				else
+				{
+					return profileHandle;
+				}
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e, "Fehler beim Öffnen der Datei Profiles.xml!");
+			}
+		}
+
+		return null;
+	}
+
+	public static void createProfile()
+	{
+		if(OfflineProfiles == null || unsavedChanges())
+		{
+			return;
+		}
+
+		Profiles profiles = getProfileHandle(null);
+
+		if(profiles == null)
+		{
+			return;
+		}
+
+		boolean error = false;
+		String message = null;
+		String nick = null;
+
+		while(true)
+		{
+			message = String.format(
+				"Mit dieser Funktion kannst Du ein neues Profil im Spiel anlegen." +
+				"%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!" +
+				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
+				"%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." +
+				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nEr muss mindestens drei und maximal 13 Zeichen enthalten. Bitte versuche es erneut." : "") +
+				"%n%nGewünschter Nickname:"
+			);
+
+			if((nick = (String) inputDialog("Profil hinzufügen", message, nick)) != null)
+			{
+				if(nick.length() > 0)
+				{
+					if(!nick.matches(NICKNAME_REGEX))
+					{
+						error = true;
+					}
+					else if(nick.equalsIgnoreCase(SPECIAL_PROFILE) || nick.equalsIgnoreCase(DEFAULT_PROFILE))
+					{
+						errorMessage(String.format("Der Nickname darf nicht %s oder %s sein!", SPECIAL_PROFILE, DEFAULT_PROFILE));
+					}
+					else if(OfflineProfiles.getProfileByNick(nick) > -1)
+					{
+						errorMessage("Ein Profil mit diesem Nicknamen existiert bereits!");
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+			else
+			{
+				return;
+			}
+		}
+
+		try
+		{
+			OfflineProfiles.addProfile(nick);
+			profiles.addProfile(nick);
+
+			profiles.saveProfiles();
+			saveFile();
+
+			profile = 0;
+			reloadFile();
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e, "Das Profil konnte nicht hinzugefügt werden!");
+			reloadFile();
+			return;
+		}
+
+		infoDialog("Das Profil wurde hinzugefügt.");
+	}
+
+	public static void renameProfile()
+	{
+		if(OfflineProfiles == null || checkProfile() || unsavedChanges())
+		{
+			return;
+		}
+
+		Profiles profiles = getProfileHandle(nickname);
+
+		if(profiles == null)
+		{
+			return;
+		}
+
+		boolean error = false;
+		String message = null;
+		String nick = nickname;
+
+		while(true)
+		{
+			message = String.format(
+				"Nutze diese Funktion, um das Profil »%s« umzubenennen." +
+				"%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!" +
+				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
+				"%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." +
+				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nEr muss mindestens drei und maximal 13 Zeichen enthalten. Bitte versuche es erneut." : "") +
+				"%n%nNeuer Nickname:"
+			, nickname);
+
+			if((nick = (String) inputDialog("Profil umbenennen", message, nick)) != null)
+			{
+				if(nick.length() > 0)
+				{
+					if(!nick.matches(NICKNAME_REGEX))
+					{
+						error = true;
+					}
+					else if(nick.equalsIgnoreCase(SPECIAL_PROFILE) || nick.equalsIgnoreCase(DEFAULT_PROFILE))
+					{
+						errorMessage(String.format("Der Nickname darf nicht %s oder %s sein!", SPECIAL_PROFILE, DEFAULT_PROFILE));
+					}
+					else if(nick.equalsIgnoreCase(nickname))
+					{
+						continue;
+					}
+					else if(OfflineProfiles.getProfileByNick(nick) > -1)
+					{
+						errorMessage("Ein Profil mit diesem Nicknamen existiert bereits!");
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+			else
+			{
+				return;
+			}
+		}
+
+		try
+		{
+			profiles.renameProfile(nickname, nick);
+			OfflineProfiles.renameProfile(nick);
+
+			profiles.saveProfiles();
+			saveFile();
+
+			profile = 0;
+			reloadFile();
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e, "Das Profil konnte nicht unbenannt werden!");
+			reloadFile();
+			return;
+		}
+
+		infoDialog("Das Profil wurde umbenannt.");
+	}
+
+	public static void deleteProfile()
+	{
+		if(OfflineProfiles == null || checkProfile())
+		{
+			return;
+		}
+
+		try
+		{
+			int defaultProfile = OfflineProfiles.defaultProfile();
+			String[] allProfiles = OfflineProfiles.getProfiles();
+			int regularProfiles = 0;
+
+			for(int i = 0; i < allProfiles.length; i++)
+			{
+				if(i != defaultProfile && !isSpecialProfile(allProfiles[i]))
+				{
+					regularProfiles++;
+				}
+			}
+
+			if(regularProfiles < 2)
+			{
+				infoDialog(null, "Das letzte reguläre Profil kann nicht gelöscht werden!");
+				return;
+			}
+			else if(unsavedChanges())
+			{
+				return;
+			}
+
+			Profiles profiles = getProfileHandle(nickname);
+
+			if(profiles == null)
+			{
+				return;
+			}
+
+			String message = String.format(
+				"Soll das Profil »%s« inkl. aller Geister und Einstellungen wirklich gelöscht werden?" +
+				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
+				"%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." +
+				"%n%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!"
+			, nickname);
+
+			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, "Profil entfernen", message))
+			{
+				return;
+			}
+
+			profiles.deleteProfile(nickname);
+			OfflineProfiles.deleteProfile(profile);
+
+			profiles.saveProfiles();
+			saveFile();
+
+			profile = 0;
+			reloadFile();
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e, "Das Profil konnte nicht gelöscht werden!");
+			reloadFile();
+			return;
+		}
+
+		infoDialog("Das Profil wurde gelöscht.");
 	}
 
 	public static void resort()
@@ -1761,13 +2076,9 @@ public class HTGT
 
 	public static void copyTokenToProfile()
 	{
-		if(OfflineProfiles == null || !prepareAPI())
+		if(OfflineProfiles == null || checkProfile() || !prepareAPI())
 		{
 			return;
-		}
-		else if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
-		{
-			infoDialog(String.format("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!%n%nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus."));
 		}
 		else
 		{
@@ -1795,13 +2106,9 @@ public class HTGT
 
 	public static void removeTokenFromProfile()
 	{
-		if(OfflineProfiles == null)
+		if(OfflineProfiles == null || checkProfile())
 		{
 			return;
-		}
-		else if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
-		{
-			infoDialog(String.format("Diese Funktion ist bei Standard-/Spezialprofilen nicht verfügbar!%n%nUm fortzufahren, wähle im Menü zuerst das richtige Profil aus."));
 		}
 		else
 		{
@@ -2341,7 +2648,7 @@ public class HTGT
 						conditions[key][2] = Integer.toString(weathers[h]);
 
 						// TODO: Eigentlich nicht ganz korrekt, da das Wetter als "int" verglichen werden müsste. So ist es aber einheitlich und einfacher.
-						if(lastTrack != null && lastTrack.toLowerCase().equals(tracks[i].toLowerCase()) && lastWeather != null && lastWeather.equals(Integer.toString(weathers[h])))
+						if(lastTrack != null && lastTrack.equalsIgnoreCase(tracks[i]) && lastWeather != null && lastWeather.equals(Integer.toString(weathers[h])))
 						{
 							selection = values[key];
 						}
@@ -2662,24 +2969,46 @@ public class HTGT
 	public static void resetDefaultFile()
 	{
 		cfg(CFG_DEFAULT, null);
-		infoDialog(null, "Der Standardpfad wurde zurückgesetzt!");
+		infoDialog(null, "Der Standardpfad wurde zurückgesetzt.");
 	}
 
-	// API-Token erstmalig eintragen oder ändern.
-	// Wird fix in der Konfiguration gespeichert!
+	// Standardpfad ändern.
 	public static void changeDefaultFile()
 	{
-		String defaultFile;
+		String defaultFile = getDefaultFile().getAbsolutePath();
 
-		// TODO: Check if file exists?
-		// ...
-
-		if((defaultFile = (String) inputDialog(null, "Standardpfad der XML-Datei:", getDefaultFile())) != null)
+		while(true)
 		{
-			cfg(CFG_DEFAULT, defaultFile);
+			if((defaultFile = (String) inputDialog(null, "Standardpfad der XML-Datei:", defaultFile)) == null)
+			{
+				break;
+			}
 
-			// TODO: infoDialog() ?
-			// ...
+			if(defaultFile.length() > 0)
+			{
+				File defaultFileHandler = new File(defaultFile);
+
+				if(defaultFileHandler == null || !defaultFileHandler.exists() || !defaultFileHandler.isFile())
+				{
+					errorMessage(null, "Der angegebene Pfad existiert nicht!");
+				}
+				else
+				{
+					cfg(CFG_DEFAULT, defaultFile);
+					infoDialog("Der Standardpfad wurde aktualisiert.");
+					return;
+				}
+			}
+		}
+	}
+
+	// Aktuelle Datei als Standardpfad übernehmen
+	public static void applyDefaultFile()
+	{
+		if(OfflineProfiles != null)
+		{
+			cfg(CFG_DEFAULT, file.getAbsolutePath());
+			infoDialog("Die aktuelle Datei ist nun der Standardpfad.");
 		}
 	}
 

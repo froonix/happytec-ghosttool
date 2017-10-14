@@ -1,5 +1,5 @@
 /**
- * ProfileException.java: (Offline)Profiles exception
+ * FNX_UIDefaults.java: Context menu for everything
  * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,27 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-public class ProfileException extends Exception
+import javax.swing.JComponent;
+import javax.swing.UIDefaults;
+
+import javax.swing.plaf.ComponentUI;
+
+import javax.swing.text.JTextComponent;
+
+class FNX_UIDefaults extends UIDefaults
 {
-	public ProfileException(String message)
+	@Override
+	public ComponentUI getUI(JComponent c)
 	{
-		super(message);
+		if(c instanceof JTextComponent)
+		{
+			if(c.getClientProperty(this) == null)
+			{
+				c.setComponentPopupMenu(FNX_ContextMenu.INSTANCE);
+				c.putClientProperty(this, Boolean.TRUE);
+			}
+		}
+
+		return null;
 	}
 }
