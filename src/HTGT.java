@@ -311,7 +311,7 @@ public class HTGT
 		UIManager.put("Button.font",            new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
 		UIManager.put("OptionPane.buttonFont",  new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
 		UIManager.put("OptionPane.messageFont", new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("TableHeader.font",       new Font(Font.SANS_SERIF, Font.PLAIN, FONTSIZE));
+		UIManager.put("TableHeader.font",       new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
 		UIManager.put("Table.font",             new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
 		UIManager.put("TextField.font",         new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
 		UIManager.put("ComboBox.font",          new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
