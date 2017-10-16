@@ -302,6 +302,25 @@ public class HTGT
 			eSportsAPI.setHost(apihost);
 		}
 
+		// https://stackoverflow.com/a/34490485
+		if(java.awt.SystemTray.isSupported())
+		{
+			try
+			{
+				java.awt.SystemTray tray = java.awt.SystemTray.getSystemTray();
+				java.awt.Image image = java.awt.Toolkit.getDefaultToolkit().createImage("icon.png");
+				java.awt.TrayIcon trayIcon = new java.awt.TrayIcon(image, "Tray Demo");
+				trayIcon.setImageAutoSize(true);
+				trayIcon.setToolTip("System tray icon demo");
+				tray.add(trayIcon);
+				trayIcon.displayMessage("Hello, World", "notification demo", java.awt.TrayIcon.MessageType.INFO);
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e);
+			}
+		}
+
 		// Wird u.a. für das Kontextmenü bei Eingaben benötigt.
 		UIManager.addAuxiliaryLookAndFeel(new FNX_LookAndFeel());
 
