@@ -50,9 +50,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.awt.Font;
+import java.awt.Toolkit;
 
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -316,6 +317,13 @@ public class HTGT
 		UIManager.put("TextField.font",         new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
 		UIManager.put("ComboBox.font",          new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
 		UIManager.put("List.font",              new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+		UIManager.put("List.font",              new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+
+		UIManager.put("Table.gridColor",        new Color(204, 204, 204)); // #ccc
+		UIManager.put("TableHeader.background", new Color(236, 236, 236)); // #888
+		UIManager.put("TableHeader.foreground", new Color(  0,   0,   0)); // #000
+		UIManager.put("Table.background",       new Color(255, 255, 255)); // #fff
+		UIManager.put("Table.foreground",       new Color(  0,   0,   0)); // #000
 
 		mainWindow = new JFrame(APPLICATION_TITLE);
 		mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
