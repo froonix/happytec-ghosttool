@@ -63,10 +63,7 @@ public class Profiles
 		// Siehe auch die Verwendung von VERSION_FILE in HTGT.getVersion()!
 		// ...
 
-		// TODO: Zufällige Farbe vom Anzug usw.
-		// ...
-
-		String xml = String.format("<Profile xsi:type=\"GameProfile\"><Progress><Entries /></Progress><Inventory /><Controls entries=\"LEFT:LeftArrow,LEFT-T:,RIGHT:RightArrow,RIGHT-T:,ACCEL:UpArrow,ACCEL-T:,BRAKE:Tab,BRAKE-T:,JUMP:Space,JUMP-T:,CAMERA:C,CAMERA-T:,GHOST:G,GHOST-T:,REWIND:Backspace,REWIND-T:,RESTART:R,RESTART-T:,ACTION:Return,ACTION-T:,JOYJUMP:JoystickButton0,JOYJUMP-T:,JOYCAMERA:JoystickButton1,JOYCAMERA-T:,JOYGHOST:JoystickButton2,JOYGHOST-T:,JOYREWIND:JoystickButton4,JOYREWIND-T:,JOYRESTART:JoystickButton3,JOYRESTART-T:,JOYACTION:JoystickButton5,JOYACTION-T:,JOYSTEER:Axis1,JOYSTEER-INV:False,JOYSTEER-SCALE:1,JOYACCEL:Axis3,JOYACCEL-INV:False,JOYACCEL-SCALE:1\" nickname=\"\" OnlineSaved=\"False\" /><Player Nickname=\"%s\" OnlineSaved=\"false\" SocialId=\"\" SocialName=\"\" SocialNetworkType=\"1\" ShowAgb=\"false\"><Location>-1</Location></Player><TrackList OnlineSaved=\"false\" /><Settings entries=\"Dress:0,DressColor1:0.6009873-0.2179533-0.2472593,DressColor2:0.1788466-0.4515831-0.5623612,PlayerModel:0,Ski:0,Helmet:0,Gloves:0,StartingNumber:68,Boots:0,Bindings:0,SkinTone:2,Jersey:0,Flag:12,SkiDesign:0,SkiSticksBindings:0,Goggles:0\" nickname=\"\" OnlineSaved=\"False\" /></Profile>", nickname);
+		String xml = String.format("<Profile xsi:type=\"GameProfile\"><Progress><Entries /></Progress><Inventory /><Controls entries=\"\" nickname=\"\" OnlineSaved=\"False\" /><Player Nickname=\"%s\" OnlineSaved=\"false\" SocialId=\"\" SocialName=\"\" SocialNetworkType=\"1\" ShowAgb=\"false\"><Location>-1</Location></Player><TrackList OnlineSaved=\"false\" /><Settings entries=\"\" nickname=\"\" OnlineSaved=\"False\" /></Profile>", nickname);
 
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
