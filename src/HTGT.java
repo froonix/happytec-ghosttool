@@ -440,6 +440,7 @@ public class HTGT
 				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails anzeigen",     HTGT.class.getName(), "playerInfo"));
 				menu.addSeparator(); // --------------------------------
 				menu.add(registerDynMenuItem("Token ins aktuelle Profil kopieren",   HTGT.class.getName(), "copyTokenToProfile"));
+				menu.add(registerDynMenuItem("Token aus aktuellem Profil verwenden", HTGT.class.getName(), "copyTokenFromProfile"));
 				menu.add(registerDynMenuItem("Token aus aktuellem Profil entfernen", HTGT.class.getName(), "removeTokenFromProfile"));
 				menu.addSeparator(); // --------------------------------
 				menu.add(new DynamicMenuItem("API-Token ändern",                     HTGT.class.getName(), "setupToken"));
@@ -2109,6 +2110,39 @@ public class HTGT
 			}
 
 			updateWindowTitle();
+		}
+	}
+
+	public static void copyTokenFromProfile()
+	{
+		if(OfflineProfiles == null || checkProfile())
+		{
+			return;
+		}
+		else
+		{
+			try
+			{
+				String newToken = OfflineProfiles.getToken();
+
+				if(newToken == null)
+				{
+					dbg("No token in active profile!");
+					infoDialog("Im aktuellen Profil ist kein Token vorhanden.");
+				}
+				else
+				{
+					if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei verwendet werden?%n%nDer bisher genutzte API-Token wird dadurch verworfen.")))
+					{
+						dbg("Copying token from active profile...");
+						updateToken(newToken);
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e, "Ups, da ist etwas ordentlich schief gelaufen...");
+			}
 		}
 	}
 
