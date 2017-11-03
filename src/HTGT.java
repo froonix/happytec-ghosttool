@@ -3182,7 +3182,8 @@ public class HTGT
 			int[] selection = maintable.getSelectedRows();
 			if(selection.length == 0) return noSelection();
 
-			selectedFile = new File("export.xml");
+			Date date = new Date(); DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
+			selectedFile = new File(String.format("%s-Export_%s.xml", APPLICATION_NAME, dateFormat.format(date)));
 
 			while(true)
 			{
