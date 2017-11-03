@@ -34,22 +34,37 @@ public class ImprovedFileChooser extends JFileChooser
 		File f = getSelectedFile();
 		if(f.exists() && getDialogType() == SAVE_DIALOG)
 		{
-			int result = JOptionPane.showConfirmDialog(null, "Soll die existierende Datei überschrieben werden?", null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-
-			switch(result)
+			if(overwriteFile(f))
 			{
-				case JOptionPane.YES_OPTION:
-					super.approveSelection();
-					return;
-
-				case JOptionPane.NO_OPTION:
-				case JOptionPane.CLOSED_OPTION:
-					return;
+				super.approveSelection();
 			}
 
-			super.cancelSelection();
+			//super.cancelSelection();
+			return;
 		}
 
 		super.approveSelection();
 	}
+
+	public static boolean overwriteFile(File f)
+	{
+		switch(JOptionPane.showConfirmDialog(null, String.format("Soll die existierende Datei überschrieben werden?%n%n%s", f), null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE))
+		{
+			case JOptionPane.YES_OPTION:
+				return true;
+
+			/*
+			case JOptionPane.NO_OPTION:
+			case JOptionPane.CLOSED_OPTION:
+				return false;
+			*/
+
+			default:
+				return false;
+		}
+	}
 }
+
+// TODO: Bei Bedarf Dateiendung erzwingen.
+//       Siehe Code in HTGT.exportFile()!
+// ...

@@ -3182,35 +3182,56 @@ public class HTGT
 			int[] selection = maintable.getSelectedRows();
 			if(selection.length == 0) return noSelection();
 
-			if((selectedFile = saveDialog(cfg(CFG_CWDPORT), new File("export.xml"))) != null)
-			{
-				cfg(CFG_CWDPORT, selectedFile.getParent().toString());
+			selectedFile = new File("export.xml");
 
-				try
+			while(true)
+			{
+				if((selectedFile = saveDialog(cfg(CFG_CWDPORT), selectedFile)) != null)
 				{
-					data = new StringBuilder();
-					for(int i = selection.length - 1; i > -1; i--)
+					cfg(CFG_CWDPORT, selectedFile.getParent().toString());
+
+					if(!selectedFile.toString().matches("^.+\\.\\w*?$$")) //
 					{
-						GhostElement ghost = OfflineProfiles.getGhost(selection[i]);
-						dbg(String.format("Exporting line %d: %s", selection[i], ghost.getDebugDetails()));
-						data.insert(0, String.format("\t<!-- %s @ %s (%s): %s (%s) -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), gmHelper.formatSki(ghost.getSki()), ghost.toString()));
+						selectedFile = new File(selectedFile.toString() + ".xml");
+
+						if(selectedFile.exists() && !ImprovedFileChooser.overwriteFile(selectedFile))
+						{
+							continue;
+						}
 					}
 
-					data.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<GhostList>\r\n\r\n");
-					data.append(String.format("</GhostList>\r\n<!-- %s -->\r\n", FNX.getDateString()));
-
-					PrintWriter pw = new PrintWriter(selectedFile);
-					pw.printf("%s", data.toString()); pw.close();
-
-					dbg("Export to file successfully!");
-					infoDialog(String.format("Die Geister wurden erfolgreich exportiert:%n%n%s", selectedFile));
-
-					return true;
+					break;
 				}
-				catch(Exception e)
+				else
 				{
-					exceptionHandler(e, "Beim Export trat ein Fehler auf!");
+					return false;
 				}
+			}
+
+			try
+			{
+				data = new StringBuilder();
+				for(int i = selection.length - 1; i > -1; i--)
+				{
+					GhostElement ghost = OfflineProfiles.getGhost(selection[i]);
+					dbg(String.format("Exporting line %d: %s", selection[i], ghost.getDebugDetails()));
+					data.insert(0, String.format("\t<!-- %s @ %s (%s): %s (%s) -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), gmHelper.formatSki(ghost.getSki()), ghost.toString()));
+				}
+
+				data.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<GhostList>\r\n\r\n");
+				data.append(String.format("</GhostList>\r\n<!-- %s -->\r\n", FNX.getDateString()));
+
+				PrintWriter pw = new PrintWriter(selectedFile);
+				pw.printf("%s", data.toString()); pw.close();
+
+				dbg("Export to file successfully!");
+				infoDialog(String.format("Die Geister wurden erfolgreich exportiert:%n%n%s", selectedFile));
+
+				return true;
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e, "Beim Export trat ein Fehler auf!");
 			}
 		}
 
