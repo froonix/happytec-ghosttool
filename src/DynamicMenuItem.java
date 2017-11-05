@@ -21,6 +21,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Method;
 import javax.swing.JMenuItem;
+import javax.swing.KeyStroke;
 
 public class DynamicMenuItem extends JMenuItem implements ActionListener
 {
@@ -30,9 +31,24 @@ public class DynamicMenuItem extends JMenuItem implements ActionListener
 	public DynamicMenuItem(String textLabel, String className, String methodName)
 	{
 		super(textLabel);
+		DynamicMenuItemWorker(textLabel, className, methodName, null);
+	}
 
+	public DynamicMenuItem(String textLabel, String className, String methodName, KeyStroke keyStroke)
+	{
+		super(textLabel);
+		DynamicMenuItemWorker(textLabel, className, methodName, keyStroke);
+	}
+
+	private void DynamicMenuItemWorker(String textLabel, String className, String methodName, KeyStroke keyStroke)
+	{
 		this.className = className;
 		this.methodName = methodName;
+
+		if(keyStroke != null)
+		{
+			this.setAccelerator(keyStroke);
+		}
 
 		addActionListener(this);
 	}

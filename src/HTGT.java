@@ -27,13 +27,15 @@ import java.io.PrintWriter;
 import java.io.InputStream;
 import java.io.Reader;
 
-import java.lang.IndexOutOfBoundsException;
-
 import java.nio.charset.StandardCharsets;
 
 import java.nio.file.Files;
 
 import java.nio.file.attribute.FileTime;
+
+import java.net.URI;
+
+import java.lang.IndexOutOfBoundsException;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -41,6 +43,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,8 +54,10 @@ import java.util.regex.Pattern;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.Toolkit;
 
 import java.awt.datatransfer.Clipboard;
@@ -60,17 +65,32 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.InputMap;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
+
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -100,14 +120,24 @@ public class HTGT
 	final private static String    DEFAULT_PROFILE     = "DefaultUser";
 	final private static String    VERSION_FILE        = "htgt-version.txt";
 	final private static String    NICKNAME_REGEX      = "^(?i:[A-Z0-9_]{3,13})$";
+	final private static boolean   ENABLE_AUTOSAVE     = true;
 	final private static boolean   ENABLE_RACE         = true;
 	final private static boolean   ENABLE_3TC          = true;
 	final private static int       FONTSIZE            = 13;
+	final private static double    FONTSMALL           = 0.75;
+	final private static int       HISTORY_SIZE        = 10;
 
-	// Diverse Links ohne https:// davor!
-	private final static String    URL_HELP = "www.forum.happytec.at/viewtopic.php?t=2831";
+	final public static int       NONE  = 0;
+	final public static int       CTRL  = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+	final public static int       SHIFT = ActionEvent.SHIFT_MASK;
+	final public static int       ALT   = ActionEvent.ALT_MASK;
+
+	// Diverse Links ohne https:// davor, da sie als Ziel direkt angezeigt werden sollen!
 	private final static String    URL_WWW  = "github.com/froonix/happytec-ghosttool";
 	private final static String    URL_API  = "www.esports.happytec.at";
+
+	// Redirect-Service für diverse andere Links oder Aktionen. (Leitet derzeit alles nur zum Forenthread...)
+	private final static String    URL_REDIRECT = "https://www.esports.happytec.at/redirect/desktop/HTGT.php?dst=%s";
 
 	// Konfigurationsnamen für java.util.prefs
 	final private static String CFG_API     = "api-host";
@@ -137,11 +167,30 @@ public class HTGT
 	final private static int BUTTON_NO     = -1;
 	final private static int BUTTON_NEVER  = -2;
 
+	// DON'T USE VALUES GREATER THAN ZERO HERE...
+	// AND DON'T FORGET: CLOSED_OPTION IS -1 TOO!
+	final private static int BUTTON_CANCEL = -1;
+	final private static int BUTTON_PREV   = -2;
+	final private static int BUTTON_NEXT   = -3;
+
+	final private static String MENU_STATIC  = "static";                // Immer aktiv, unabhängig vom Kontext/Status.
+	final private static String MENU_DEFAULT = "default";               // Aktiv, sobald eine XML-Datei geladen wurde.
+	final private static String MENU_UNDO    = "undo";                  // Aktiv, sobald der Verlauf ältere Strings enthält.
+	final private static String MENU_REDO    = "redo";                  // Aktiv, sobald der Verlauf neuere Strings enthält.
+	final private static String MENU_TOKEN   = "token";                 // Aktiv, sobald ein API-Token existiert – unabhängig vom Kontext/Status.
+	final private static String MENU_FTOKEN  = "ftoken";                // Aktiv, sobald ein API-Token existiert und eine XML-Datei geladen wurde.
+	final private static String MENU_STOKEN  = "stoken";                // Aktiv, sobald ein API-Token existiert und Geister markiert wurden.
+	final private static String MENU_PTOKEN  = "ptoken";                // Aktiv, sobald ein API-Token im geladenen XML-Profil existiert.
+	final private static String MENU_SELECT  = "select";                // Aktiv, sobald Geister markiert wurden.
+
 	private static Preferences                cfg;
 	private static File                       dll;
 	private static File                       file;
 	private static int                        profile;
 	private static String                     nickname;
+
+	private static String[]                   history;
+	private static int                        historyIndex;
 
 	private static String                     token;
 	private static eSportsAPI                 anonAPI;
@@ -159,9 +208,10 @@ public class HTGT
 	private static JFrame                     mainWindow;
 	private static JTable                     maintable;
 	private static DefaultTableModel          mainmodel;
-	private static ArrayList<DynamicMenuItem> menuitems;
 
-	private static void dbg(String msg)
+	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
+
+	public static void dbg(String msg)
 	{
 		if(debugMode)
 		{
@@ -172,6 +222,11 @@ public class HTGT
 
 			System.err.printf("[%s] %s - %s%n", debugDate.format(new Date()), Thread.currentThread().getStackTrace()[2].toString(), msg);
 		}
+	}
+
+	public static void dbgf(String msg, Object... args)
+	{
+		dbg(String.format(msg, args));
 	}
 
 	public static void about()
@@ -197,7 +252,7 @@ public class HTGT
 			+ "		<b>Application:</b> %1$s<br /><b>Version:</b> %3$s"
 			+ "		<br /><br />Website: <a href='https://%5$s'>%5$s</a><br />%2$s: <a href='https://%6$s'>%6$s</a>"
 			+ "		<br /><br /><pre style='font-family: monospace; padding: 10px; color: #AAAAAA; border: 1px solid #CCCCCC;'>%4$s</pre>"
-			+ "		<br /><br /><div align='center'><i>Probleme? Vorschläge? Wünsche?</i><br /><br /><a href='https://%7$s' style='text-decoration: none;'><b>Hier geht's zum Forenthread!</b></a></div>"
+			+ "		<br /><br /><div align='center'><i>Probleme? Vorschläge? Wünsche?</i><br /><br /><a href='%7$s' style='text-decoration: none;'><b>Hier geht's zum Forenthread!</b></a></div>"
 			+ "	</body>"
 			+ "</html>"
 		;
@@ -205,7 +260,32 @@ public class HTGT
 		// TODO: HTML-Ressource und Lizenz auslagern und hier nur ersetzen?
 		// ...
 
-		JOptionPane.showOptionDialog(mainWindow, FNX.getHTMLPane(String.format(content, APPLICATION_NAME, APPLICATION_API, getVersion(true), licence, URL_WWW, URL_API, URL_HELP)), "Über diese App", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{}, null);
+		JOptionPane.showOptionDialog(mainWindow, FNX.getHTMLPane(String.format(content, APPLICATION_NAME, APPLICATION_API, getVersion(true), licence, URL_WWW, URL_API, getRedirectURL("support"))), "Über diese App", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{}, null);
+	}
+
+	public static void faq()
+	{
+		openURL("faq");
+	}
+
+	public static void support()
+	{
+		openURL("support");
+	}
+
+	private static void openURL(String dst)
+	{
+		try
+		{
+			if(Desktop.isDesktopSupported())
+			{
+				Desktop.getDesktop().browse(new URI(getRedirectURL(dst)));
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	private static void exceptionHandler(Exception e)
@@ -269,6 +349,11 @@ public class HTGT
 		return APPLICATION_VERSION;
 	}
 
+	private static String getRedirectURL(String dst)
+	{
+		return String.format(URL_REDIRECT, FNX.urlencode(dst));
+	}
+
 	public static void main(String[] args)
 	{
 		if(args.length > 0)
@@ -289,7 +374,7 @@ public class HTGT
 			}
 		}
 
-		dbg(String.format("%s version: %s", APPLICATION_NAME, getVersion(true)));
+		dbgf("%s version: %s", APPLICATION_NAME, getVersion(true));
 
 		// Aktuell gibt es nur eine Konfiguration für den ganzen User-
 		// account. Das heißt, dass mehrere unterschiedliche Bewerbe und
@@ -306,24 +391,76 @@ public class HTGT
 		// Wird u.a. für das Kontextmenü bei Eingaben benötigt.
 		UIManager.addAuxiliaryLookAndFeel(new FNX_LookAndFeel());
 
-		// http://nadeausoftware.com/articles/2008/11/all_ui_defaults_names_common_java_look_and_feels_windows_mac_os_x_and_linux
-		UIManager.put("Menu.font",              new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
-		UIManager.put("MenuItem.font",          new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("Button.font",            new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
-		UIManager.put("OptionPane.buttonFont",  new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE));
-		UIManager.put("OptionPane.messageFont", new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("TableHeader.font",       new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("Table.font",             new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("TextField.font",         new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("ComboBox.font",          new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("List.font",              new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
-		UIManager.put("List.font",              new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE));
+		Font smallPlain = new Font(Font.SANS_SERIF, Font.PLAIN,  (int) Math.round(FONTSIZE * FONTSMALL));
+		Font smallBold  = new Font(Font.SANS_SERIF, Font.BOLD,   (int) Math.round(FONTSIZE * FONTSMALL));
+		Font plain      = new Font(Font.SANS_SERIF, Font.PLAIN,  FONTSIZE);
+		Font bold       = new Font(Font.SANS_SERIF, Font.BOLD,   FONTSIZE);
 
-		UIManager.put("Table.gridColor",        new Color(204, 204, 204)); // #ccc
-		UIManager.put("TableHeader.background", new Color(236, 236, 236)); // #888
-		UIManager.put("TableHeader.foreground", new Color(  0,   0,   0)); // #000
-		UIManager.put("Table.background",       new Color(255, 255, 255)); // #fff
-		UIManager.put("Table.foreground",       new Color(  0,   0,   0)); // #000
+		Color white     = new Color(255, 255, 255); // #fff
+		Color black     = new Color(  0,   0,   0); // #000
+		Color darkGray  = new Color(136, 136, 136); // #888
+		Color lightGray = new Color(204, 204, 204); // #ccc
+		Color lightBlue = new Color( 68, 136, 255); // #48f;
+
+		// http://nadeausoftware.com/articles/2008/11/all_ui_defaults_names_common_java_look_and_feels_windows_mac_os_x_and_linux
+		UIManager.put("Menu.font",                                      bold);
+		UIManager.put("MenuItem.font",                                  plain);
+		UIManager.put("MenuItem.acceleratorFont",                       smallPlain);
+		UIManager.put("Button.font",                                    bold);
+		UIManager.put("OptionPane.buttonFont",                          bold);
+		UIManager.put("OptionPane.messageFont",                         plain);
+		UIManager.put("TableHeader.font",                               plain);
+		UIManager.put("Table.font",                                     plain);
+		UIManager.put("TextField.font",                                 plain);
+		UIManager.put("ComboBox.font",                                  plain);
+		UIManager.put("List.font",                                      plain);
+		UIManager.put("List.font",                                      plain);
+		UIManager.put("Label.font",                                     plain);
+
+		// Tabelle
+		UIManager.put("Table.gridColor",                                darkGray);
+
+		// Tabellenheader
+		UIManager.put("TableHeader.cellBorder",                         darkGray);
+		UIManager.put("TableHeader.background",                         darkGray);
+		UIManager.put("TableHeader.foreground",                         white);
+
+		// Normale Tabellenzeilen
+		UIManager.put("Table.background",                               white);
+		UIManager.put("Table.foreground",                               black);
+
+		/*
+		// Markierte Tabellenzeilen
+		UIManager.put("Table.selectionBackground",                      lightBlue);
+		UIManager.put("Table.selectionForeground",                      white);
+		*/
+
+		/*
+		// Normale Menüs
+		UIManager.put("MenuBar.background",                             lightGray);
+		UIManager.put("MenuBar.foreground",                             black);
+
+		// Aktive Menüs
+		UIManager.put("Menu.selectionBackground",                       white);
+		UIManager.put("Menu.selectionForeground",                       black);
+
+		// Normale Menüzeilen
+		UIManager.put("MenuItem.background",                            lightGray);
+		UIManager.put("MenuItem.foreground",                            black);
+		UIManager.put("MenuItem.acceleratorForeground",                 lightBlue);
+
+		// Aktive Menüzeilen
+		UIManager.put("MenuItem.selectionBackground",                   white);
+		UIManager.put("MenuItem.selectionForeground",                   black);
+		UIManager.put("MenuItem.acceleratorSelectionForeground",        lightBlue);
+
+		// Deaktivierte Menüzeilen
+		UIManager.put("MenuItem.disabledBackground",                    lightGray);
+		UIManager.put("MenuItem.disabledForeground",                    darkGray);
+
+		// Trennlinien in Menüs
+		UIManager.put("Separator.foreground",                           lightGray);
+		*/
 
 		mainWindow = new JFrame(APPLICATION_TITLE);
 		mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -346,8 +483,15 @@ public class HTGT
 		maintable.getTableHeader().setResizingAllowed(false);
 
 		// macOS würde z.B. gar keine Rahmen anzeigen.
+		// Das dürfte aber an der weißen Farbe liegen.
 		maintable.setShowHorizontalLines(true);
 		maintable.setShowVerticalLines(true);
+
+		// Für die Menüelemente müssen wir wissen, wann eine Auswahl getroffen wurde.
+		maintable.getSelectionModel().addListSelectionListener(new HTGT_SelectionHandler());
+
+		// ...
+		maintable.requestFocusInWindow();
 
 		JScrollPane scrollPane = new JScrollPane(maintable);
 		mainWindow.add(scrollPane, BorderLayout.CENTER);
@@ -388,7 +532,7 @@ public class HTGT
 			case "help": title = "Hilfe";      break;
 
 			default:
-				dbg(String.format("Unknown menu »%s«", key));
+				dbgf("Unknown menu »%s«", key);
 				return null;
 		}
 
@@ -397,102 +541,233 @@ public class HTGT
 		switch(key)
 		{
 			case "file":
-				menu.add(new DynamicMenuItem("XML-Datei öffnen",                     HTGT.class.getName(), "openFile"));
-				menu.add(new DynamicMenuItem("Standardpfad öffnen",                  HTGT.class.getName(), "openDefaultFile"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Speichern",                            HTGT.class.getName(), "saveFile"));
-				menu.add(registerDynMenuItem("Speichern unter",                      HTGT.class.getName(), "saveFileAs"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Schließen",                            HTGT.class.getName(), "closeFile"));
-				menu.add(new DynamicMenuItem("Beenden",                              HTGT.class.getName(), "quit"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "XML-Datei öffnen",                     "openFile",               KeyStroke.getKeyStroke(KeyEvent.VK_O,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad öffnen",                  "openDefaultFile",        KeyStroke.getKeyStroke(KeyEvent.VK_O,      CTRL | SHIFT)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Speichern",                            "saveFile",               KeyStroke.getKeyStroke(KeyEvent.VK_S,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Speichern unter",                      "saveFileAs",             KeyStroke.getKeyStroke(KeyEvent.VK_S,      CTRL | SHIFT)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Schließen",                            "closeFile",              KeyStroke.getKeyStroke(KeyEvent.VK_W,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Beenden",                              "quit",                   KeyStroke.getKeyStroke(KeyEvent.VK_Q,      CTRL)));
 				break;
 
 			case "edit":
-				menu.add(registerDynMenuItem("Ausschneiden",                         HTGT.class.getName(), "cutToClipboard"));
-				menu.add(registerDynMenuItem("Kopieren",                             HTGT.class.getName(), "copyToClipboard"));
-				menu.add(registerDynMenuItem("Einfügen",                             HTGT.class.getName(), "copyFromClipboard"));
-				menu.add(registerDynMenuItem("Löschen",                              HTGT.class.getName(), "deleteRows"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Geistliste sortieren",                 HTGT.class.getName(), "resort"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aus Datei importieren",                HTGT.class.getName(), "importFile"));
-				menu.add(registerDynMenuItem("In Datei exportieren",                 HTGT.class.getName(), "exportFile"));
+				if(ENABLE_AUTOSAVE)
+				{
+					menu.add(registerDynMenuItem(MENU_UNDO, "Rückgängig",                           "undoHistory",            KeyStroke.getKeyStroke(KeyEvent.VK_Z,      CTRL)));
+					menu.add(registerDynMenuItem(MENU_REDO, "Wiederholen",                          "redoHistory",            KeyStroke.getKeyStroke(KeyEvent.VK_Y,      CTRL)));
+					menu.addSeparator(); // ------------------------------------------------------------------------------------------------------------------------------------------------------------
+				}
+
+				menu.add(registerDynMenuItem(MENU_SELECT,   "Ausschneiden",                         "cutToClipboard",         KeyStroke.getKeyStroke(KeyEvent.VK_X,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "Kopieren",                             "copyToClipboard",        KeyStroke.getKeyStroke(KeyEvent.VK_C,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Einfügen",                             "copyFromClipboard",      KeyStroke.getKeyStroke(KeyEvent.VK_V,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "Löschen",                              "deleteRows",             KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, NONE)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Importieren",                          "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Exportieren",                          "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Sortieren",                            "resort",                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,  ALT)));
 				break;
 
 			case "view":
-				menu.add(registerDynMenuItem("Profil auswählen",                     HTGT.class.getName(), "selectProfile"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Profil hinzufügen",                    HTGT.class.getName(), "createProfile"));
-				menu.add(registerDynMenuItem("Profil umbenennen",                    HTGT.class.getName(), "renameProfile"));
-				menu.add(registerDynMenuItem("Profil entfernen",                     HTGT.class.getName(), "deleteProfile"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Aktualisieren",                        HTGT.class.getName(), "reloadFile"));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil auswählen",                     "selectProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_F6,     NONE)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil hinzufügen",                    "createProfile"));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil umbenennen",                    "renameProfile"));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil entfernen",                     "deleteProfile"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Aktualisieren",                        "reloadFile",             KeyStroke.getKeyStroke(KeyEvent.VK_F5,     NONE)));
 				break;
 
 			case "api":
-				menu.add(registerDynMenuItem("Geister hochladen",                    HTGT.class.getName(), "ghostUpload"));
-				menu.add(registerDynMenuItem("Geister durch ID(s) herunterladen",    HTGT.class.getName(), "ghostDownload"));
-				menu.add(registerDynMenuItem("Geist auswählen und herunterladen",    HTGT.class.getName(), "ghostSelect"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem(FF_TITLE + " (nur pB's hochladen)",     HTGT.class.getName(), "fastFollow"));
-				menu.add(registerDynMenuItem(FF_TITLE + " (immer alles hochladen)",  HTGT.class.getName(), "fastFollowForce"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Spieler-/Bewerbsdetails anzeigen",     HTGT.class.getName(), "playerInfo"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(registerDynMenuItem("Token ins aktuelle Profil kopieren",   HTGT.class.getName(), "copyTokenToProfile"));
-				menu.add(registerDynMenuItem("Token aus aktuellem Profil verwenden", HTGT.class.getName(), "copyTokenFromProfile"));
-				menu.add(registerDynMenuItem("Token aus aktuellem Profil entfernen", HTGT.class.getName(), "removeTokenFromProfile"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("API-Token ändern",                     HTGT.class.getName(), "setupToken"));
-				menu.add(new DynamicMenuItem("API-Token löschen",                    HTGT.class.getName(), "deleteToken"));
+				menu.add(registerDynMenuItem(MENU_STOKEN,   "Markierte Geister hochladen",          "ghostUpload",            KeyStroke.getKeyStroke(KeyEvent.VK_F3,     NONE)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Geist aus Rangliste herunterladen",    "ghostSelect",            KeyStroke.getKeyStroke(KeyEvent.VK_F4,     NONE)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Geister durch ID(s) herunterladen",    "ghostDownload"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   FF_TITLE + " (nur pB's hochladen)",     "fastFollow",             KeyStroke.getKeyStroke(KeyEvent.VK_F7,     NONE)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   FF_TITLE + " (immer alles hochladen)",  "fastFollowForce",        KeyStroke.getKeyStroke(KeyEvent.VK_F8,     NONE)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_TOKEN,    "Spieler-/Bewerbsdetails anzeigen",     "playerInfo",             KeyStroke.getKeyStroke(KeyEvent.VK_F9,     NONE)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Token ins aktuelle Profil kopieren",   "copyTokenToProfile"));
+				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil verwenden", "copyTokenFromProfile"));
+				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil entfernen", "removeTokenFromProfile"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   "API-Token ändern",                     "setupToken",             KeyStroke.getKeyStroke(KeyEvent.VK_F2,     NONE)));
+				menu.add(registerDynMenuItem(MENU_TOKEN,    "API-Token löschen",                    "deleteToken"));
 				break;
 
 			case "help":
-				menu.add(new DynamicMenuItem("Prüfung auf Updates",                  HTGT.class.getName(), "updateCheck"));
-				menu.add(registerDynMenuItem("DLL-Datei überprüfen",                 HTGT.class.getName(), "updateCheckDLL"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Standardpfad einstellen",              HTGT.class.getName(), "changeDefaultFile"));
-				menu.add(new DynamicMenuItem("Standardpfad zurücksetzen",            HTGT.class.getName(), "resetDefaultFile"));
-				menu.add(registerDynMenuItem("Datei als Standardpfad nutzen",        HTGT.class.getName(), "applyDefaultFile"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Konfiguration löschen",                HTGT.class.getName(), "clearConfigDialog"));
-				menu.addSeparator(); // --------------------------------
-				menu.add(new DynamicMenuItem("Über diese App",                       HTGT.class.getName(), "about"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Über diese App",                       "about"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Online Dokumentation",                 "faq",                    KeyStroke.getKeyStroke(KeyEvent.VK_F1,     NONE)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Support kontaktieren",                 "support"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Prüfung auf Updates",                  "updateCheck"));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "OC-Patch überprüfen",                  "updateCheckDLL"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad einstellen",              "changeDefaultFile"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad zurücksetzen",            "resetDefaultFile"));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Datei als Standardpfad nutzen",        "applyDefaultFile"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Konfiguration löschen",                "clearConfigDialog"));
+
+
 				break;
 		}
 
 		return menu;
 	}
 
-	private static JMenuItem registerDynMenuItem(String t, String c, String m)
+	private static JMenuItem registerDynMenuItem(String o, String t, String m)
+	{
+		return registerDynMenuItem(o, t, m, null);
+	}
+
+	private static JMenuItem registerDynMenuItem(String o, String t, String m, KeyStroke k)
 	{
 		if(menuitems == null)
 		{
-			menuitems = new ArrayList<DynamicMenuItem>();
+			menuitems = new HashMap<String,ArrayList<DynamicMenuItem>>();
 		}
 
-		DynamicMenuItem DMI = new DynamicMenuItem(t, c, m);
-		menuitems.add(DMI);
+		if(menuitems.get(o) == null)
+		{
+			menuitems.put(o, new ArrayList<DynamicMenuItem>());
+		}
+
+		DynamicMenuItem DMI = new DynamicMenuItem(t, HTGT.class.getName(), m, k);
+		menuitems.get(o).add(DMI);
+
 		return DMI;
+	}
+
+	private static void updateMenuItems()
+	{
+		String  token  = null;
+		String  ptoken = null;
+		boolean op     = false;
+
+		try
+		{
+			token = cfg(CFG_TOKEN);
+
+			if(OfflineProfiles != null)
+			{
+				op = true;
+				ptoken = OfflineProfiles.getToken();
+			}
+			else
+			{
+				op = false;
+			}
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+
+		if(token != null)
+		{
+			enableMenuItems(MENU_TOKEN);
+		}
+		else
+		{
+			disableMenuItems(MENU_TOKEN);
+		}
+
+		if(token != null && op)
+		{
+			enableMenuItems(MENU_FTOKEN);
+		}
+		else
+		{
+			disableMenuItems(MENU_FTOKEN);
+		}
+
+		if(ptoken != null)
+		{
+			enableMenuItems(MENU_PTOKEN);
+		}
+		else
+		{
+			disableMenuItems(MENU_PTOKEN);
+		}
+
+		if(op)
+		{
+			enableMenuItems(MENU_DEFAULT);
+		}
+		else
+		{
+			disableMenuItems(MENU_DEFAULT);
+			disableMenuItems(MENU_UNDO);
+			disableMenuItems(MENU_REDO);
+		}
+
+		updateSelectionMenuItems();
+	}
+
+	public static void updateSelectionMenuItems()
+	{
+		if(maintable != null && maintable.getSelectedRows().length > 0)
+		{
+			updateSelectionMenuItems(true);
+		}
+		else
+		{
+			updateSelectionMenuItems(false);
+		}
+	}
+
+	public static void updateSelectionMenuItems(Boolean action)
+	{
+		if(OfflineProfiles == null)
+		{
+			action = null;
+		}
+
+		disableMenuItems(MENU_SELECT);
+		disableMenuItems(MENU_STOKEN);
+
+		if(action != null && action)
+		{
+			if(cfg(CFG_TOKEN) != null)
+			{
+				enableMenuItems(MENU_STOKEN);
+			}
+
+			enableMenuItems(MENU_SELECT);
+		}
 	}
 
 	private static void disableMenuItems()
 	{
-		changeMenuItems(false);
+		updateMenuItems();
+	}
+
+	private static void disableMenuItems(String o)
+	{
+		changeMenuItems(o, false);
 	}
 
 	private static void enableMenuItems()
 	{
-		changeMenuItems(true);
+		updateMenuItems();
 	}
 
-	private static void changeMenuItems(boolean e)
+	private static void enableMenuItems(String o)
 	{
-		if(menuitems != null)
+		changeMenuItems(o, true);
+	}
+
+	private static void changeMenuItems(String o, boolean e)
+	{
+		if(menuitems != null && menuitems.get(o) != null)
 		{
-			for(int i = 0; i < menuitems.size(); i++)
+			for(int i = 0; i < menuitems.get(o).size(); i++)
 			{
-				menuitems.get(i).setEnabled(e);
+				menuitems.get(o).get(i).setEnabled(e);
 			}
 		}
 	}
@@ -728,7 +1003,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und kann nicht geladen werden!");
+			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und konnte nicht geladen werden!");
 		}
 	}
 
@@ -785,7 +1060,7 @@ public class HTGT
 			if(lastProfile == PROFILE_DEFAULT)
 			{
 				selectedProfile = OfflineProfiles.defaultProfile();
-				dbg(String.format("Last used profile: DEFAULT (%d)", selectedProfile));
+				dbgf("Last used profile: DEFAULT (%d)", selectedProfile);
 			}
 			else if(lastProfile == PROFILE_SPECIAL)
 			{
@@ -796,7 +1071,7 @@ public class HTGT
 					if(isSpecialProfile(profiles[i]))
 					{
 						selectedProfile = i;
-						dbg(String.format("Last used profile: SPECIAL (%d)", selectedProfile));
+						dbgf("Last used profile: SPECIAL (%d)", selectedProfile);
 						break;
 					}
 				}
@@ -805,7 +1080,7 @@ public class HTGT
 			{
 				selectedProfile = lastProfile - 1;
 				selectedProfile = (selectedProfile < 0 || selectedProfile >= OfflineProfiles.getProfileCount()) ? PROFILE_NONE : selectedProfile;
-				dbg(String.format("Last used profile: %d", selectedProfile));
+				dbgf("Last used profile: %d", selectedProfile);
 			}
 			else
 			{
@@ -816,7 +1091,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und kann nicht geladen werden!");
+			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und konnte nicht geladen werden!");
 		}
 	}
 
@@ -826,15 +1101,20 @@ public class HTGT
 		hideTableHeader();
 		clearTable();
 
-		if(OfflineProfiles != null && OfflineProfiles.getGhostCount() > 0)
+		if(OfflineProfiles != null)
 		{
-			showTableHeader();
-
-			for(int i = 0; i < OfflineProfiles.getGhostCount(); i++)
+			if(OfflineProfiles.getGhostCount() > 0)
 			{
-				addGhost(OfflineProfiles.getGhost(i), false);
+				showTableHeader();
+
+				for(int i = 0; i < OfflineProfiles.getGhostCount(); i++)
+				{
+					addGhost(OfflineProfiles.getGhost(i), false);
+				}
 			}
 		}
+
+		updateMenuItems();
 	}
 
 	public static void addGhost(GhostElement ghost, boolean create)
@@ -991,7 +1271,7 @@ public class HTGT
 
 					if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
 					{
-						dbg(String.format("Unsupported changes: %d != %d || %d != %d%n", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile));
+						dbgf("Unsupported changes: %d != %d || %d != %d%n", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
 						errorMessage(FF_TITLE, "Es wurden nicht unterstützte Änderungen festgestellt!");
 						return;
 					}
@@ -1026,7 +1306,7 @@ public class HTGT
 							{
 								if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
 								{
-									dbg(String.format("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+									dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
 									// ghostUpload(newProfileGhosts[t][w], true);
 
@@ -1058,7 +1338,7 @@ public class HTGT
 								{
 									if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
 									{
-										dbg(String.format("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w])));
+										dbgf("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
 										// ghostUpload(newDefaultGhosts[t][w], true);
 
@@ -1110,13 +1390,13 @@ public class HTGT
 
 							if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
 							{
-								dbg(String.format("Uploading ghost: %s", ghost.getDebugDetails()));
+								dbgf("Uploading ghost: %s", ghost.getDebugDetails());
 								ghostUpload(ghost, true);
 								realUpload = true;
 							}
 							else
 							{
-								dbg(String.format("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails()));
+								dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
 
 								if(force)
 								{
@@ -1131,13 +1411,17 @@ public class HTGT
 					{
 						if(/*lastFromDefault &&*/ lastUploadedWeather > 0 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
 						{
+							// TODO: Beim Multighost Dialog im Spiel trifft das nicht mehr zu!
+							// Man könnte aber MultiGhost/MultiGhosts in der UserConfig.xml auswerten.
+							// ...
+
 							currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
 						}
 
 						if(cfg(CFG_NDG) == null)
 						{
 							int realWeather = (lastUploadedWeather == gmHelper.WEATHER_TICKET) ? gmHelper.WEATHER_TICKET : weathers[lastUploadedWeather];
-							int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s%nBitte beachte, dass die Datei danach automatisch gespeichert wird!", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather), currentGhost), false);
+							int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s" + (!ENABLE_AUTOSAVE ? "%nBitte beachte, dass die Datei danach automatisch gespeichert wird!" : ""), gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather), currentGhost), false);
 
 							if(action == BUTTON_NEVER)
 							{
@@ -1145,7 +1429,9 @@ public class HTGT
 							}
 							else if(action == BUTTON_YES)
 							{
-								if(ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather == gmHelper.WEATHER_TICKET) ? true : false)))
+								Boolean result = ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather == gmHelper.WEATHER_TICKET) ? true : false));
+
+								if(result != null && result == true)
 								{
 									if(OfflineProfiles.changed() && !saveFile(true))
 									{
@@ -1254,12 +1540,12 @@ public class HTGT
 
 		if(profilesFile == null || !profilesFile.exists() || !profilesFile.isFile())
 		{
-			dbg(String.format("Other XML file not found: %s", profilesFile));
+			dbgf("Other XML file not found: %s", profilesFile);
 			errorMessage(null, "Die Datei Profiles.xml wurde nicht gefunden!");
 		}
 		else
 		{
-			dbg(String.format("Other XML file: %s", profilesFile));
+			dbgf("Other XML file: %s", profilesFile);
 
 			try
 			{
@@ -1285,14 +1571,14 @@ public class HTGT
 
 	public static void createProfile()
 	{
-		if(OfflineProfiles == null || unsavedChanges())
+		if(OfflineProfiles == null)
 		{
 			return;
 		}
 
 		Profiles profiles = getProfileHandle(null);
 
-		if(profiles == null)
+		if(profiles == null || unsavedChanges())
 		{
 			return;
 		}
@@ -1307,7 +1593,8 @@ public class HTGT
 				"Mit dieser Funktion kannst Du ein neues Profil im Spiel anlegen." +
 				"%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!" +
 				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
-				"%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." +
+				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
+				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
 				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nEr muss mindestens drei und maximal 13 Zeichen enthalten. Bitte versuche es erneut." : "") +
 				"%n%nGewünschter Nickname:"
 			);
@@ -1342,6 +1629,11 @@ public class HTGT
 
 		try
 		{
+			// TODO: Reload profile? (falls die SC erst später geschlossen wurde)
+			// ...
+
+			resetHistory();
+
 			OfflineProfiles.addProfile(nick);
 			profiles.addProfile(nick);
 
@@ -1363,14 +1655,14 @@ public class HTGT
 
 	public static void renameProfile()
 	{
-		if(OfflineProfiles == null || checkProfile() || unsavedChanges())
+		if(OfflineProfiles == null)
 		{
 			return;
 		}
 
 		Profiles profiles = getProfileHandle(nickname);
 
-		if(profiles == null)
+		if(profiles == null || checkProfile() || unsavedChanges())
 		{
 			return;
 		}
@@ -1385,7 +1677,8 @@ public class HTGT
 				"Nutze diese Funktion, um das Profil »%s« umzubenennen." +
 				"%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!" +
 				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
-				"%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." +
+				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
+				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
 				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nEr muss mindestens drei und maximal 13 Zeichen enthalten. Bitte versuche es erneut." : "") +
 				"%n%nNeuer Nickname:"
 			, nickname);
@@ -1424,6 +1717,11 @@ public class HTGT
 
 		try
 		{
+			// TODO: Reload profile? (falls die SC erst später geschlossen wurde)
+			// ...
+
+			resetHistory();
+
 			profiles.renameProfile(nickname, nick);
 			OfflineProfiles.renameProfile(nick);
 
@@ -1452,6 +1750,13 @@ public class HTGT
 
 		try
 		{
+			Profiles profiles = getProfileHandle(nickname);
+
+			if(profiles == null)
+			{
+				return;
+			}
+
 			int defaultProfile = OfflineProfiles.defaultProfile();
 			String[] allProfiles = OfflineProfiles.getProfiles();
 			int regularProfiles = 0;
@@ -1469,14 +1774,8 @@ public class HTGT
 				infoDialog(null, "Das letzte reguläre Profil kann nicht gelöscht werden!");
 				return;
 			}
-			else if(unsavedChanges())
-			{
-				return;
-			}
 
-			Profiles profiles = getProfileHandle(nickname);
-
-			if(profiles == null)
+			if(unsavedChanges())
 			{
 				return;
 			}
@@ -1484,7 +1783,8 @@ public class HTGT
 			String message = String.format(
 				"Soll das Profil »%s« inkl. aller Geister und Einstellungen wirklich gelöscht werden?" +
 				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
-				"%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." +
+				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
+				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
 				"%n%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!"
 			, nickname);
 
@@ -1492,6 +1792,11 @@ public class HTGT
 			{
 				return;
 			}
+
+			// TODO: Reload profile? (falls die SC erst später geschlossen wurde)
+			// ...
+
+			resetHistory();
 
 			profiles.deleteProfile(nickname);
 			OfflineProfiles.deleteProfile(profile);
@@ -1579,6 +1884,8 @@ public class HTGT
 					}
 				}
 			}
+
+			autoSave();
 		}
 	}
 
@@ -1606,9 +1913,9 @@ public class HTGT
 
 		Date date = new Date();
 		lastDLLCheck = cfg.getLong(CFG_DC, 0L);
-		dbg(String.format("Current time: %d", date.getTime()));
-		dbg(String.format("Last DLL check: %d", lastDLLCheck));
-		dbg(String.format("Check interval: %d", UPDATE_INTERVAL));
+		dbgf("Current time: %d", date.getTime());
+		dbgf("Last DLL check: %d", lastDLLCheck);
+		dbgf("Check interval: %d", UPDATE_INTERVAL);
 
 		if(lastDLLCheck <= 0L || date.getTime() > (lastDLLCheck + UPDATE_INTERVAL))
 		{
@@ -1628,12 +1935,23 @@ public class HTGT
 			{
 				// TODO: Check for NULL?
 				String hash = FNX.sha512(dll);
-				dbg(String.format("SHA512: %s", hash));
+				dbgf("SHA512: %s", hash);
 
 				if(anonAPI.updateAvailable("SC.DLL", hash, auto))
 				{
 					dbg("New DLL available!" + ((auto) ? " (autocheck)" : ""));
-					infoDialog("Es ist eine neuere DLL-Datei verfügbar! Besuche das Forum, um sie herunterzuladen.");
+
+					if(Desktop.isDesktopSupported())
+					{
+						if(confirmDialog(JOptionPane.INFORMATION_MESSAGE, null, String.format("Es ist eine neue Version vom OC-Patch verfügbar!%n%nWillst du die Website öffnen, um ihn herunterzuladen?")))
+						{
+							Desktop.getDesktop().browse(new URI(getRedirectURL("update-dll")));
+						}
+					}
+					else
+					{
+						infoDialog("Es ist eine neue Version vom OC-Patch verfügbar! Besuche das Forum, um ihn herunterzuladen.");
+					}
 				}
 				else
 				{
@@ -1641,7 +1959,7 @@ public class HTGT
 
 					if(!auto)
 					{
-						infoDialog("Es gibt keine neuere DLL-Datei, du verwendest bereits die aktuellste Version.");
+						infoDialog("Es gibt keinen neueren OC-Patch, du verwendest bereits die aktuellste Version.");
 					}
 				}
 			}
@@ -1656,6 +1974,10 @@ public class HTGT
 					e.printStackTrace();
 				}
 			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -1668,11 +1990,11 @@ public class HTGT
 	{
 		if(selectionValues != null)
 		{
-			dbg(String.format("Input dialog: SELECTION %s", title));
+			dbgf("Input dialog: SELECTION %s", title);
 		}
 		else
 		{
-			dbg(String.format("Input dialog: INPUTFIELD %s", title));
+			dbgf("Input dialog: INPUTFIELD %s", title);
 		}
 
 		Object input = JOptionPane.showInputDialog(mainWindow, message, title, JOptionPane.PLAIN_MESSAGE, null, selectionValues, initialSelectionValue);
@@ -1691,7 +2013,7 @@ public class HTGT
 			{
 				if(selected.equals(selectionValues[i]))
 				{
-					dbg(String.format("Input dialog: SELECTED #%d", i));
+					dbgf("Input dialog: SELECTED #%d", i);
 					return i;
 				}
 			}
@@ -1702,7 +2024,7 @@ public class HTGT
 		else
 		{
 			selected = selected.trim();
-			dbg(String.format("Input dialog: VALUE(%d) %s", selected.length(), selected));
+			dbgf("Input dialog: VALUE(%d) %s", selected.length(), selected);
 			return selected;
 		}
 	}
@@ -1724,18 +2046,18 @@ public class HTGT
 
 		if(open)
 		{
-			dbg(String.format("File dialog: OPEN %s", directory));
+			dbgf("File dialog: OPEN %s", directory);
 			chooser = new JFileChooser(directory);
 		}
 		else
 		{
-			dbg(String.format("File dialog: SAVE %s", directory));
+			dbgf("File dialog: SAVE %s", directory);
 			chooser = new ImprovedFileChooser(directory);
 		}
 
 		if(selection != null)
 		{
-			dbg(String.format("File dialog: SET %s", selection.getAbsolutePath()));
+			dbgf("File dialog: SET %s", selection.getAbsolutePath());
 			chooser.setSelectedFile(selection);
 		}
 
@@ -1755,7 +2077,7 @@ public class HTGT
 		if(code == JFileChooser.APPROVE_OPTION)
 		{
 			File selectedFile = chooser.getSelectedFile();
-			dbg(String.format("File dialog: APPROVE %s", selectedFile));
+			dbgf("File dialog: APPROVE %s", selectedFile);
 
 			if(selectedFile != null && (!open || selectedFile.exists()))
 			{
@@ -1796,7 +2118,7 @@ public class HTGT
 	{
 		FNX.windowToFront(mainWindow);
 
-		dbg(String.format("New yes/no confirm dialog: %s", title));
+		dbgf("New yes/no confirm dialog: %s", title);
 		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type))
 		{
 			dbg("return TRUE (confirmed)");
@@ -1827,16 +2149,16 @@ public class HTGT
 
 		if(appendix)
 		{
-			dbg(String.format("New threesome (yes/always/no) dialog: %s", title));
+			dbgf("New threesome (yes/always/no) dialog: %s", title);
 			values = new Integer[]{BUTTON_YES, BUTTON_ALWAYS, BUTTON_NO};
 			buttons = new String[]{"Ja", "Immer", "Nein"};
 			defaultButton = buttons[0];
 		}
 		else
 		{
-			dbg(String.format("New threesome (yes/never/no) dialog: %s", title));
+			dbgf("New threesome (yes/never/no) dialog: %s", title);
 			values = new Integer[]{BUTTON_YES, BUTTON_NEVER, BUTTON_NO};
-			buttons = new String[]{"Ja", "Nie", "Nein"};
+			buttons = new String[]{"Ja", "Niemals", "Nein"};
 			defaultButton = buttons[0];
 		}
 
@@ -1849,9 +2171,126 @@ public class HTGT
 		}
 		else
 		{
-			dbg(String.format("return [%d] (%s)%n", values[result], buttons[result]));
+			dbgf("return [%d] (%s)%n", values[result], buttons[result]);
 			return values[result].intValue();
 		}
+	}
+
+	private static Object stepDialog(String title, Object message)
+	{
+		return stepDialog(JOptionPane.PLAIN_MESSAGE, title, message, null, null, false);
+	}
+
+	private static Object stepDialog(String title, Object message, boolean prev)
+	{
+		return stepDialog(JOptionPane.PLAIN_MESSAGE, title, message, null, null, prev);
+	}
+
+	private static Object stepDialog(int type, String title, Object message)
+	{
+		return stepDialog(type, title, message, null, null, false);
+	}
+
+	private static Object stepDialog(int type, String title, Object message, boolean prev)
+	{
+		return stepDialog(type, title, message, null, null, prev);
+	}
+
+	private static Object stepDialog(String title, Object message, Object[] selectionValues, Object initialSelectionValue)
+	{
+		return stepDialog(JOptionPane.PLAIN_MESSAGE, title, message, selectionValues, initialSelectionValue, false);
+	}
+
+	private static Object stepDialog(int type, String title, Object message, Object[] selectionValues, Object initialSelectionValue)
+	{
+		return stepDialog(type, title, message, selectionValues, initialSelectionValue, false);
+	}
+
+	private static Object stepDialog(String title, Object message, Object[] selectionValues, Object initialSelectionValue, boolean prev)
+	{
+		return stepDialog(JOptionPane.PLAIN_MESSAGE, title, message, selectionValues, initialSelectionValue, prev);
+	}
+
+	private static Object stepDialog(int type, String title, Object message, Object[] selectionValues, Object initialSelectionValue, boolean prev)
+	{
+		String[] buttons;
+		Integer[] values;
+		Object defaultButton;
+		String dialogType;
+
+		JComboBox  comboBox  = null;
+		JTextField textField = null;
+
+		JPanel panel = new JPanel();
+		panel.setLayout(new GridLayout(0, 1));
+		panel.add(new JLabel((String) message));
+
+		if(selectionValues != null)
+		{
+			DefaultComboBoxModel model = new DefaultComboBoxModel();
+
+			for(int i = 0; i < selectionValues.length; i++)
+			{
+				if(selectionValues[i] != null)
+				{
+					model.addElement(selectionValues[i]);
+				}
+			}
+
+			if(initialSelectionValue != null)
+			{
+				model.setSelectedItem(initialSelectionValue);
+			}
+
+			dialogType = "SELECTION";
+			comboBox = new JComboBox(model);
+			panel.add(comboBox);
+		}
+		else
+		{
+			dialogType = "INPUTFIELD";
+			textField = new JTextField(initialSelectionValue != null ? initialSelectionValue.toString() : null);
+			panel.add(textField);
+		}
+
+		if(prev)
+		{
+			dbgf("New prev/next step %s dialog: %s", dialogType, title);
+			values = new Integer[]{BUTTON_PREV, BUTTON_CANCEL, BUTTON_NEXT};
+			buttons = new String[]{"Zurück", "Abbrechen", "Weiter"};
+			defaultButton = buttons[2];
+		}
+		else
+		{
+			dbgf("New next step %s dialog: %s", dialogType, title);
+			values = new Integer[]{BUTTON_CANCEL, BUTTON_NEXT};
+			buttons = new String[]{"Abbrechen", "Weiter"};
+			defaultButton = buttons[1];
+		}
+
+		int result = JOptionPane.showOptionDialog(mainWindow, panel, title, JOptionPane.YES_NO_CANCEL_OPTION, type, null, buttons, defaultButton);
+
+		if(result == JOptionPane.CLOSED_OPTION)
+		{
+			dbgf("RETURN: %d (CLOSED)", BUTTON_CANCEL);
+			return BUTTON_CANCEL;
+		}
+		else if(buttons[result] == defaultButton)
+		{
+			if(selectionValues != null)
+			{
+				dbgf("RETURN SELECTION: %d (%s)", comboBox.getSelectedIndex(),comboBox.getSelectedItem().toString());
+				return comboBox.getSelectedIndex();
+			}
+			else
+			{
+				dbgf("RETURN INPUT: %s", textField.getText());
+				return textField.getText();
+			}
+		}
+
+		dbgf("RETURN: %d (%s)", values[result], buttons[result]);
+		return values[result];
 	}
 
 	private static void errorMessage(String msg)
@@ -1956,6 +2395,7 @@ public class HTGT
 		if(delete)
 		{
 			updateWindowTitle();
+			autoSave();
 		}
 	}
 
@@ -1987,6 +2427,8 @@ public class HTGT
 		{
 			exceptionHandler(e, null);
 		}
+
+		autoSave();
 	}
 
 /***********************************************************************
@@ -2022,7 +2464,7 @@ public class HTGT
 
 		if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
 		{
-			dbg(String.format("Update check disabled: %s", APPLICATION_VERSION));
+			dbgf("Update check disabled: %s", APPLICATION_VERSION);
 
 			if(!auto)
 			{
@@ -2034,9 +2476,9 @@ public class HTGT
 
 		Date date = new Date();
 		lastUpdateCheck = cfg.getLong(CFG_UC, 0L);
-		dbg(String.format("Current time: %d", date.getTime()));
-		dbg(String.format("Last update check: %d", lastUpdateCheck));
-		dbg(String.format("Check interval: %d", UPDATE_INTERVAL));
+		dbgf("Current time: %d", date.getTime());
+		dbgf("Last update check: %d", lastUpdateCheck);
+		dbgf("Check interval: %d", UPDATE_INTERVAL);
 
 		if(lastUpdateCheck <= 0L || date.getTime() > (lastUpdateCheck + UPDATE_INTERVAL))
 		{
@@ -2057,7 +2499,18 @@ public class HTGT
 				if(anonAPI.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION, auto))
 				{
 					dbg("New update available!" + ((auto) ? " (autocheck)" : ""));
-					infoDialog("Es ist ein neues Update verfügbar! Besuche die Website, um es herunterzuladen.");
+
+					if(Desktop.isDesktopSupported())
+					{
+						if(confirmDialog(JOptionPane.INFORMATION_MESSAGE, null, String.format("Es ist ein neues Update verfügbar!%n%nWillst du die Website öffnen, um es herunterzuladen?")))
+						{
+							Desktop.getDesktop().browse(new URI(getRedirectURL("update")));
+						}
+					}
+					else
+					{
+						infoDialog("Es ist ein neues Update verfügbar! Besuche die Website, um es herunterzuladen.");
+					}
 				}
 				else
 				{
@@ -2080,6 +2533,10 @@ public class HTGT
 					e.printStackTrace();
 				}
 			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -2089,28 +2546,33 @@ public class HTGT
 		{
 			return;
 		}
-		else
-		{
-			try
-			{
-				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der hinterlegte API-Token wirklich ins aktuelle Profil der XML-Datei kopiert werden?%n%nFür manche Rennen (z.B. mit limitierten Startversuchen) ist das zwingend erforderlich.%nDu darfst die OfflineProfiles.xml danach aber nicht mehr öffentlich mit anderen teilen!%nAndere könnten ansonsten in deinem Namen Zeiten eintragen und Fahrkarten lösen.")))
-				{
-					dbg("Copying token to active profile...");
-					OfflineProfiles.setToken(token);
 
-					if(!token.equals(OfflineProfiles.getToken()))
-					{
-						throw new Exception("Could not copy token");
-					}
+		try
+		{
+			if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format(
+				"Soll der hinterlegte API-Token wirklich ins aktuelle Profil der XML-Datei kopiert werden?" +
+				"%n%nFür manche Rennen (z.B. mit limitierten Startversuchen) ist das zwingend erforderlich." +
+				"%nDu darfst die OfflineProfiles.xml danach aber nicht mehr öffentlich mit anderen teilen!" +
+				"%nAndere könnten ansonsten in deinem Namen Zeiten eintragen und Fahrkarten lösen."
+			)))
+			{
+				dbg("Copying token to active profile...");
+				OfflineProfiles.setToken(token);
+
+				if(!token.equals(OfflineProfiles.getToken()))
+				{
+					throw new Exception("Could not copy token");
 				}
 			}
-			catch(Exception e)
-			{
-				exceptionHandler(e, "Ups, da ist etwas ordentlich schief gelaufen...");
-			}
-
-			updateWindowTitle();
 		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+
+		updateWindowTitle();
+		updateMenuItems();
+		autoSave();
 	}
 
 	public static void copyTokenFromProfile()
@@ -2119,30 +2581,27 @@ public class HTGT
 		{
 			return;
 		}
-		else
-		{
-			try
-			{
-				String newToken = OfflineProfiles.getToken();
 
-				if(newToken == null)
-				{
-					dbg("No token in active profile!");
-					infoDialog("Im aktuellen Profil ist kein Token vorhanden.");
-				}
-				else
-				{
-					if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei verwendet werden?%n%nDer bisher genutzte API-Token wird dadurch verworfen.")))
-					{
-						dbg("Copying token from active profile...");
-						updateToken(newToken);
-					}
-				}
-			}
-			catch(Exception e)
+		try
+		{
+			String newToken = OfflineProfiles.getToken();
+
+			if(newToken == null)
 			{
-				exceptionHandler(e, "Ups, da ist etwas ordentlich schief gelaufen...");
+				dbg("No token in active profile!");
 			}
+			else
+			{
+				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei verwendet werden?%n%nDer bisher genutzte API-Token wird dadurch verworfen.")))
+				{
+					dbg("Copying token from active profile...");
+					updateToken(newToken);
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
 		}
 	}
 
@@ -2152,33 +2611,32 @@ public class HTGT
 		{
 			return;
 		}
-		else
+
+		try
 		{
-			try
+			if(OfflineProfiles.getToken() == null)
 			{
-				if(OfflineProfiles.getToken() == null)
-				{
-					dbg("No token in active profile!");
-					infoDialog("Im aktuellen Profil ist kein Token vorhanden.");
-				}
-				else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei wirklich gelöscht werden?%n%nDu kannst dann nicht mehr an Rennen teilnehmen, bei denen es z.B. limitierte Startversuche gibt.")))
-				{
-					dbg("Removing token from active profile...");
-					OfflineProfiles.deleteToken();
+				dbg("No token in active profile!");
+			}
+			else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei wirklich gelöscht werden?%n%nDu kannst dann nicht mehr an Rennen teilnehmen, bei denen es z.B. limitierte Startversuche gibt.")))
+			{
+				dbg("Removing token from active profile...");
+				OfflineProfiles.deleteToken();
 
-					if(OfflineProfiles.getToken() != null)
-					{
-						throw new Exception("Could not remove token");
-					}
+				if(OfflineProfiles.getToken() != null)
+				{
+					throw new Exception("Could not remove token");
 				}
 			}
-			catch(Exception e)
-			{
-				exceptionHandler(e, "Ups, da ist etwas ordentlich schief gelaufen...");
-			}
-
-			updateWindowTitle();
 		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+
+		updateWindowTitle();
+		updateMenuItems();
+		autoSave();
 	}
 
 	// Token aktualisieren und Cache leeren.
@@ -2186,6 +2644,7 @@ public class HTGT
 	{
 		removeConfig(CFG_WC);
 		cfg(CFG_TOKEN, t);
+		updateMenuItems();
 	}
 
 	// API-Token aus der Konfiguration löschen.
@@ -2247,7 +2706,7 @@ public class HTGT
 			}
 			else
 			{
-				dbg(String.format("Asking for API token... (try #%d)%n", i + 1));
+				dbgf("Asking for API token... (try #%d)%n", i + 1);
 				setupToken();
 			}
 		}
@@ -2316,7 +2775,7 @@ public class HTGT
 			ghostIDs = api.getGhostIDs(ghosts);
 			if(ghostIDs.length != ghosts.length)
 			{
-				dbg(String.format("ghosts(%d) != selection(%d)", ghostIDs.length, ghosts.length));
+				dbgf("ghosts(%d) != selection(%d)", ghostIDs.length, ghosts.length);
 				errorMessage("Die Menge der von der API empfangenen Geist-IDs entspricht nicht der angeforderten Anzahl.");
 				return false;
 			}
@@ -2330,7 +2789,7 @@ public class HTGT
 		for(int i = 0; i < ghostIDs.length; i++)
 		{
 			GhostElement ghost = ghosts[i];
-			dbg(String.format("Item #%d uploaded as ghost ID %d: %s", i, ghostIDs[i], ghost.getDebugDetails()));
+			dbgf("Item #%d uploaded as ghost ID %d: %s", i, ghostIDs[i], ghost.getDebugDetails());
 
 			if(!doNotApply)
 			{
@@ -2358,7 +2817,7 @@ public class HTGT
 					{
 						if(api.applyResultByGhostID(ghostIDs[i]))
 						{
-							dbg(String.format("Successfully applied result from ghost with ID %d.", ghostIDs[i]));
+							dbgf("Successfully applied result from ghost with ID %d.", ghostIDs[i]);
 
 							if(!silent)
 							{
@@ -2373,7 +2832,7 @@ public class HTGT
 					catch(eSportsAPIException e)
 					{
 						error = true;
-						dbg(String.format("Failed to apply ghost with ID %d.", ghostIDs[i]));
+						dbgf("Failed to apply ghost with ID %d.", ghostIDs[i]);
 						APIError(e, String.format("Der Geist mit der ID %d konnte nicht übernommen werden!", ghostIDs[i]));
 					}
 				}
@@ -2423,6 +2882,8 @@ public class HTGT
 					else
 					{
 						infoDialog("Der Download von mindestens einem Geist war erfolgreich.");
+
+						autoSave();
 					}
 				}
 
@@ -2432,25 +2893,25 @@ public class HTGT
 	}
 
 	// Download einer einzelnen Geist-ID über die API.
-	public static boolean ghostDownload(int id)
+	private static boolean ghostDownload(int id)
 	{
 		return ghostDownload(id, false);
 	}
 
 	// ...
-	public static boolean ghostDownload(int id, boolean force)
+	private static boolean ghostDownload(int id, boolean force)
 	{
 		return ghostDownload(new int[]{id}, force);
 	}
 
 	// Download mehrerer Geist-IDs über die API.
-	public static boolean ghostDownload(int[] ids)
+	private static boolean ghostDownload(int[] ids)
 	{
 		return ghostDownload(ids, false);
 	}
 
 	// ...
-	public static boolean ghostDownload(int[] ids, boolean force)
+	private static boolean ghostDownload(int[] ids, boolean force)
 	{
 		try
 		{
@@ -2511,6 +2972,7 @@ public class HTGT
 		}
 
 		Integer input;
+		Boolean result;
 		String selection;
 
 		int[] modes = gmHelper.getGameModeIDs();
@@ -2539,11 +3001,14 @@ public class HTGT
 				}
 			}
 
-			if((input = (Integer) inputDialog(APPLICATION_API, "Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst den gewünschten Spielmodus aus:", values, selection)) != null)
+			input = (Integer) stepDialog(APPLICATION_API, "Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst den gewünschten Spielmodus aus:", values, selection);
+
+			if(input >= 0)
 			{
 				lastMode = cfg(CFG_MODE, input.toString());
+				result = ghostSelect(input.intValue());
 
-				if(!ghostSelect(input.intValue()))
+				if(result != null && !result)
 				{
 					continue;
 				}
@@ -2555,7 +3020,7 @@ public class HTGT
 
 	// Auswahl einer Strecke/Wetter für den Geistdownload. Das passiert
 	// offline, erst die Rangliste wird über die API vom Server geladen.
-	public static boolean ghostSelect(int mode)
+	private static Boolean ghostSelect(int mode)
 	{
 		if(OfflineProfiles == null || !prepareAPI())
 		{
@@ -2563,6 +3028,7 @@ public class HTGT
 		}
 
 		Integer input;
+		Boolean result;
 		String selection;
 
 		String[]   tracks      = gmHelper.getTracksByGameMode(mode);
@@ -2697,12 +3163,20 @@ public class HTGT
 					}
 				}
 
-				if((input = (Integer) inputDialog(APPLICATION_API, "Wähle nun die gewünschte Strecke und das Wetter aus:", values, selection)) != null)
+				input = (Integer) stepDialog(APPLICATION_API, "Wähle nun die gewünschte Strecke und das Wetter aus:", values, selection, true);
+
+				if(input >= 0)
 				{
 					lastTrack = cfg(CFG_TRACK, conditions[input][1]);
 					lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
 
-					if(ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather), false, ENABLE_RACE))
+					result = ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather), false, ENABLE_RACE);
+
+					if(result == null)
+					{
+						return null;
+					}
+					else if(result)
 					{
 						return true;
 					}
@@ -2710,6 +3184,14 @@ public class HTGT
 					{
 						continue;
 					}
+				}
+				else if(input == BUTTON_CANCEL)
+				{
+					return null;
+				}
+				else if(input == BUTTON_PREV)
+				{
+					return false;
 				}
 
 				break;
@@ -2725,18 +3207,18 @@ public class HTGT
 
 	// Auswahl eines Geists aus der Rangliste zum Herunterladen.
 	// Vorher muss bereits nach Strecke/Wetter gefragt worden sein!
-	public static boolean ghostSelect(int mode, String track, int weather)
+	private static Boolean ghostSelect(int mode, String track, int weather)
 	{
 		return ghostSelect(mode, track, weather, false);
 	}
 
-	public static boolean ghostSelect(int mode, String track, int weather, boolean force)
+	private static Boolean ghostSelect(int mode, String track, int weather, boolean force)
 	{
 		return ghostSelect(mode, track, weather, force, false);
 	}
 
 	// Ermöglicht alle Rückfragen zu umgehen, die beim Download auftreten.
-	public static boolean ghostSelect(int mode, String track, int weather, boolean force, boolean forceWeather)
+	private static Boolean ghostSelect(int mode, String track, int weather, boolean force, boolean forceWeather)
 	{
 		try
 		{
@@ -2749,7 +3231,7 @@ public class HTGT
 
 				if(results.size() > 0)
 				{
-					dbg(String.format("Got %d results.", results.size()));
+					dbgf("Got %d results.", results.size());
 					Integer[] ghosts = new Integer[results.size()];
 					String[] values = new String[results.size()];
 					String preSelection = null;
@@ -2766,11 +3248,22 @@ public class HTGT
 						}
 					}
 
-					if((selection = (Integer) inputDialog(APPLICATION_API, String.format("Bitte beachte, dass es nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination geben kann!%nEin eventuell bereits vorhandener Geist wird dadurch ohne Rückfrage aus dem aktuellen Profil gelöscht.%n%nNachfolgend alle verfügbaren Geister der gewählten Strecke:"), values, preSelection)) != null)
+					selection = (Integer) stepDialog(APPLICATION_API, "Nachfolgend alle verfügbaren Geister der gewählten Strecke:", values, preSelection, true);
+
+					if(selection >= 0)
 					{
-						Integer ghost = ghosts[selection];
-						ghostDownload(ghost, true);
+						ghostDownload(ghosts[selection], true);
+						autoSave();
+
 						return true;
+					}
+					else if(selection == BUTTON_CANCEL)
+					{
+						return null;
+					}
+					else if(selection == BUTTON_PREV)
+					{
+						return false;
 					}
 				}
 				else
@@ -2797,7 +3290,7 @@ public class HTGT
 			if(prepareAPI())
 			{
 				Map<String,Object> data = api.getPlayerInfo();
-				data.forEach((k,v) -> dbg(String.format("playerDetails.%s: %s", k, v)));
+				data.forEach((k,v) -> dbgf("playerDetails.%s: %s", k, v));
 
 				messageDialog(APPLICATION_API, String.format("Nachfolgend alle Details des angegebenen API-Tokens.%n%nHAPPYTEC-Account: %1$s%nBewerb: %3$s%nTeilnehmer: %2$s", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
 			}
@@ -2812,9 +3305,9 @@ public class HTGT
 	{
 		Date date = new Date();
 		long lastWeatherCheck = cfg.getLong(CFG_WC, 0L);
-		dbg(String.format("Current time: %d", date.getTime()));
-		dbg(String.format("Last weather check: %d", lastWeatherCheck));
-		dbg(String.format("Check interval: %d", WEATHER_INTERVAL));
+		dbgf("Current time: %d", date.getTime());
+		dbgf("Last weather check: %d", lastWeatherCheck);
+		dbgf("Check interval: %d", WEATHER_INTERVAL);
 
 		if(lastWeatherCheck <= 0L || date.getTime() > (lastWeatherCheck + WEATHER_INTERVAL))
 		{
@@ -2832,7 +3325,7 @@ public class HTGT
 						{
 							for(int t = 0; t < tracks.length; t++)
 							{
-								dbg(String.format("Race weather: %s @ %s (%d) = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), i, test[i][m][t]));
+								dbgf("Race weather: %s @ %s (%d) = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), i, test[i][m][t]);
 								cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase() + (i != 0 ? "-T" : "")), test[i][m][t]);
 							}
 						}
@@ -2923,8 +3416,14 @@ public class HTGT
 	{
 		try
 		{
+			resetHistory();
 			OfflineProfiles = new OfflineProfiles(file);
-			selectLastProfile(); updateWindowTitle(); enableMenuItems();
+			updateHistory(true);
+
+			selectLastProfile();
+			updateWindowTitle();
+			enableMenuItems();
+
 			dbg("Successfully loaded XML file! Let's rumble...");
 		}
 		catch(FileNotFoundException e)
@@ -2949,12 +3448,12 @@ public class HTGT
 
 		if(dll.exists() && dll.isFile())
 		{
-			dbg(String.format("DLL file exists: %s", dll.getAbsolutePath().toString()));
+			dbgf("DLL file exists: %s", dll.getAbsolutePath().toString());
 			new Thread(new HTGT_Background(HTGT_Background.EXEC_DLLCHECK)).start();
 		}
 		else
 		{
-			dbg(String.format("DLL file not found: %s", dll.getAbsolutePath().toString()));
+			dbgf("DLL file not found: %s", dll.getAbsolutePath().toString());
 		}
 	}
 
@@ -3083,9 +3582,28 @@ public class HTGT
 		syncGUI();
 	}
 
+	// Änderungen automatisch speichern.
+	private static void autoSave()
+	{
+		if(ENABLE_AUTOSAVE)
+		{
+			dbg("AUTOSAVE TRIGGERED!");
+			saveFile(false);
+		}
+	}
+
 	// Speichert Änderungen, wenn es welche gibt.
 	public static void saveFile()
 	{
+		if(ENABLE_AUTOSAVE)
+		{
+			infoDialog(String.format(
+				"Hinweis: Änderungen an der XML-Datei werden seit Version 0.1.0 automatisch gespeichert!" +
+				"%nDu musst somit nicht mehr auf Speichern klicken, das übernimmt das Programm für dich." +
+				"%n%nSolltest du versehentlich eine Aktion getätigt haben, nutze die Rückgängig-Funktion im Menü »Bearbeiten«."
+			));
+		}
+
 		if(!saveFile(false))
 		{
 			dbg("Failed to save file! (safe internal state)");
@@ -3094,8 +3612,7 @@ public class HTGT
 	}
 
 	// Speichert die Änderungen in der aktuellen Datei.
-	// Der erste Parameter mit für saveFileAs() gedacht.
-	public static boolean saveFile(boolean force)
+	private static boolean saveFile(boolean force)
 	{
 		if(OfflineProfiles == null)
 		{
@@ -3104,23 +3621,41 @@ public class HTGT
 
 		if(force || OfflineProfiles.changed())
 		{
-			try
+			dbg("Something to save...");
+
+			if(!saveFile(OfflineProfiles.toString()))
 			{
-				PrintWriter tmp = new PrintWriter(file);
-				tmp.printf("%s", OfflineProfiles.toString());
-				tmp.close();
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
 				return false;
 			}
 
+			updateHistory(true);
 			OfflineProfiles.saved();
 			updateWindowTitle();
 		}
+		else
+		{
+			dbg("Nothing to save...");
+		}
 
 		return true;
+	}
+
+	private static boolean saveFile(String xml)
+	{
+		try
+		{
+			PrintWriter tmp = new PrintWriter(file);
+			tmp.printf("%s", xml);
+			tmp.close();
+
+			return true;
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+
+		return false;
 	}
 
 	// "Speichern unter" Dialog.
@@ -3183,8 +3718,9 @@ public class HTGT
 			return false;
 		}
 
-		disableMenuItems();
 		reset();
+		resetHistory();
+		disableMenuItems();
 
 		return true;
 	}
@@ -3249,7 +3785,7 @@ public class HTGT
 				for(int i = selection.length - 1; i > -1; i--)
 				{
 					GhostElement ghost = OfflineProfiles.getGhost(selection[i]);
-					dbg(String.format("Exporting line %d: %s", selection[i], ghost.getDebugDetails()));
+					dbgf("Exporting line %d: %s", selection[i], ghost.getDebugDetails());
 					data.insert(0, String.format("\t<!-- %s @ %s (%s): %s (%s) -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), gmHelper.formatSki(ghost.getSki()), ghost.toString()));
 				}
 
@@ -3288,7 +3824,7 @@ public class HTGT
 			{
 				if((importCounter = ghostImport(selectedFile)) > 0)
 				{
-					dbg(String.format("importCounter = %d (ok)", importCounter));
+					dbgf("importCounter = %d (ok)", importCounter);
 					infoDialog(String.format("Anzahl importierter Geister: %d", importCounter));
 				}
 				else if(importCounter == 0)
@@ -3301,7 +3837,160 @@ public class HTGT
 			{
 				exceptionHandler(e, "Bei der Verarbeitung der XML-Datei kam es zu einem Fehler!");
 			}
+
+			autoSave();
 		}
+	}
+
+	private static void updateHistoryMenuItems()
+	{
+		if(historyIndex < history.length && history[historyIndex + 1] != null)
+		{
+			enableMenuItems(MENU_UNDO);
+		}
+		else
+		{
+			disableMenuItems(MENU_UNDO);
+		}
+
+		if(historyIndex > 0 && history[historyIndex - 1] != null)
+		{
+			enableMenuItems(MENU_REDO);
+		}
+		else
+		{
+			disableMenuItems(MENU_REDO);
+		}
+	}
+
+	/*
+	private static void cleanHistory()
+	{
+		resetHistory();
+		updateHistory(true);
+	}
+	*/
+
+	private static void resetHistory()
+	{
+		historyIndex = 0;
+		history = new String[HISTORY_SIZE];
+		dbg("History cleared! (index: 0)");
+
+		disableMenuItems(MENU_UNDO);
+		disableMenuItems(MENU_REDO);
+
+		dumpHistory();
+	}
+
+	private static void updateHistory()
+	{
+		updateHistory(false);
+	}
+
+	private static void updateHistory(boolean force)
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+		else if(!force && !OfflineProfiles.changed())
+		{
+			dbg("Nothing changed, not updating history.");
+			return;
+		}
+
+		String[] newHistory = new String[history.length];
+		newHistory[0] = OfflineProfiles.toString();
+
+		int n = 1; int i = 0;
+		int c = history.length;
+
+		if(historyIndex != 0)
+		{
+			dbgf("History index is %d, let's rewind...", historyIndex);
+
+			i = historyIndex;
+			historyIndex = 0;
+		}
+
+		//dumpHistory("pre-rewind");
+
+		while(i < c && n < c)
+		{
+			newHistory[n++] = history[i++];
+		}
+
+		history = newHistory;
+		dbg("History updated!");
+
+		//dumpHistory("post-rewind");
+		dumpHistory();
+
+		updateHistoryMenuItems();
+	}
+
+	public static void undoHistory()
+	{
+		restoreHistory(historyIndex + 1);
+	}
+
+	public static void redoHistory()
+	{
+		restoreHistory(historyIndex - 1);
+	}
+
+	private static boolean restoreHistory(int newIndex)
+	{
+		if(OfflineProfiles != null && newIndex >= 0 && newIndex < history.length && history[newIndex] != null)
+		{
+			dbgf("Restoring from history index %d...", newIndex);
+
+			try
+			{
+				saveFile(history[newIndex]);
+				OfflineProfiles.reload();
+				selectProfile(profile);
+				syncGUI();
+
+				historyIndex = newIndex;
+				updateHistoryMenuItems();
+
+				dumpHistory();
+				return true;
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e);
+			}
+		}
+		else
+		{
+			dbgf("Restoring from history index %d is impossible!", newIndex);
+		}
+
+		dumpHistory();
+
+		return false;
+	}
+
+	private static void dumpHistory()
+	{
+		dumpHistory(null);
+	}
+
+	private static void dumpHistory(String title)
+	{
+		title = (title != null) ? String.format(" (%s)", title) : "";
+		dbgf("----- START OF HISTORY DUMP%s -----", title);
+
+		int length = FNX.strlen(HISTORY_SIZE);
+		for(int i = 0; i < history.length; i++)
+		{
+			dbgf("%3$s[%1$0" + length + "d] = %2$s", i, (history[i] == null ? "NULL" : String.format("%d byte", history[i].length())), (i == historyIndex ? "!" : " "));
+		}
+
+		dbgf("----- END OF HISTORY DUMP%s -----", title);
 	}
 
 /***********************************************************************
@@ -3334,12 +4023,12 @@ public class HTGT
 
 		if(getConfig(key, "").equals(value))
 		{
-			dbg(String.format("Config for key \"%s\" unchanged: %s", key, value));
+			dbgf("Config for key \"%s\" unchanged: %s", key, value);
 		}
 		else
 		{
-			dbg(String.format("Old config for key \"%s\": %s", key, oldValue));
-			dbg(String.format("New config for key \"%s\": %s", key, newValue));
+			dbgf("Old config for key \"%s\": %s", key, oldValue);
+			dbgf("New config for key \"%s\": %s", key, newValue);
 
 			cfg.put(key, value);
 		}
@@ -3359,7 +4048,7 @@ public class HTGT
 			oldValue = getConfig(key, null);
 		}
 
-		dbg(String.format("Removing config for key \"%s\", old value: %s", key, oldValue));
+		dbgf("Removing config for key \"%s\", old value: %s", key, oldValue);
 
 		cfg.remove(key);
 	}
@@ -3394,23 +4083,12 @@ public class HTGT
 	{
 		try
 		{
-			/*
-			// Wäre fürs Debugging gut, funktioniert aber nicht.
-			// Eventuell wäre eine dumpConfig() Methode besser?
-			String[] cfgs = cfg.childrenNames();
-			dbg(String.format("%d", cfgs.length));
-			for(int i = 0; i < cfgs.length; i++)
-			{
-				removeConfig(cfgs[i]);
-			}
-			*/
-
 			dbg("Clearing config!");
 			cfg.clear(); return true;
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, null);
+			exceptionHandler(e);
 		}
 
 		return false;
@@ -3422,14 +4100,7 @@ public class HTGT
 	{
 		if(confirmDialog(null, "Soll die gesamte Konfiguration dieses Programms wirklich gelöscht werden?"))
 		{
-			if(clearConfig())
-			{
-				infoDialog("Die Konfiguration dieser Anwendung wurde erfolgreich zurückgesetzt.");
-			}
-			else
-			{
-				// errorMessage("Die Konfiguration konnte nicht gelöscht werden!");
-			}
+			clearConfig();
 		}
 	}
 }
@@ -3448,6 +4119,37 @@ class HTGT_JTable extends JTable
 	public HTGT_JTable(TableModel dm)
 	{
 		super(dm);
+
+		InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,      HTGT.NONE             ), "selectPreviousRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,   HTGT.NONE             ), "selectPreviousRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,      HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,   HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,    HTGT.NONE             ), "selectNextRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN, HTGT.NONE             ), "selectNextRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,    HTGT.SHIFT            ), "selectNextRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN, HTGT.SHIFT            ), "selectNextRowExtendSelection");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.NONE             ), "selectFirstRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.CTRL             ), "selectFirstRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.SHIFT            ), "selectFirstRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.SHIFT + HTGT.CTRL), "selectFirstRowExtendSelection");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.NONE             ), "selectLastRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.CTRL             ), "selectLastRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.SHIFT            ), "selectLastRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.SHIFT + HTGT.CTRL), "selectLastRowExtendSelection");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,  HTGT.NONE             ), "clearSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A,       HTGT.CTRL             ), "selectAll");
+
+		//VK_PAGE_UP
+		//VK_PAGE_DOWN
+
+		//getColumnModel().addColumnModelListener(this);
+		getModel().addTableModelListener(this);
 	}
 
 	@Override
@@ -3512,6 +4214,28 @@ class HTGT_Background implements Runnable
 			case EXEC_DLLCHECK:
 				HTGT.updateCheckDLL(false, true);
 				break;
+		}
+	}
+}
+
+class HTGT_SelectionHandler implements javax.swing.event.ListSelectionListener
+{
+	public void valueChanged(ListSelectionEvent e)
+	{
+		javax.swing.ListSelectionModel lsm = (ListSelectionModel) e.getSource();
+
+		if(!e.getValueIsAdjusting())
+		{
+			if(lsm.isSelectionEmpty())
+			{
+				HTGT.dbg("No selection available – disabling menus…");
+				HTGT.updateSelectionMenuItems(false);
+			}
+			else
+			{
+				HTGT.dbg("Selection available – enabling menus…");
+				HTGT.updateSelectionMenuItems(true);
+			}
 		}
 	}
 }

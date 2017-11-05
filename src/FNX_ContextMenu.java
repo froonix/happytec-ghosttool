@@ -18,12 +18,14 @@
  */
 
 import java.awt.Component;
+import java.awt.Toolkit;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
 
 import javax.swing.text.JTextComponent;
 
@@ -39,18 +41,33 @@ public class FNX_ContextMenu extends JPopupMenu implements ActionListener
 
 	private FNX_ContextMenu()
 	{
-		itemCut =       newItem("Ausschneiden");
-		itemCopy =      newItem("Kopieren");
-		itemPaste =     newItem("Einfügen");
+		itemCut =       newItem("Ausschneiden",    'X');
+		itemCopy =      newItem("Kopieren",        'C');
+		itemPaste =     newItem("Einfügen",        'V');
 		itemDelete =    newItem("Löschen");
-		addSeparator(); // -----------------------
-		itemSelectAll = newItem("Alles markieren");
+		addSeparator(); // ----------------------------
+		itemSelectAll = newItem("Alles markieren", 'A');
 	}
 
 	private JMenuItem newItem(String t)
 	{
+		return this.newItem(t, null);
+	}
+
+	private JMenuItem newItem(String t, char c)
+	{
+		return this.newItem(t, KeyStroke.getKeyStroke(c, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+	}
+
+	private JMenuItem newItem(String t, KeyStroke k)
+	{
 		JMenuItem i = new JMenuItem(t);
 		i.addActionListener(this);
+
+		if(k != null)
+		{
+			i.setAccelerator(k);
+		}
 
 		return add(i);
 	}
