@@ -548,6 +548,10 @@ public class OfflineProfiles
 		{
 			throw new IndexOutOfBoundsException(String.format("OfflineProfile #%d", index));
 		}
+		else if(this.profile == index && this.OfflineProfile != null)
+		{
+			return;
+		}
 
 		this.profile = index;
 		this.GhostElements = null;

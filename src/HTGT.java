@@ -211,7 +211,7 @@ public class HTGT
 
 	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
 
-	public static void dbg(String msg)
+	private static void dbg(String msg, int trace)
 	{
 		if(debugMode)
 		{
@@ -220,13 +220,18 @@ public class HTGT
 				debugDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZZZZ");
 			}
 
-			System.err.printf("[%s] %s - %s%n", debugDate.format(new Date()), Thread.currentThread().getStackTrace()[2].toString(), msg);
+			System.err.printf("[%s] %s - %s%n", debugDate.format(new Date()), Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
 		}
 	}
 
 	public static void dbgf(String msg, Object... args)
 	{
-		dbg(String.format(msg, args));
+		dbg(String.format(msg, args), 1);
+	}
+
+	public static void dbg(String msg)
+	{
+		dbg(msg, 1);
 	}
 
 	public static void about()
@@ -568,8 +573,11 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_SELECT,   "Auswahl umkehren",                     "invertSelection",        KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL)));
 				menu.add(registerDynMenuItem(MENU_SELECT,   "Nichts auswählen",                     "clearSelection",         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_SELECT,   "Exportieren",                          "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Importieren",                          "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "In anderes Profil verschieben",        "moveGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_M,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "Zu anderem Profil kopieren",           "copyGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_C,      CTRL | SHIFT)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Aus Datei importieren",                "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "In Datei exportieren",                 "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Sortieren",                            "resort",                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,  ALT)));
 				break;
@@ -875,6 +883,9 @@ public class HTGT
 			profilename = " – " + nickname;
 			filename = " – " + file.getAbsolutePath();
 
+			//profilename = ": " + nickname + "";
+			//filename = " @ " + file.getAbsolutePath();
+
 			if(OfflineProfiles.changed())
 			{
 				suffix = " *";
@@ -882,6 +893,7 @@ public class HTGT
 		}
 
 		mainWindow.setTitle(APPLICATION_TITLE + profilename + filename + suffix);
+		//mainWindow.setTitle(APPLICATION_NAME + profilename + filename + suffix);
 	}
 
 	public static int ghostImport(File f) throws Exception
@@ -1193,6 +1205,11 @@ public class HTGT
 
 	private static boolean confirmGhostReplacement()
 	{
+		return confirmGhostReplacement(null);
+	}
+
+	private static boolean confirmGhostReplacement(String title)
+	{
 		int action;
 
 		if(cfg(CFG_ARG) != null)
@@ -1202,7 +1219,7 @@ public class HTGT
 		}
 		else
 		{
-			action = threesomeDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Es kann nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination in einem Profil geben.%nBei der gewünschten Aktion werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?"), true);
+			action = threesomeDialog(JOptionPane.WARNING_MESSAGE, title, String.format("Es kann nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination in einem Profil geben.%nBei der gewünschten Aktion werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?"), true);
 		}
 
 		if(action == BUTTON_ALWAYS)
@@ -3629,11 +3646,19 @@ public class HTGT
 	{
 		if(ENABLE_AUTOSAVE)
 		{
-			infoDialog(String.format(
-				"Hinweis: Änderungen an der XML-Datei werden seit Version 0.1.0 automatisch gespeichert!" +
-				"%nDu musst somit nicht mehr auf Speichern klicken, das übernimmt das Programm für dich." +
-				"%n%nSolltest du versehentlich eine Aktion getätigt haben, nutze die Rückgängig-Funktion im Menü »Bearbeiten«."
-			));
+			if(unsavedChanges())
+			{
+				dbg("THIS IS A BUG! THERE ARE UNSAVED CHANGES BUT AUTOSAVE IS ENABLED.");
+				exceptionHandler(new Exception("AUTOSAVE & UNSAVED TRIGGERED"));
+			}
+			else
+			{
+				infoDialog(String.format(
+					"Hinweis: Änderungen an der XML-Datei werden seit Version 0.1.0 automatisch gespeichert!" +
+					"%nDu musst somit nicht mehr auf Speichern klicken, das übernimmt das Programm für dich." +
+					"%n%nSolltest du versehentlich eine Aktion getätigt haben, nutze die Rückgängig-Funktion im Menü »Bearbeiten«."
+				));
+			}
 		}
 
 		if(!saveFile(false))
@@ -4133,6 +4158,257 @@ public class HTGT
 		if(confirmDialog(null, "Soll die gesamte Konfiguration dieses Programms wirklich gelöscht werden?"))
 		{
 			clearConfig();
+		}
+	}
+
+/***********************************************************************
+ *                            MISCELLANEOUS                            *
+ ***********************************************************************/
+
+	public static void copyGhosts()
+	{
+		ghostsProfileAction(false);
+	}
+
+	public static void moveGhosts()
+	{
+		ghostsProfileAction(true);
+	}
+
+	private static void ghostsProfileAction(boolean move)
+	{
+		if(OfflineProfiles != null && maintable != null)
+		{
+			String title = move ? "Verschiebe zu Profil" : "Kopiere zu Profil";
+			String message = "";
+
+			boolean warnSRC = false;
+			boolean warnDST = false;
+
+			try
+			{
+				int[] selection = maintable.getSelectedRows();
+
+				if(selection.length == 0)
+				{
+					return;
+				}
+
+				int[] modes = gmHelper.getGameModeIDs();
+				String[] tracks = gmHelper.getTracks(true);
+				int[] weathers = gmHelper.getWeatherIDs();
+
+				GhostElement[][][] result = new GhostElement[modes.length][tracks.length][weathers.length];
+				GhostElement[] ghosts = new GhostElement[selection.length];
+
+				for(int i = 0; i < selection.length; i++)
+				{
+					int m = -1;
+					int t = -1;
+					int w = -1;
+
+					ghosts[i] = OfflineProfiles.getGhost(selection[i]);
+
+					for(int h = 0; h < modes.length; h++)
+					{
+						if(modes[h] == ghosts[i].getGameMode())
+						{
+							m = h;
+							break;
+						}
+					}
+
+					for(int h = 0; h < tracks.length; h++)
+					{
+						if(tracks[h].equals(ghosts[i].getTrack()))
+						{
+							t = h;
+							break;
+						}
+					}
+
+					for(int h = 0; h < weathers.length; h++)
+					{
+						if(weathers[h] == ghosts[i].getWeather())
+						{
+							w = h;
+							break;
+						}
+					}
+
+					if(m < 0 || t < 0 || w < 0)
+					{
+						throw new Exception();
+					}
+					else if(result[m][t][w] != null)
+					{
+						warnSRC = true;
+					}
+					else
+					{
+						result[m][t][w] = ghosts[i];
+					}
+				}
+
+				if(warnSRC)
+				{
+					message = String.format(
+						"Es sind mehrere Geister der gleichen Spielmodus/Strecken/Wetter Kombination markiert.%n" +
+						"Allerdings unterstützt nur das Spezialprofil mehrere Geister bei gleichen Bedingungen.%n%n"
+					);
+
+					if(isSpecialProfile())
+					{
+						if(confirmDialog(JOptionPane.WARNING_MESSAGE, title, String.format(message + "Sollen die markierten Geister stattdessen in eine Datei exportiert werden?")))
+						{
+							exportFile();
+						}
+
+						return;
+					}
+				}
+
+				String[] profiles = OfflineProfiles.getProfiles();
+				String[] values = new String[warnSRC ? 1 : (profiles.length - 1)];
+				int[] profileIDs = new int[values.length];
+
+				String defaultSelection = null;
+				String suffix = null;
+
+				for(int i = 0, h = 0; i < profiles.length; i++)
+				{
+					if(i == profile || (warnSRC && !isSpecialProfile(i)))
+					{
+						continue;
+					}
+
+					if(i == OfflineProfiles.defaultProfile())
+					{
+						suffix = "Standardprofil";
+					}
+					else if(isSpecialProfile(profiles[i]))
+					{
+						suffix = "Spezialprofil";
+					}
+					else
+					{
+						suffix = "";
+					}
+
+					if(suffix.length() > 0)
+					{
+						suffix = String.format(" (%s)", suffix);
+					}
+
+					values[h] = String.format("[%0" + Integer.toString(FNX.strlen(profiles.length)) + "d] %s%s", i + 1, profiles[i], suffix);
+					profileIDs[h] = i;
+
+					if(!isSpecialProfile() && isSpecialProfile(i))
+					{
+						defaultSelection = values[h];
+					}
+
+					h++;
+				}
+
+				if(warnSRC && values[0] == null)
+				{
+					errorMessage(title, message + "Fehler: Es ist kein Spezialprofil vorhanden! Bitte installiere das Spiel erneut...");
+					return;
+				}
+
+				Integer selected = (Integer) inputDialog(title, message + "Bitte wähle das gewünschte Zielprofil:", values, defaultSelection);
+
+				if(selected == null)
+				{
+					return;
+				}
+
+				dbgf("Selected profile ID: %2$d (item #%1$d)", selected, profileIDs[selected]);
+				selected = profileIDs[selected];
+
+				dbgf("Switching to profile %d…", selected);
+				OfflineProfiles.selectProfile(selected);
+
+				if(!isSpecialProfile(selected))
+				{
+					GhostElement[][][] existing = OfflineProfiles.getAllGhosts();
+
+					for(int m = 0; m < result.length; m++)
+					{
+						for(int t = 0; t < result[m].length; t++)
+						{
+							for(int w = 0; w < result[m][t].length; w++)
+							{
+								if(existing[m][t][w] != null && result[m][t][w] != null)
+								{
+									existing[m][t][w].printDetails();
+									result[m][t][w].printDetails();
+
+									warnDST = true;
+									break;
+								}
+							}
+						}
+					}
+
+					if(warnDST && !confirmGhostReplacement(title))
+					{
+						return;
+					}
+				}
+
+				for(int i = 0; i < ghosts.length; i++)
+				{
+					if(warnDST)
+					{
+						for(int h = (OfflineProfiles.getGhostCount() - 1); h > -1; h--)
+						{
+							GhostElement ghost = OfflineProfiles.getGhost(h);
+
+							if(ghost.getGameMode() == ghosts[i].getGameMode() && ghost.getTrack().equals(ghosts[i].getTrack()) && ghost.getWeather() == ghosts[i].getWeather())
+							{
+								OfflineProfiles.deleteGhost(h);
+							}
+						}
+					}
+
+					OfflineProfiles.addGhost(ghosts[i]);
+				}
+
+				dbgf("Using old profile %d…", profile);
+				OfflineProfiles.selectProfile(profile);
+
+				if(move)
+				{
+					for(int i = 0; i < selection.length; i++)
+					{
+						deleteGhost(selection[i]);
+					}
+				}
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e);
+			}
+			finally
+			{
+				try
+				{
+					// Das ursprüngliche Profil aktivieren!
+					dbgf("Restoring profile %d…", profile);
+					OfflineProfiles.selectProfile(profile);
+				}
+				catch(Exception e)
+				{
+					exceptionHandler(e);
+					syncGUI();
+				}
+				finally
+				{
+					autoSave();
+				}
+			}
 		}
 	}
 }
