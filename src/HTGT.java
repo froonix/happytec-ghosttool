@@ -573,8 +573,8 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_SELECT,   "Auswahl umkehren",                     "invertSelection",        KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL)));
 				menu.add(registerDynMenuItem(MENU_SELECT,   "Nichts auswählen",                     "clearSelection",         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_SELECT,   "In anderes Profil verschieben",        "moveGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_M,      CTRL | SHIFT)));
 				menu.add(registerDynMenuItem(MENU_SELECT,   "Zu anderem Profil kopieren",           "copyGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_C,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "In anderes Profil verschieben",        "moveGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_M,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Aus Datei importieren",                "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL | SHIFT)));
 				menu.add(registerDynMenuItem(MENU_SELECT,   "In Datei exportieren",                 "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL | SHIFT)));
