@@ -577,9 +577,9 @@ public class HTGT
 			case "view":
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil auswählen",                     "selectProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_F6,     NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil hinzufügen",                    "createProfile"));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil umbenennen",                    "renameProfile"));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil entfernen",                     "deleteProfile"));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil hinzufügen",                    "createProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_N,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil umbenennen",                    "renameProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil entfernen",                     "deleteProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_D,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Aktualisieren",                        "reloadFile",             KeyStroke.getKeyStroke(KeyEvent.VK_F5,     NONE)));
 				break;
@@ -587,34 +587,34 @@ public class HTGT
 			case "api":
 				menu.add(registerDynMenuItem(MENU_STOKEN,   "Markierte Geister hochladen",          "ghostUpload",            KeyStroke.getKeyStroke(KeyEvent.VK_F3,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Geist aus Rangliste herunterladen",    "ghostSelect",            KeyStroke.getKeyStroke(KeyEvent.VK_F4,     NONE)));
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Geister durch ID(s) herunterladen",    "ghostDownload"));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Geister durch ID(s) herunterladen",    "ghostDownload",          KeyStroke.getKeyStroke(KeyEvent.VK_F4,     SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   FF_TITLE + " (nur pB's hochladen)",     "fastFollow",             KeyStroke.getKeyStroke(KeyEvent.VK_F7,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   FF_TITLE + " (immer alles hochladen)",  "fastFollowForce",        KeyStroke.getKeyStroke(KeyEvent.VK_F8,     NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_TOKEN,    "Spieler-/Bewerbsdetails anzeigen",     "playerInfo",             KeyStroke.getKeyStroke(KeyEvent.VK_F9,     NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Token ins aktuelle Profil kopieren",   "copyTokenToProfile"));
-				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil verwenden", "copyTokenFromProfile"));
-				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil entfernen", "removeTokenFromProfile"));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Token ins aktuelle Profil kopieren",   "copyTokenToProfile",     KeyStroke.getKeyStroke(KeyEvent.VK_T,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil verwenden", "copyTokenFromProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil entfernen", "removeTokenFromProfile", KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   "API-Token ändern",                     "setupToken",             KeyStroke.getKeyStroke(KeyEvent.VK_F2,     NONE)));
-				menu.add(registerDynMenuItem(MENU_TOKEN,    "API-Token löschen",                    "deleteToken"));
+				menu.add(registerDynMenuItem(MENU_TOKEN,    "API-Token löschen",                    "deleteToken",            KeyStroke.getKeyStroke(KeyEvent.VK_F2,     SHIFT)));
 				break;
 
 			case "help":
 				menu.add(registerDynMenuItem(MENU_STATIC,   "Über diese App",                       "about"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   "Online Dokumentation",                 "faq",                    KeyStroke.getKeyStroke(KeyEvent.VK_F1,     NONE)));
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Support kontaktieren",                 "support"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Support kontaktieren",                 "support",                KeyStroke.getKeyStroke(KeyEvent.VK_F1,     SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Prüfung auf Updates",                  "updateCheck"));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "OC-Patch überprüfen",                  "updateCheckDLL"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Prüfung auf Updates",                  "updateCheck",            KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "OC-Patch überprüfen",                  "updateCheckDLL",         KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad einstellen",              "changeDefaultFile"));
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad zurücksetzen",            "resetDefaultFile"));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Datei als Standardpfad nutzen",        "applyDefaultFile"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad einstellen",              "changeDefaultFile",      KeyStroke.getKeyStroke(KeyEvent.VK_D,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad zurücksetzen",            "resetDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_R,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Datei als Standardpfad nutzen",        "applyDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_A,      SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Konfiguration löschen",                "clearConfigDialog"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   "Konfiguration löschen",                "clearConfigDialog",      KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL)));
 
 
 				break;
