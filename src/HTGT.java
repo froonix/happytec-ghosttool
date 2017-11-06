@@ -1460,7 +1460,7 @@ public class HTGT
 
 					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !multiGhostEnabled())
 					{
-						if(/*lastFromDefault &&*/ lastUploadedWeather > 0 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
+						if(/*lastFromDefault &&*/ lastUploadedWeather != gmHelper.WEATHER_TICKET && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
 						{
 							currentGhost = String.format("Der aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
 						}
