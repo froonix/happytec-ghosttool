@@ -2366,8 +2366,6 @@ public class HTGT
 	private static boolean noSelection()
 	{
 		dbg("No selection available!");
-		infoDialog(null, String.format("Die gewünschte Aktion funktioniert nur, wenn bereits Geister ausgewählt wurden.%n%nMarkiere eine Zeile mit der Maus, eine Mehrfachauswahl ist durch Halten der Strg/Ctrl Taste möglich."));
-
 		return false;
 	}
 
