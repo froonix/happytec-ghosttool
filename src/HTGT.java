@@ -1458,15 +1458,11 @@ public class HTGT
 						}
 					}
 
-					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1)
+					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !multiGhostEnabled())
 					{
 						if(/*lastFromDefault &&*/ lastUploadedWeather > 0 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
 						{
-							// TODO: Beim Multighost Dialog im Spiel trifft das nicht mehr zu!
-							// Man könnte aber MultiGhost/MultiGhosts in der UserConfig.xml auswerten.
-							// ...
-
-							currentGhost = String.format("%nDer aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
+							currentGhost = String.format("Der aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
 						}
 
 						if(cfg(CFG_NDG) == null)
@@ -1866,6 +1862,38 @@ public class HTGT
 		}
 
 		infoDialog("Das Profil wurde gelöscht.");
+	}
+
+	private static boolean multiGhostEnabled()
+	{
+		File userConfigFile = new File(String.format("%2$s%1$s%3$s", File.separator, file.getParent().toString(), "UserConfig.xml"));
+
+		if(userConfigFile == null || !userConfigFile.exists() || !userConfigFile.isFile())
+		{
+			dbgf("User config XML file not found: %s", userConfigFile);
+		}
+		else
+		{
+			dbgf("User config XML file: %s", userConfigFile);
+
+			try
+			{
+				if((new UserConfig(userConfigFile)).getMultiGhost())
+				{
+					dbg("MultiGhost setting is enabled.");
+
+					return true;
+				}
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		dbg("MultiGhost setting is disabled.");
+
+		return false;
 	}
 
 	public static void resort()

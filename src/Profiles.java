@@ -205,6 +205,4 @@ public class Profiles
 		tmp.printf("%s", FNX.getWinNL(xml));
 		tmp.close();
 	}
-
-
 }
