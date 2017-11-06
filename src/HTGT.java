@@ -564,8 +564,12 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Einfügen",                             "copyFromClipboard",      KeyStroke.getKeyStroke(KeyEvent.VK_V,      CTRL)));
 				menu.add(registerDynMenuItem(MENU_SELECT,   "Löschen",                              "deleteRows",             KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Importieren",                          "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Exportieren",                          "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Alles markieren",                      "selectAll",              KeyStroke.getKeyStroke(KeyEvent.VK_A,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "Auswahl umkehren",                     "invertSelection",        KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   "Nichts auswählen",                     "clearSelection",         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, NONE)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_SELECT,   "Exportieren",                          "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Importieren",                          "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Sortieren",                            "resort",                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,  ALT)));
 				break;
@@ -827,6 +831,36 @@ public class HTGT
 		for(int i = 0; i < rows.length; i++)
 		{
 			maintable.addRowSelectionInterval(rows[i], rows[i]);
+		}
+	}
+
+	public static void selectAll()
+	{
+		if(maintable != null)
+		{
+			maintable.selectAll();
+		}
+	}
+
+	public static void clearSelection()
+	{
+		if(maintable != null)
+		{
+			maintable.clearSelection();
+		}
+	}
+
+	public static void invertSelection()
+	{
+		if(maintable != null)
+		{
+			int[] selection = maintable.getSelectedRows();
+			maintable.selectAll();
+
+			for(int i = 0; i < selection.length; i++)
+			{
+				maintable.removeRowSelectionInterval(selection[i], selection[i]);
+			}
 		}
 	}
 
