@@ -2297,7 +2297,8 @@ public class HTGT
 		Object defaultButton;
 		String dialogType;
 
-		JComboBox  comboBox  = null;
+		JComboBox  comboBox = null;
+		Integer[] returnValues = null;
 		JTextField textField = null;
 
 		JPanel panel = new JPanel();
@@ -2307,12 +2308,14 @@ public class HTGT
 		if(selectionValues != null)
 		{
 			DefaultComboBoxModel model = new DefaultComboBoxModel();
+			returnValues = new Integer[selectionValues.length];
 
-			for(int i = 0; i < selectionValues.length; i++)
+			for(int i = 0, h = 0; i < selectionValues.length; i++)
 			{
 				if(selectionValues[i] != null)
 				{
 					model.addElement(selectionValues[i]);
+					returnValues[h++] = i;
 				}
 			}
 
@@ -2358,8 +2361,17 @@ public class HTGT
 		{
 			if(selectionValues != null)
 			{
-				dbgf("RETURN SELECTION: %d (%s)", comboBox.getSelectedIndex(),comboBox.getSelectedItem().toString());
-				return comboBox.getSelectedIndex();
+				int selectedIndex = comboBox.getSelectedIndex();
+				String selectedItem = comboBox.getSelectedItem().toString();
+
+				if(selectedIndex < 0 || selectedIndex >= returnValues.length || returnValues[selectedIndex] == null)
+				{
+					throw new IndexOutOfBoundsException(String.format("selectedIndex = %d; selectedItem = %s", selectedIndex, selectedItem));
+				}
+
+				dbgf("RETURN SELECTION: %d (%s)", returnValues[selectedIndex], selectedItem);
+
+				return (int) returnValues[selectedIndex];
 			}
 			else
 			{
