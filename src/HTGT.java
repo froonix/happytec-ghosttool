@@ -1686,7 +1686,7 @@ public class HTGT
 			profiles.addProfile(nick);
 
 			profiles.saveProfiles();
-			saveFile();
+			saveFile(true);
 
 			profile = 0;
 			reloadFile();
@@ -1774,7 +1774,7 @@ public class HTGT
 			OfflineProfiles.renameProfile(nick);
 
 			profiles.saveProfiles();
-			saveFile();
+			saveFile(true);
 
 			profile = 0;
 			reloadFile();
@@ -1850,7 +1850,7 @@ public class HTGT
 			OfflineProfiles.deleteProfile(profile);
 
 			profiles.saveProfiles();
-			saveFile();
+			saveFile(true);
 
 			profile = 0;
 			reloadFile();
