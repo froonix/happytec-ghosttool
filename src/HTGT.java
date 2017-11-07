@@ -120,6 +120,7 @@ public class HTGT
 	final private static String    DEFAULT_PROFILE     = "DefaultUser";
 	final private static String    VERSION_FILE        = "htgt-version.txt";
 	final private static String    NICKNAME_REGEX      = "^(?i:[A-Z0-9_]{3,13})$";
+	final private static String    NICKNAME_REGEX_NOT  = "^[0-9]+$";
 	final private static boolean   ENABLE_AUTOSAVE     = true;
 	final private static boolean   ENABLE_RACE         = true;
 	final private static boolean   ENABLE_3TC          = true;
@@ -1642,7 +1643,7 @@ public class HTGT
 				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
 				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
 				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
-				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nEr muss mindestens drei und maximal 13 Zeichen enthalten. Bitte versuche es erneut." : "") +
+				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nDie geforderte Mindestlänge liegt bei drei Zeichen, die Maximallänge beträgt 13 Zeichen.%nNur Ziffern sind nicht erlaubt, es muss mindestens ein anderes Zeichen vorkommen." : "") +
 				"%n%nGewünschter Nickname:"
 			);
 
@@ -1650,7 +1651,7 @@ public class HTGT
 			{
 				if(nick.length() > 0)
 				{
-					if(!nick.matches(NICKNAME_REGEX))
+					if(!nick.matches(NICKNAME_REGEX) || nick.matches(NICKNAME_REGEX_NOT))
 					{
 						error = true;
 					}
@@ -1726,7 +1727,7 @@ public class HTGT
 				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
 				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
 				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
-				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nEr muss mindestens drei und maximal 13 Zeichen enthalten. Bitte versuche es erneut." : "") +
+				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nDie geforderte Mindestlänge liegt bei drei Zeichen, die Maximallänge beträgt 13 Zeichen.%nNur Ziffern sind nicht erlaubt, es muss mindestens ein anderes Zeichen vorkommen." : "") +
 				"%n%nNeuer Nickname:"
 			, nickname);
 
@@ -1734,7 +1735,7 @@ public class HTGT
 			{
 				if(nick.length() > 0)
 				{
-					if(!nick.matches(NICKNAME_REGEX))
+					if(!nick.matches(NICKNAME_REGEX) || nick.matches(NICKNAME_REGEX_NOT))
 					{
 						error = true;
 					}
