@@ -4372,7 +4372,7 @@ public class HTGT
 				dbgf("Selected profile ID: %2$d (item #%1$d)", selected, profileIDs[selected]);
 				selected = profileIDs[selected];
 
-				dbgf("Switching to profile %d…", selected);
+				dbgf("Switching to profile %d...", selected);
 				OfflineProfiles.selectProfile(selected);
 
 				if(!isSpecialProfile(selected))
@@ -4421,7 +4421,7 @@ public class HTGT
 					OfflineProfiles.addGhost(ghosts[i]);
 				}
 
-				dbgf("Using old profile %d…", profile);
+				dbgf("Using old profile %d...", profile);
 				OfflineProfiles.selectProfile(profile);
 
 				if(move)
@@ -4441,7 +4441,7 @@ public class HTGT
 				try
 				{
 					// Das ursprüngliche Profil aktivieren!
-					dbgf("Restoring profile %d…", profile);
+					dbgf("Restoring profile %d...", profile);
 					OfflineProfiles.selectProfile(profile);
 				}
 				catch(Exception e)
@@ -4581,12 +4581,12 @@ class HTGT_SelectionHandler implements javax.swing.event.ListSelectionListener
 		{
 			if(lsm.isSelectionEmpty())
 			{
-				HTGT.dbg("No selection available – disabling menus…");
+				HTGT.dbg("No selection available - disabling menus...");
 				HTGT.updateSelectionMenuItems(false);
 			}
 			else
 			{
-				HTGT.dbg("Selection available – enabling menus…");
+				HTGT.dbg("Selection available - enabling menus...");
 				HTGT.updateSelectionMenuItems(true);
 			}
 		}
