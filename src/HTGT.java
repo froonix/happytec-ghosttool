@@ -2223,6 +2223,8 @@ public class HTGT
 
 	private static int threesomeDialog(int type, String title, String msg, boolean appendix)
 	{
+		FNX.windowToFront(mainWindow);
+
 		String[] buttons;
 		Integer[] values;
 		Object defaultButton;
@@ -2293,6 +2295,8 @@ public class HTGT
 
 	private static Object stepDialog(int type, String title, Object message, Object[] selectionValues, Object initialSelectionValue, boolean prev)
 	{
+		FNX.windowToFront(mainWindow);
+
 		String[] buttons;
 		Integer[] values;
 		Object defaultButton;
