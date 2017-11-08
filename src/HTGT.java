@@ -1332,8 +1332,12 @@ public class HTGT
 
 					if(newDefaultProfile > -1)
 					{
+						dbgf("Switching to profile %d...", newDefaultProfile);
 						OfflineProfiles.selectProfile(newDefaultProfile);
+
 						newDefaultGhosts = OfflineProfiles.getAllGhosts();
+
+						dbgf("Using old profile %d...", profile);
 						OfflineProfiles.selectProfile(profile);
 					}
 
@@ -1519,7 +1523,17 @@ public class HTGT
 		}
 		finally
 		{
-			return;
+			try
+			{
+				// Das ursprüngliche Profil aktivieren!
+				dbgf("Restoring profile %d...", profile);
+				OfflineProfiles.selectProfile(profile);
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e);
+				syncGUI();
+			}
 		}
 	}
 
