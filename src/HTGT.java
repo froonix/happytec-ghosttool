@@ -1323,7 +1323,7 @@ public class HTGT
 
 					if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
 					{
-						dbgf("Unsupported changes: %d != %d || %d != %d%n", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
+						dbgf("Unsupported changes: %d != %d || %d != %d", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
 						errorMessage(FF_TITLE, "Es wurden nicht unterstützte Änderungen festgestellt!");
 						return;
 					}
@@ -2267,7 +2267,7 @@ public class HTGT
 		}
 		else
 		{
-			dbgf("return [%d] (%s)%n", values[result], buttons[result]);
+			dbgf("return [%d] (%s)", values[result], buttons[result]);
 			return values[result].intValue();
 		}
 	}
@@ -2814,7 +2814,7 @@ public class HTGT
 			}
 			else
 			{
-				dbgf("Asking for API token... (try #%d)%n", i + 1);
+				dbgf("Asking for API token... (try #%d)", i + 1);
 				setupToken();
 			}
 		}
