@@ -17,8 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+import java.util.ResourceBundle;
+
 public class eSportsAPIException extends Exception
 {
+	private ResourceBundle lang;
 	private Exception primaryException;
 
 	public eSportsAPIException()
@@ -68,28 +71,17 @@ public class eSportsAPIException extends Exception
 	{
 		if(this.getMessage() != null)
 		{
-			switch(this.getMessage())
+			String code = this.getMessage().toUpperCase();
+			this.lang = FNX.getLangBundle("eSportsAPI");
+
+			if(this.lang.containsKey(code))
 			{
-				// Es gibt noch deutlich mehr Fehlercodes, die haben aber
-				// keine reale Bedeutung, wenn die API korrekt benutzt wird.
-				case "RESULT_EMPTY":              return "Die Rangliste ist (noch) leer.";
-				case "PLAYER_SUSPENDED":          return "Dein Spieler wurde suspendiert!";
-				case "GHOST_UNKNOWN":             return "Es wurden keine Geister gefunden.";
-				case "GHOST_PRIVATE":             return "Dieser Geist ist nicht öffentlich.";
-				case "GHOST_DUPLICATE":           return String.format("Der Geist wurde schon einmal verwendet.%n%nEin anderer Teilnehmer verwendete diesen Geist schon einmal für die Rangliste.%nBitte wende dich an die eSports-Moderatoren im Forum, falls das ein Fehler ist.");
-				case "GHOST_DOPING":              return String.format("Die Dopingkontrolle verlief positiv!%n%nFür einen fairen Bewerb sind bestimmte Aktionen z.B. beim Rennen verboten.%nDazu kann u.a. das Zurücksetzen, Stürzen oder Auslassen der Tore zählen.%n%nFür weitere Informationen wende dich bitte an die eSports-Moderatoren im Forum.");
-				case "RESULT_WORSE":              return String.format("Die neue Zeit ist nicht schneller.%n%nDu kannst nur Ergebnisse übernehmen, die besser als dein existierendes sind.");
-				case "NO_ACTIVE_TRACK":           return String.format("Die gewünschte Strecke ist nicht aktiv.%n%nWahrscheinlich startet die Strecke erst in einiger Zeit.");
-				case "TRACK_UNKNOWN":             return String.format("Die gewünschte Strecke existiert nicht.%n%nWahrscheinlich wurde die Rangliste noch nicht angelegt.");
-				case "TOKEN_UNKNOWN":             return String.format("Unbekannter API-Token!%n%nBitte kontrolliere den API-Token.");
-				case "TOKEN_INVALID":             return String.format("Ungültiges Format des API-Tokens!%n%nBitte kontrolliere den API-Token.");
-				case "SEASON_OVER":               return String.format("Die Saison ist schon beendet.%n%nSchau ins Forum, wann es wieder los geht!");
-				case "INTERNAL_CLIENT_EXCEPTION": return String.format("Interne Exception im Java-Programm.%n%nSiehe Stacktrace in der Konsolenausgabe.");
-				case "INTERNAL_NETWORK_ERROR":    return "Überprüfe deine Internetverbindung.";
-				case "SERVER_DUMB":               return "Der Server hat Schluckauf!";
+				return FNX.formatLangString(lang, code);
 			}
 		}
 
-		return "Unbekannter Fehler, siehe Fehlercode.";
+		// Es gibt noch deutlich mehr Fehlercodes, die haben aber
+		// keine Bedeutung, wenn die API korrekt benutzt wird...
+		return "Unknown API error code.";
 	}
 }

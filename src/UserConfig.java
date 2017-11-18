@@ -34,6 +34,7 @@ import org.xml.sax.InputSource;
 public class UserConfig
 {
 	final private static String XML_TAG_USERCONFIG = "DesktopUserConfig";
+	final private static String XML_TAG_GHOSTNICK  = "TrainingGhostNick";
 	final private static String XML_TAG_MULTIGHOST = "MultiGhost";
 
 	private File     file     = null;
@@ -66,5 +67,24 @@ public class UserConfig
 			case "false": return false;
 			default: throw new Exception();
 		}
+	}
+
+	public String getTrainingGhostNick() throws Exception
+	{
+		NodeList nodes = this.document.getElementsByTagName(this.XML_TAG_GHOSTNICK);
+
+		if(nodes.getLength() == 0)
+		{
+			throw new ProfileException(String.format("Missing <%s> tag", XML_TAG_GHOSTNICK));
+		}
+
+		String nick = ((Element) nodes.item(0)).getTextContent();
+
+		if(nick.length() > 0)
+		{
+			return nick;
+		}
+
+		return null;
 	}
 }

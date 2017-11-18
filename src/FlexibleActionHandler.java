@@ -1,5 +1,5 @@
 /**
- * DynamicMenuItem.java: Avoid anonymous inner classes
+ * FlexibleActionHandler.java: Avoid anonymous inner classes
  * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,34 +20,18 @@
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JMenuItem;
-import javax.swing.KeyStroke;
 
-public class DynamicMenuItem extends JMenuItem implements ActionListener
+public class FlexibleActionHandler extends JMenuItem implements ActionListener
 {
 	String className;
 	String methodName;
 
-	public DynamicMenuItem(String textLabel, String className, String methodName)
+	public FlexibleActionHandler(String className, String methodName)
 	{
-		super(textLabel);
-		DynamicMenuItemWorker(textLabel, className, methodName, null);
-	}
+		super();
 
-	public DynamicMenuItem(String textLabel, String className, String methodName, KeyStroke keyStroke)
-	{
-		super(textLabel);
-		DynamicMenuItemWorker(textLabel, className, methodName, keyStroke);
-	}
-
-	private void DynamicMenuItemWorker(String textLabel, String className, String methodName, KeyStroke keyStroke)
-	{
 		this.className = className;
 		this.methodName = methodName;
-
-		if(keyStroke != null)
-		{
-			this.setAccelerator(keyStroke);
-		}
 
 		addActionListener(this);
 	}
@@ -58,3 +42,8 @@ public class DynamicMenuItem extends JMenuItem implements ActionListener
 		FNX.actionCallback(this.className, this.methodName);
 	}
 }
+
+// TODO: Diese Klasse sollte nicht JMenuItem erweitern.
+//       Ich bin jetzt aber zu faul die passende zu suchen,
+//       bei der addActionListener() implementiert ist.
+// ...

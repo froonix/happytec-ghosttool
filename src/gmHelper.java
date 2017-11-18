@@ -19,6 +19,7 @@
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ResourceBundle;
 import java.util.Date;
 
 public abstract class gmHelper
@@ -59,6 +60,7 @@ public abstract class gmHelper
 	// ----------------------------------- //
 
 	private static DateFormat ResultFormat;
+	private static ResourceBundle lang;
 
 	public static boolean isReverseGameMode(int gameModeType)
 	{
@@ -120,45 +122,14 @@ public abstract class gmHelper
 
 	public static String getGameModeName(int gameModeType) throws gmException
 	{
-		String gameModeName = "";
+		String gameModeName = getGameMode(gameModeType);
 
-		switch(gameModeType)
+		if(getLangBundle().containsKey(gameModeName))
 		{
-			case GAMEMODE_DEFAULT:
-				// gameModeName = "Standard";
-				gameModeName = "Zeitrennen";
-				break;
-
-			case GAMEMODE_MM_ROWDY:
-				gameModeName = "Freeride";
-				break;
-
-			case GAMEMODE_MM_TIMEATTACK:
-				gameModeName = "Zeitbombe";
-				break;
-
-			case GAMEMODE_MM_ARCADE:
-				gameModeName = "Arcade";
-				break;
-
-			case GAMEMODE_MM_EXTREME:
-				gameModeName = "Extrem";
-				// gameModeName = "Extreme";
-				break;
-
-			case GAMEMODE_MM_EXTREMEICE:
-				gameModeName = "Blitzeis";
-				break;
-
-			case GAMEMODE_MM_LASTDOWNSWING:
-				gameModeName = "Talfahrt";
-				break;
-
-			default:
-				throw new gmException(String.format("Invalid game mode type: %d", gameModeType));
+			return FNX.getLangString(getLangBundle(), gameModeName);
 		}
 
-		return gameModeName;
+		throw new gmException(String.format("Invalid game mode type: %d", gameModeType));
 	}
 
 	public static int parseGameMode(String gameModeString) throws gmException
@@ -236,6 +207,10 @@ public abstract class gmHelper
 				weatherString = "race";
 				break;
 
+			case WEATHER_TICKET:
+				weatherString = "3tc";
+				break;
+
 			default:
 				throw new gmException(String.format("Invalid weather type: %d", weatherType));
 		}
@@ -245,35 +220,14 @@ public abstract class gmHelper
 
 	public static String getWeatherName(int weatherType) throws gmException
 	{
-		String weatherName = "";
+		String weatherName = String.format("weather_%s", getWeather(weatherType));
 
-		switch(weatherType)
+		if(getLangBundle().containsKey(weatherName))
 		{
-			case WEATHER_SUN:
-				weatherName = "Sonne";
-				break;
-
-			case WEATHER_SNOW:
-				weatherName = "Schnee";
-				break;
-
-			case WEATHER_ICE:
-				weatherName = "Eis";
-				break;
-
-			case WEATHER_RACE:
-				weatherName = "Rennen";
-				break;
-
-			case WEATHER_TICKET:
-				weatherName = "3TC Rennen";
-				break;
-
-			default:
-				throw new gmException(String.format("Invalid weather type: %d", weatherType));
+			return FNX.getLangString(getLangBundle(), weatherName);
 		}
 
-		return weatherName;
+		throw new gmException(String.format("Invalid weather type: %d", weatherType));
 	}
 
 	public static int parseWeather(String weatherString) throws gmException
@@ -310,58 +264,14 @@ public abstract class gmHelper
 	// Es muss also nur eine Richtung implementiert werden.
 	public static String getTrack(String trackKey) throws gmException
 	{
-		String trackName = "";
+		String trackName = String.format("track_%s", trackKey.toLowerCase());
 
-		// TODO: Locales?
-		// ...
-
-		switch(trackKey.toLowerCase())
+		if(getLangBundle().containsKey(trackName))
 		{
-			case "bcr":
-				trackName = "Beaver Creek";
-				break;
-
-			case "gro":
-				trackName = "Gröden";
-				break;
-
-			case "bor":
-				trackName = "Bormio";
-				break;
-
-			case "wen":
-				trackName = "Wengen";
-				break;
-
-			case "kiz":
-				trackName = "Kitzbühel";
-				break;
-
-			case "gar":
-				trackName = "Garmisch";
-				break;
-
-			case "mor":
-				trackName = "St. Moritz";
-				break;
-
-			case "vdi":
-				trackName = "Val d'Isère";
-				break;
-
-			case "soc":
-				trackName = "Sotschi";
-				break;
-
-			case "schl":
-				trackName = "Schladming";
-				break;
-
-			default:
-				throw new gmException(String.format("Invalid track key: %s", trackKey));
+			return FNX.getLangString(getLangBundle(), trackName);
 		}
 
-		return trackName;
+		throw new gmException(String.format("Invalid track key: %s", trackKey));
 	}
 
 	public static String getResult(int ms)
@@ -469,5 +379,15 @@ public abstract class gmHelper
 		int[] values = {GAMEMODE_DEFAULT, GAMEMODE_MM_ROWDY, GAMEMODE_MM_TIMEATTACK, GAMEMODE_MM_ARCADE, GAMEMODE_MM_EXTREME, GAMEMODE_MM_EXTREMEICE /*, GAMEMODE_MM_LASTDOWNSWING*/};
 
 		return values;
+	}
+
+	private static ResourceBundle getLangBundle()
+	{
+		if(lang == null)
+		{
+			lang = FNX.getLangBundle("gmHelper");
+		}
+
+		return lang;
 	}
 }

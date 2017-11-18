@@ -27,6 +27,8 @@ compile: $(classes)
 	echo Original version: $(version)
 	@echo git-$(commit) > $(VFILE)
 
+	cp -af ./src/*.properties ./classes/
+
 %.class: %.java
 	$(JC) $(JFLAGS) $<
 
@@ -39,7 +41,7 @@ jar: compile
 	@echo "Permissions: all-permissions" >> $(MFFILE)
 
 	cd ./classes && \
-	$(JAR) -cmf ../$(MFFILE) ../$(JARFILE) ./*.class ../$(VFILE) && \
+	$(JAR) -cmf ../$(MFFILE) ../$(JARFILE) ./*.class ./*.properties ../$(VFILE) && \
 	chmod +x ../$(JARFILE) && $(RM) ../$(MFFILE)
 
 zip: jar
@@ -70,4 +72,4 @@ sig: zip
 clean:
 	$(RM) build/HTGT_*.*
 	$(RM) $(MFFILE) $(VFILE) $(LICENCEFILE)
-	$(RM) classes/*.class src/*.class
+	$(RM) classes/*.class classes/*.properties src/*.class

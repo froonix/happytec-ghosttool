@@ -27,6 +27,8 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
+import java.lang.reflect.Method;
+
 import java.net.URLEncoder;
 
 import java.security.MessageDigest;
@@ -37,6 +39,7 @@ import java.text.SimpleDateFormat;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.TimeZone;
 
 import javax.swing.JEditorPane;
@@ -372,5 +375,61 @@ public abstract class FNX
 		e.setEditable(false);
 
 		return e;
+	}
+
+	public static ResourceBundle getLangBundle(String bundle)
+	{
+		return ResourceBundle.getBundle(String.format("LangBundle_%s", bundle));
+	}
+
+	/*
+	public static String formatLangString(ResourceBundle lang, String key)
+	{
+		return String.format(getLangString(lang, key));
+	}
+	*/
+
+	public static String formatLangString(ResourceBundle lang, String key, Object... args)
+	{
+		return String.format(getLangString(lang, key), args);
+	}
+
+	public static String getLangString(ResourceBundle lang, String key)
+	{
+		try
+		{
+			return new String(lang.getString(key).getBytes("ISO-8859-1"), "UTF-8");
+		}
+		catch(UnsupportedEncodingException e)
+		{
+			e.printStackTrace();
+			return "{" + key + "}";
+		}
+	}
+
+	public static String[] getLangStrings(ResourceBundle lang, String[] keys)
+	{
+		String[] results = new String[keys.length];
+
+		for(int i = 0; i < keys.length; i++)
+		{
+			results[i] = getLangString(lang, keys[i]);
+		}
+
+		return results;
+	}
+
+	public static void actionCallback(String className, String methodName)
+	{
+		try
+		{
+			Class<?> c = Class.forName(className);
+			Method m = c.getDeclaredMethod(methodName);
+			m.invoke(null);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 }

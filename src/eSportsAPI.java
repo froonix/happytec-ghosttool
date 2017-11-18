@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -658,7 +659,7 @@ public class eSportsAPI
 
 			if(this.osdata == null)
 			{
-				this.osdata = String.format("%s; %s; %s; %s; %s", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"), System.getProperty("java.runtime.name"), System.getProperty("java.version"));
+				this.osdata = String.format("%s; %s; %s; %s; %s; %s", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"), System.getProperty("java.runtime.name"), System.getProperty("java.version"), Locale.getDefault());
 			}
 			connection.setRequestProperty("X-OS-Data", this.osdata);
 

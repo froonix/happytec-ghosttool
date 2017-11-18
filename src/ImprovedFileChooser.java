@@ -18,11 +18,14 @@
  */
 
 import java.io.File;
+import java.util.ResourceBundle;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 public class ImprovedFileChooser extends JFileChooser
 {
+	private static ResourceBundle lang = FNX.getLangBundle("ImprovedFileChooser");
+
 	public ImprovedFileChooser(String currentDirectoryPath)
 	{
 		super(currentDirectoryPath);
@@ -48,7 +51,7 @@ public class ImprovedFileChooser extends JFileChooser
 
 	public static boolean overwriteFile(File f)
 	{
-		switch(JOptionPane.showConfirmDialog(null, String.format("Soll die existierende Datei überschrieben werden?%n%n%s", f), null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE))
+		switch(JOptionPane.showConfirmDialog(null, FNX.formatLangString(lang, "overwrite", f), null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE))
 		{
 			case JOptionPane.YES_OPTION:
 				return true;

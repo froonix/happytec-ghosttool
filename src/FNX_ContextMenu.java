@@ -29,6 +29,8 @@ import javax.swing.KeyStroke;
 
 import javax.swing.text.JTextComponent;
 
+import java.util.ResourceBundle;
+
 public class FNX_ContextMenu extends JPopupMenu implements ActionListener
 {
 	public static final FNX_ContextMenu INSTANCE = new FNX_ContextMenu();
@@ -41,12 +43,14 @@ public class FNX_ContextMenu extends JPopupMenu implements ActionListener
 
 	private FNX_ContextMenu()
 	{
-		itemCut =       newItem("Ausschneiden",    'X');
-		itemCopy =      newItem("Kopieren",        'C');
-		itemPaste =     newItem("Einfügen",        'V');
-		itemDelete =    newItem("Löschen");
+		ResourceBundle lang = FNX.getLangBundle("ContextMenu");
+
+		itemCut =       newItem(FNX.getLangString(lang, "cut"),     'X');
+		itemCopy =      newItem(FNX.getLangString(lang, "copy"),    'C');
+		itemPaste =     newItem(FNX.getLangString(lang, "paste"),   'V');
+		itemDelete =    newItem(FNX.getLangString(lang, "delete"));
 		addSeparator(); // ----------------------------
-		itemSelectAll = newItem("Alles markieren", 'A');
+		itemSelectAll = newItem(FNX.getLangString(lang, "markAll"), 'A');
 	}
 
 	private JMenuItem newItem(String t)

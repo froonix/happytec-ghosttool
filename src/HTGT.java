@@ -41,11 +41,14 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 import java.util.prefs.Preferences;
 
@@ -54,6 +57,7 @@ import java.util.regex.Pattern;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.ComponentOrientation;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -68,8 +72,10 @@ import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
+import javax.swing.Box;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.InputMap;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -115,11 +121,12 @@ public class HTGT
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
 	final private static long      WEATHER_INTERVAL    = 900000L; // 15 minutes
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
-	final private static String    FF_TITLE            = "Fast-Follow-Modus";
 	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
 	final private static String    DEFAULT_PROFILE     = "DefaultUser";
 	final private static String    VERSION_FILE        = "htgt-version.txt";
-	final private static String    NICKNAME_REGEX      = "^(?i:[A-Z0-9_]{3,13})$";
+	final private static int       NICKNAME_MINLEN     = 3;
+	final private static int       NICKNAME_MAXLEN     = 13;
+	final private static String    NICKNAME_REGEX      = "^(?i:[A-Z0-9_]{" + NICKNAME_MINLEN + "," + NICKNAME_MAXLEN + "})$";
 	final private static String    NICKNAME_REGEX_NOT  = "^[0-9]+$";
 	final private static boolean   ENABLE_AUTOSAVE     = true;
 	final private static boolean   ENABLE_RACE         = true;
@@ -128,10 +135,10 @@ public class HTGT
 	final private static double    FONTSMALL           = 0.75;
 	final private static int       HISTORY_SIZE        = 10;
 
-	final public static int       NONE  = 0;
-	final public static int       CTRL  = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-	final public static int       SHIFT = ActionEvent.SHIFT_MASK;
-	final public static int       ALT   = ActionEvent.ALT_MASK;
+	final public static int        NONE  = 0;
+	final public static int        CTRL  = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+	final public static int        SHIFT = ActionEvent.SHIFT_MASK;
+	final public static int        ALT   = ActionEvent.ALT_MASK;
 
 	// Diverse Links ohne https:// davor, da sie als Ziel direkt angezeigt werden sollen!
 	private final static String    URL_WWW  = "github.com/froonix/happytec-ghosttool";
@@ -140,23 +147,34 @@ public class HTGT
 	// Redirect-Service für diverse andere Links oder Aktionen. (Leitet derzeit alles nur zum Forenthread...)
 	private final static String    URL_REDIRECT = "https://www.esports.happytec.at/redirect/desktop/HTGT.php?dst=%s";
 
+	// Bei jeder neuen verfügbaren Sprache muss dieser Wert erhöht werden.
+	// Dadurch wird der Dialog für die Sprachauswahl erneut angezeigt werden.
+	// Es sollte nicht dazu verwendet werden, um die Sprachen zu zählen!
+	private final static int TRANSLATION_VERSION = 1;
+
+	// Alle verfügbaren Sprachen als Locale-String.
+	// In dieser Reihenfolge werden sie auch angezeigt!
+	private final static String[] LOCALES = new String[]{ "de_DE", "en_UK" };
+
 	// Konfigurationsnamen für java.util.prefs
-	final private static String CFG_API     = "api-host";
-	final private static String CFG_DC      = "dll-check";
-	final private static String CFG_UC      = "update-check";
-	final private static String CFG_DEFAULT = "default-file";
-	final private static String CFG_TOKEN   = "esports-token";
-	final private static String CFG_CWD     = "last-directory";
-	final private static String CFG_CWDPORT = "last-port-directory";
-	final private static String CFG_PROFILE = "last-profile";
-	final private static String CFG_MODE    = "last-gamemode";
-	final private static String CFG_WEATHER = "last-weather";
-	final private static String CFG_TRACK   = "last-track";
-	final private static String CFG_NDG     = "never-download";
-	final private static String CFG_ARG     = "always-replace";
-	final private static String CFG_AAR     = "always-apply";
-	final private static String CFG_WC      = "weather-check";
-	final private static String CFG_RACE    = "race.%s.%s";
+	final private static String CFG_LOCALE      = "locale";
+	final private static String CFG_TRANSLATION = "translation";
+	final private static String CFG_API         = "api-host";
+	final private static String CFG_DC          = "dll-check";
+	final private static String CFG_UC          = "update-check";
+	final private static String CFG_DEFAULT     = "default-file";
+	final private static String CFG_TOKEN       = "esports-token";
+	final private static String CFG_CWD         = "last-directory";
+	final private static String CFG_CWDPORT     = "last-port-directory";
+	final private static String CFG_PROFILE     = "last-profile";
+	final private static String CFG_MODE        = "last-gamemode";
+	final private static String CFG_WEATHER     = "last-weather";
+	final private static String CFG_TRACK       = "last-track";
+	final private static String CFG_NDG         = "never-download";
+	final private static String CFG_ARG         = "always-replace";
+	final private static String CFG_AAR         = "always-apply";
+	final private static String CFG_WC          = "weather-check";
+	final private static String CFG_RACE        = "race.%s.%s";
 
 	final private static int PROFILE_NONE    =  0;
 	final private static int PROFILE_DEFAULT = -1;
@@ -183,6 +201,8 @@ public class HTGT
 	final private static String MENU_STOKEN  = "stoken";                // Aktiv, sobald ein API-Token existiert und Geister markiert wurden.
 	final private static String MENU_PTOKEN  = "ptoken";                // Aktiv, sobald ein API-Token im geladenen XML-Profil existiert.
 	final private static String MENU_SELECT  = "select";                // Aktiv, sobald Geister markiert wurden.
+
+	private static ResourceBundle             lang;
 
 	private static Preferences                cfg;
 	private static File                       dll;
@@ -258,7 +278,7 @@ public class HTGT
 			+ "		<b>Application:</b> %1$s<br /><b>Version:</b> %3$s"
 			+ "		<br /><br />Website: <a href='https://%5$s'>%5$s</a><br />%2$s: <a href='https://%6$s'>%6$s</a>"
 			+ "		<br /><br /><pre style='font-family: monospace; padding: 10px; color: #AAAAAA; border: 1px solid #CCCCCC;'>%4$s</pre>"
-			+ "		<br /><br /><div align='center'><i>Probleme? Vorschläge? Wünsche?</i><br /><br /><a href='%7$s' style='text-decoration: none;'><b>Hier geht's zum Forenthread!</b></a></div>"
+			+ "		<br /><br /><div align='center'><i>" + FNX.getLangString(lang, "aboutExtendedHeader") + "</i><br /><br /><a href='%7$s' style='text-decoration: none;'><b>" + FNX.getLangString(lang, "aboutExtendedLink") + "</b></a></div>"
 			+ "	</body>"
 			+ "</html>"
 		;
@@ -266,7 +286,10 @@ public class HTGT
 		// TODO: HTML-Ressource und Lizenz auslagern und hier nur ersetzen?
 		// ...
 
-		JOptionPane.showOptionDialog(mainWindow, FNX.getHTMLPane(String.format(content, APPLICATION_NAME, APPLICATION_API, getVersion(true), licence, URL_WWW, URL_API, getRedirectURL("support"))), "Über diese App", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{}, null);
+		// TODO: Übersetzer auflisten?
+		// ...
+
+		JOptionPane.showOptionDialog(mainWindow, FNX.getHTMLPane(String.format(content, APPLICATION_NAME, APPLICATION_API, getVersion(true), licence, URL_WWW, URL_API, getRedirectURL("support"))), FNX.getLangString(lang, "aboutTitle"), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{}, null);
 	}
 
 	public static void faq()
@@ -302,7 +325,7 @@ public class HTGT
 	private static void exceptionHandler(Exception e, String msg)
 	{
 		FNX.windowToFront(mainWindow);
-		FNX.displayExceptionSummary(e, "Fehler", msg, "Weitere Details stehen im Stacktrace in der Konsolenausgabe.");
+		FNX.displayExceptionSummary(e, FNX.formatLangString(lang, "errorTitle"), msg, FNX.formatLangString(lang, "errorBody"));
 	}
 
 	public static String getIdent()
@@ -387,6 +410,19 @@ public class HTGT
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
 
+		// ...
+		setupLocale();
+
+		// Wenn neue Sprachen verfügbar sind, darf der User erneut auswählen.
+		// Eventuell ist jetzt seine bevorzugte Muttersprache endlich dabei.
+		if(FNX.intval(cfg(CFG_TRANSLATION)) < TRANSLATION_VERSION)
+		{
+			dbgf("New translation(s) available! [cfg=%s; cur=%d]", cfg(CFG_TRANSLATION), TRANSLATION_VERSION);
+
+			selectLanguage(true, (cfg(CFG_TRANSLATION) != null ? true : false));
+			cfg(CFG_TRANSLATION, Integer.toString(TRANSLATION_VERSION));
+		}
+
 		String apihost = cfg(CFG_API);
 		if(apihost != null && apihost.length() > 0)
 		{
@@ -406,7 +442,7 @@ public class HTGT
 		Color black     = new Color(  0,   0,   0); // #000
 		Color darkGray  = new Color(136, 136, 136); // #888
 		Color lightGray = new Color(204, 204, 204); // #ccc
-		Color lightBlue = new Color( 68, 136, 255); // #48f;
+		Color lightBlue = new Color( 68, 136, 255); // #48f
 
 		// http://nadeausoftware.com/articles/2008/11/all_ui_defaults_names_common_java_look_and_feels_windows_mac_os_x_and_linux
 		UIManager.put("Menu.font",                                      bold);
@@ -475,7 +511,13 @@ public class HTGT
 		mainWindow.addWindowListener(new HTGT_WindowAdapter());
 
 		Object rowData[][] = {};
-		Object columnNames[] = {"Spieler", "Spielmodus", "Strecke", "Wetter", "Ski", "Ergebnis"};
+		Object columnNames[] = new String[6];
+		columnNames[0] = FNX.getLangString(lang, "player");
+		columnNames[1] = FNX.getLangString(lang, "gameMode");
+		columnNames[2] = FNX.getLangString(lang, "trackName");
+		columnNames[3] = FNX.getLangString(lang, "weatherName");
+		columnNames[4] = FNX.getLangString(lang, "skiSettings");
+		columnNames[5] = FNX.getLangString(lang, "timeResult");
 
 		mainmodel = new DefaultTableModel(rowData, columnNames);
 		maintable = new HTGT_JTable(mainmodel);
@@ -514,6 +556,16 @@ public class HTGT
 
 	private static JMenuBar getMenubar()
 	{
+		// TODO: Statt dem UTF-8 Symbol ein PNG-Icon verwenden?
+		// Das unterstützt der Font unter Windows nämlich nicht.
+		// ...
+
+		//JButton langButton = new JButton(String.format("🗺 %s", FNX.getLangString(lang, "language")));
+		JButton langButton = new JButton(String.format("%s", FNX.getLangString(lang, "languageSelectionTitle")));
+		langButton.addActionListener(new FlexibleActionHandler(HTGT.class.getName(), "selectLanguage"));
+		langButton.setOpaque(true); langButton.setContentAreaFilled(false);
+		langButton.setBorderPainted(false); langButton.setFocusable(false);
+
 		JMenuBar menu = new JMenuBar();
 
 		menu.add(getMenu("file"));
@@ -521,112 +573,107 @@ public class HTGT
 		menu.add(getMenu("view"));
 		menu.add(getMenu("api"));
 		menu.add(getMenu("help"));
+
 		disableMenuItems();
+
+		menu.add(Box.createHorizontalGlue());
+		menu.add(langButton);
 
 		return menu;
 	}
 
 	private static JMenu getMenu(String key)
 	{
-		String title;
-		switch(key)
-		{
-			case "file": title = "Datei";      break;
-			case "edit": title = "Bearbeiten"; break;
-			case "view": title = "Ansicht";    break;
-			case "api":  title = "Server";     break;
-			case "help": title = "Hilfe";      break;
-
-			default:
-				dbgf("Unknown menu »%s«", key);
-				return null;
-		}
+		String langKey = String.format("menu.%s", key);
+		String title = FNX.getLangString(lang, langKey);
 
 		JMenu menu = new JMenu(title);
 
 		switch(key)
 		{
 			case "file":
-				menu.add(registerDynMenuItem(MENU_STATIC,   "XML-Datei öffnen",                     "openFile",               KeyStroke.getKeyStroke(KeyEvent.VK_O,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad öffnen",                  "openDefaultFile",        KeyStroke.getKeyStroke(KeyEvent.VK_O,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".open",                      "openFile",               KeyStroke.getKeyStroke(KeyEvent.VK_O,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".openDefault",               "openDefaultFile",        KeyStroke.getKeyStroke(KeyEvent.VK_O,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Speichern",                            "saveFile",               KeyStroke.getKeyStroke(KeyEvent.VK_S,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Speichern unter",                      "saveFileAs",             KeyStroke.getKeyStroke(KeyEvent.VK_S,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".save",                      "saveFile",               KeyStroke.getKeyStroke(KeyEvent.VK_S,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".saveAs",                    "saveFileAs",             KeyStroke.getKeyStroke(KeyEvent.VK_S,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Schließen",                            "closeFile",              KeyStroke.getKeyStroke(KeyEvent.VK_W,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Beenden",                              "quit",                   KeyStroke.getKeyStroke(KeyEvent.VK_Q,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".close",                     "closeFile",              KeyStroke.getKeyStroke(KeyEvent.VK_W,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".quit",                      "quit",                   KeyStroke.getKeyStroke(KeyEvent.VK_Q,      CTRL)));
 				break;
 
 			case "edit":
 				if(ENABLE_AUTOSAVE)
 				{
-					menu.add(registerDynMenuItem(MENU_UNDO, "Rückgängig",                           "undoHistory",            KeyStroke.getKeyStroke(KeyEvent.VK_Z,      CTRL)));
-					menu.add(registerDynMenuItem(MENU_REDO, "Wiederholen",                          "redoHistory",            KeyStroke.getKeyStroke(KeyEvent.VK_Y,      CTRL)));
+					menu.add(registerDynMenuItem(MENU_UNDO, langKey + ".undo",                      "undoHistory",            KeyStroke.getKeyStroke(KeyEvent.VK_Z,      CTRL)));
+					menu.add(registerDynMenuItem(MENU_REDO, langKey + ".redo",                      "redoHistory",            KeyStroke.getKeyStroke(KeyEvent.VK_Y,      CTRL)));
 					menu.addSeparator(); // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 				}
 
-				menu.add(registerDynMenuItem(MENU_SELECT,   "Ausschneiden",                         "cutToClipboard",         KeyStroke.getKeyStroke(KeyEvent.VK_X,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_SELECT,   "Kopieren",                             "copyToClipboard",        KeyStroke.getKeyStroke(KeyEvent.VK_C,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Einfügen",                             "copyFromClipboard",      KeyStroke.getKeyStroke(KeyEvent.VK_V,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_SELECT,   "Löschen",                              "deleteRows",             KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, NONE)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".cut",                       "cutToClipboard",         KeyStroke.getKeyStroke(KeyEvent.VK_X,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".copy",                      "copyToClipboard",        KeyStroke.getKeyStroke(KeyEvent.VK_C,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".paste",                     "copyFromClipboard",      KeyStroke.getKeyStroke(KeyEvent.VK_V,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".delete",                    "deleteRows",             KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Alles markieren",                      "selectAll",              KeyStroke.getKeyStroke(KeyEvent.VK_A,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_SELECT,   "Auswahl umkehren",                     "invertSelection",        KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_SELECT,   "Nichts auswählen",                     "clearSelection",         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, NONE)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".markAll",                   "selectAll",              KeyStroke.getKeyStroke(KeyEvent.VK_A,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".invertSelection",           "invertSelection",        KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".markNone",                  "clearSelection",         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_SELECT,   "Zu anderem Profil kopieren",           "copyGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_C,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_SELECT,   "In anderes Profil verschieben",        "moveGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_M,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".copyToProfile",             "copyGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_C,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".moveToProfile",             "moveGhosts",             KeyStroke.getKeyStroke(KeyEvent.VK_M,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Aus Datei importieren",                "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_SELECT,   "In Datei exportieren",                 "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".import",                    "importFile",             KeyStroke.getKeyStroke(KeyEvent.VK_I,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_SELECT,   langKey + ".export",                    "exportFile",             KeyStroke.getKeyStroke(KeyEvent.VK_E,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Sortieren",                            "resort",                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,  ALT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".resort",                    "resort",                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,  ALT)));
 				break;
 
 			case "view":
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil auswählen",                     "selectProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_F6,     NONE)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectProfile",             "selectProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_F6,     NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil hinzufügen",                    "createProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_N,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil umbenennen",                    "renameProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Profil entfernen",                     "deleteProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_D,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".createProfile",             "createProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_N,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".renameProfile",             "renameProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".deleteProfile",             "deleteProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_D,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Aktualisieren",                        "reloadFile",             KeyStroke.getKeyStroke(KeyEvent.VK_F5,     NONE)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".reload",                    "reloadFile",             KeyStroke.getKeyStroke(KeyEvent.VK_F5,     NONE)));
 				break;
 
 			case "api":
-				menu.add(registerDynMenuItem(MENU_STOKEN,   "Markierte Geister hochladen",          "ghostUpload",            KeyStroke.getKeyStroke(KeyEvent.VK_F3,     NONE)));
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Geist aus Rangliste herunterladen",    "ghostSelect",            KeyStroke.getKeyStroke(KeyEvent.VK_F4,     NONE)));
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Geister durch ID(s) herunterladen",    "ghostDownload",          KeyStroke.getKeyStroke(KeyEvent.VK_F4,     SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STOKEN,   langKey + ".uploadGhosts",              "ghostUpload",            KeyStroke.getKeyStroke(KeyEvent.VK_F3,     NONE)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".downloadGhost",             "ghostSelect",            KeyStroke.getKeyStroke(KeyEvent.VK_F4,     NONE)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".downloadGhostsByIDs",       "ghostDownload",          KeyStroke.getKeyStroke(KeyEvent.VK_F4,     SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   FF_TITLE + " (nur pB's hochladen)",     "fastFollow",             KeyStroke.getKeyStroke(KeyEvent.VK_F7,     NONE)));
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   FF_TITLE + " (immer alles hochladen)",  "fastFollowForce",        KeyStroke.getKeyStroke(KeyEvent.VK_F8,     NONE)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowMode",            "fastFollow",             KeyStroke.getKeyStroke(KeyEvent.VK_F7,     NONE)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowModeForce",       "fastFollowForce",        KeyStroke.getKeyStroke(KeyEvent.VK_F8,     NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_TOKEN,    "Spieler-/Bewerbsdetails anzeigen",     "playerInfo",             KeyStroke.getKeyStroke(KeyEvent.VK_F9,     NONE)));
+				menu.add(registerDynMenuItem(MENU_TOKEN,    langKey + ".displayInfo",               "playerInfo",             KeyStroke.getKeyStroke(KeyEvent.VK_F9,     NONE)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   "Token ins aktuelle Profil kopieren",   "copyTokenToProfile",     KeyStroke.getKeyStroke(KeyEvent.VK_T,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil verwenden", "copyTokenFromProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_PTOKEN,   "Token aus aktuellem Profil entfernen", "removeTokenFromProfile", KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".copyTokenToProfile",        "copyTokenToProfile",     KeyStroke.getKeyStroke(KeyEvent.VK_T,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_PTOKEN,   langKey + ".copyTokenFromProfile",      "copyTokenFromProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_PTOKEN,   langKey + ".removeTokenFromProfile",    "removeTokenFromProfile", KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   "API-Token ändern",                     "setupToken",             KeyStroke.getKeyStroke(KeyEvent.VK_F2,     NONE)));
-				menu.add(registerDynMenuItem(MENU_TOKEN,    "API-Token löschen",                    "deleteToken",            KeyStroke.getKeyStroke(KeyEvent.VK_F2,     SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".changeToken",               "setupToken",             KeyStroke.getKeyStroke(KeyEvent.VK_F2,     NONE)));
+				menu.add(registerDynMenuItem(MENU_TOKEN,    langKey + ".deleteToken",               "deleteToken",            KeyStroke.getKeyStroke(KeyEvent.VK_F2,     SHIFT)));
 				break;
 
 			case "help":
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Über diese App",                       "about"));
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Online Dokumentation",                 "faq",                    KeyStroke.getKeyStroke(KeyEvent.VK_F1,     NONE)));
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Support kontaktieren",                 "support",                KeyStroke.getKeyStroke(KeyEvent.VK_F1,     SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".about",                     "about"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".manual",                    "faq",                    KeyStroke.getKeyStroke(KeyEvent.VK_F1,     NONE)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".support",                   "support",                KeyStroke.getKeyStroke(KeyEvent.VK_F1,     SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Prüfung auf Updates",                  "updateCheck",            KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "OC-Patch überprüfen",                  "updateCheckDLL",         KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".updateCheckApp",            "updateCheck",            KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".updateCheckDLL",            "updateCheckDLL",         KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad einstellen",              "changeDefaultFile",      KeyStroke.getKeyStroke(KeyEvent.VK_D,      SHIFT)));
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Standardpfad zurücksetzen",            "resetDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_R,      SHIFT)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  "Datei als Standardpfad nutzen",        "applyDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_A,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".changeDefaultPath",         "changeDefaultFile",      KeyStroke.getKeyStroke(KeyEvent.VK_D,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetDefaultPath",          "resetDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_R,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".applyDefaultPath",          "applyDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_A,      SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   "Konfiguration löschen",                "clearConfigDialog",      KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL)));
-
-
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".reset",                     "clearConfigDialog",      KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL)));
 				break;
+
+			default:
+				dbgf("Unknown menu »%s«", key);
+				return null;
 		}
 
 		return menu;
@@ -649,7 +696,7 @@ public class HTGT
 			menuitems.put(o, new ArrayList<DynamicMenuItem>());
 		}
 
-		DynamicMenuItem DMI = new DynamicMenuItem(t, HTGT.class.getName(), m, k);
+		DynamicMenuItem DMI = new DynamicMenuItem(FNX.getLangString(lang, t), HTGT.class.getName(), m, k);
 		menuitems.get(o).add(DMI);
 
 		return DMI;
@@ -1015,11 +1062,11 @@ public class HTGT
 			{
 				if(i == OfflineProfiles.defaultProfile())
 				{
-					suffix = "Standardprofil";
+					suffix = FNX.getLangString(lang, "defaultProfile");
 				}
 				else if(isSpecialProfile(profiles[i]))
 				{
-					suffix = "Spezialprofil";
+					suffix = FNX.getLangString(lang, "specialProfile");
 				}
 				else
 				{
@@ -1039,7 +1086,7 @@ public class HTGT
 				}
 			}
 
-			Integer selected = (Integer) inputDialog("Profilauswahl", "Aktuell genutztes Profil aus der XML-Datei:", values, selection);
+			Integer selected = (Integer) inputDialog(FNX.getLangString(lang, "profileSelectionTitle"), FNX.formatLangString(lang, "profileSelectionBody"), values, selection);
 
 			if(selected == null)
 			{
@@ -1050,7 +1097,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und konnte nicht geladen werden!");
+			exceptionHandler(e);
 		}
 	}
 
@@ -1138,7 +1185,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Mindestens ein Profil ist beschädigt und konnte nicht geladen werden!");
+			exceptionHandler(e);
 		}
 	}
 
@@ -1175,7 +1222,7 @@ public class HTGT
 			}
 			catch(Exception e)
 			{
-				exceptionHandler(e, "Der Geist konnte nicht hinzugefügt werden!");
+				exceptionHandler(e);
 				return;
 			}
 		}
@@ -1200,7 +1247,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Der Geist konnte nicht gelöscht werden!");
+			exceptionHandler(e);
 		}
 	}
 
@@ -1220,7 +1267,7 @@ public class HTGT
 		}
 		else
 		{
-			action = threesomeDialog(JOptionPane.WARNING_MESSAGE, title, String.format("Es kann nur einen aktiven Geist pro Spielmodus/Strecken/Wetter Kombination in einem Profil geben.%nBei der gewünschten Aktion werden andere eventuell vorhandene Geister ohne Rückfrage gelöscht!%n%nBist du sicher, dass du fortfahren möchtest?"), true);
+			action = threesomeDialog(JOptionPane.WARNING_MESSAGE, title, FNX.formatLangString(lang, "confirmGhostReplacement"), true);
 		}
 
 		if(action == BUTTON_ALWAYS)
@@ -1241,8 +1288,15 @@ public class HTGT
 	{
 		if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
 		{
-			infoDialog(null, String.format("Diese Funktion kann nur genutzt werden, wenn nicht das Spezial-/Standardprofil ausgewählt ist.%n%nWähle über das Menü »Ansicht« ein anderes Profil und versuche es erneut."));
-			return true;
+			if(confirmDialog(FNX.formatLangString(lang, "incompatibleProfile")))
+			{
+				selectProfile();
+			}
+
+			if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
+			{
+				return true;
+			}
 		}
 
 		return false;
@@ -1279,15 +1333,9 @@ public class HTGT
 
 			while(true)
 			{
-				JOptionPane msg = new JOptionPane(String.format(
-					"Es wird darauf gewartet, dass die XML-Datei durch das Spiel aktualisiert wird.%n" +
-					"Sobald du eine neue Fahrt ins Ziel gebracht hast, wird der Geist hochgeladen.%n%n" +
-					"Wichtig ist, dass vorher das richtige Profil ausgewählt wurde! (siehe Menü \"Ansicht\")%n" +
-					"Änderungen am Standardprofil werden unabhängig davon immer automatisch erkannt.%n%n" +
-					"Du kannst diesen Modus jederzeit beenden..."
-				), JOptionPane.PLAIN_MESSAGE);
-				msg.setOptions(new String[]{"Abbrechen"});
-				ffDialog = msg.createDialog(mainWindow, FF_TITLE);
+				JOptionPane msg = new JOptionPane(FNX.formatLangString(lang, "fastFollowModeBody"), JOptionPane.PLAIN_MESSAGE);
+				msg.setOptions(new String[]{FNX.getLangString(lang, "cancel")});
+				ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
 
 				ffState = true;
 				dbg("Starting worker thread...");
@@ -1324,7 +1372,7 @@ public class HTGT
 					if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
 					{
 						dbgf("Unsupported changes: %d != %d || %d != %d", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
-						errorMessage(FF_TITLE, "Es wurden nicht unterstützte Änderungen festgestellt!");
+						errorMessage(FNX.getLangString(lang, "fastFollowMode"), "Es wurden nicht unterstützte Änderungen festgestellt!");
 						return;
 					}
 
@@ -1345,7 +1393,7 @@ public class HTGT
 					String[] tracks = gmHelper.getTracks(true);
 					int[] weathers = gmHelper.getWeatherIDs();
 
-					String currentGhost = "";
+					String currentGhost = null;
 					int lastUploadedMode = -1;
 					int lastUploadedTrack = -1;
 					int lastUploadedWeather = -1;
@@ -1463,17 +1511,20 @@ public class HTGT
 						}
 					}
 
-					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !multiGhostEnabled())
+					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
 					{
 						if(/*lastFromDefault &&*/ lastUploadedWeather != gmHelper.WEATHER_TICKET && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
 						{
-							currentGhost = String.format("Der aktuell genutzte Geist ist von %s mit dem Ergebnis %s.%n", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult());
+							currentGhost = String.format("%s%n", FNX.formatLangString(lang, "fastFollowCurrentGhost", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult()));
 						}
 
 						if(cfg(CFG_NDG) == null)
 						{
 							int realWeather = (lastUploadedWeather == gmHelper.WEATHER_TICKET) ? gmHelper.WEATHER_TICKET : weathers[lastUploadedWeather];
-							int action = threesomeDialog(FF_TITLE, String.format("Willst du für %s (%s/%s) einen neuen Geist herunterladen?%n%s" + (!ENABLE_AUTOSAVE ? "%nBitte beachte, dass die Datei danach automatisch gespeichert wird!" : ""), gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather), currentGhost), false);
+							int action = threesomeDialog(FNX.getLangString(lang, "fastFollowMode"),
+								FNX.formatLangString(lang, "fastFollowGhostQuestion", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather)) +
+								(!ENABLE_AUTOSAVE ? String.format("%n%s", FNX.formatLangString(lang, "fastFollowNoAutosave")) : "") + (currentGhost != null ? String.format("%n%s", currentGhost) : "")
+							, false);
 
 							if(action == BUTTON_NEVER)
 							{
@@ -1487,7 +1538,7 @@ public class HTGT
 								{
 									if(OfflineProfiles.changed() && !saveFile(true))
 									{
-										errorMessage("Die Änderungen konnten nicht gespeichert werden!");
+										throw new Exception("Could not save file");
 									}
 								}
 							}
@@ -1511,7 +1562,7 @@ public class HTGT
 		}
 		catch(eSportsAPIException e)
 		{
-			APIError(e, "Da ist etwas schief gegangen...");
+			APIError(e);
 		}
 		catch(InterruptedException e)
 		{
@@ -1603,7 +1654,7 @@ public class HTGT
 		if(profilesFile == null || !profilesFile.exists() || !profilesFile.isFile())
 		{
 			dbgf("Other XML file not found: %s", profilesFile);
-			errorMessage(null, "Die Datei Profiles.xml wurde nicht gefunden!");
+			errorMessage(null, FNX.formatLangString(lang, "fileNotFound", "Profiles.xml"));
 		}
 		else
 		{
@@ -1615,7 +1666,7 @@ public class HTGT
 
 				if(nick != null && !profileHandle.profileExists(nick))
 				{
-					errorMessage(null, "Die XML-Dateien sind fehlerhaft.");
+					throw new Exception("Could not find nickname in profile");
 				}
 				else
 				{
@@ -1624,7 +1675,7 @@ public class HTGT
 			}
 			catch(Exception e)
 			{
-				exceptionHandler(e, "Fehler beim Öffnen der Datei Profiles.xml!");
+				exceptionHandler(e);
 			}
 		}
 
@@ -1652,16 +1703,16 @@ public class HTGT
 		while(true)
 		{
 			message = String.format(
-				"Mit dieser Funktion kannst Du ein neues Profil im Spiel anlegen." +
-				"%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!" +
-				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
-				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
-				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
-				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nDie geforderte Mindestlänge liegt bei drei Zeichen, die Maximallänge beträgt 13 Zeichen.%nNur Ziffern sind nicht erlaubt, es muss mindestens ein anderes Zeichen vorkommen." : "") +
-				"%n%nGewünschter Nickname:"
+				FNX.formatLangString(lang, "createProfileBody", nickname) +
+				"%n" + FNX.formatLangString(lang, "profileWarning") +
+				"%n%n" + FNX.formatLangString(lang, "profileModification") + "%n" +
+				(!ENABLE_AUTOSAVE ? FNX.getLangString(lang, "profileNoAutosave") : "") +
+				(ENABLE_AUTOSAVE ? FNX.getLangString(lang, "profileAutosave") : "") +
+				(error ? "%n%n" + FNX.formatLangString(lang, "invalidProfileName", NICKNAME_MINLEN, NICKNAME_MAXLEN) : "") +
+				"%n%n" + FNX.formatLangString(lang, "createProfileInput")
 			);
 
-			if((nick = (String) inputDialog("Profil hinzufügen", message, nick)) != null)
+			if((nick = (String) inputDialog(FNX.getLangString(lang, "createProfileTitle"), message, nick)) != null)
 			{
 				if(nick.length() > 0)
 				{
@@ -1671,11 +1722,11 @@ public class HTGT
 					}
 					else if(nick.equalsIgnoreCase(SPECIAL_PROFILE) || nick.equalsIgnoreCase(DEFAULT_PROFILE))
 					{
-						errorMessage(String.format("Der Nickname darf nicht %s oder %s sein!", SPECIAL_PROFILE, DEFAULT_PROFILE));
+						errorMessage(FNX.formatLangString(lang, "unsupportedProfileName", SPECIAL_PROFILE, DEFAULT_PROFILE));
 					}
 					else if(OfflineProfiles.getProfileByNick(nick) > -1)
 					{
-						errorMessage("Ein Profil mit diesem Nicknamen existiert bereits!");
+						errorMessage(FNX.formatLangString(lang, "profileAlreadyExists"));
 					}
 					else
 					{
@@ -1707,12 +1758,12 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Das Profil konnte nicht hinzugefügt werden!");
+			exceptionHandler(e);
 			reloadFile();
 			return;
 		}
 
-		infoDialog("Das Profil wurde hinzugefügt.");
+		//infoDialog("Das Profil wurde hinzugefügt.");
 	}
 
 	public static void renameProfile()
@@ -1736,16 +1787,16 @@ public class HTGT
 		while(true)
 		{
 			message = String.format(
-				"Nutze diese Funktion, um das Profil »%s« umzubenennen." +
-				"%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!" +
-				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
-				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
-				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
-				(error ? "%n%nAchtung: Der Nickname darf nur aus Buchstaben, Ziffern und Unterstrichen bestehen.%nDie geforderte Mindestlänge liegt bei drei Zeichen, die Maximallänge beträgt 13 Zeichen.%nNur Ziffern sind nicht erlaubt, es muss mindestens ein anderes Zeichen vorkommen." : "") +
-				"%n%nNeuer Nickname:"
-			, nickname);
+				FNX.formatLangString(lang, "renameProfileQuestion", nickname) +
+				"%n" + FNX.formatLangString(lang, "profileWarning") +
+				"%n%n" + FNX.formatLangString(lang, "profileModification") + "%n" +
+				(!ENABLE_AUTOSAVE ? FNX.getLangString(lang, "profileNoAutosave") : "") +
+				(ENABLE_AUTOSAVE ? FNX.getLangString(lang, "profileAutosave") : "") +
+				(error ? "%n%n" + FNX.formatLangString(lang, "invalidProfileName", NICKNAME_MINLEN, NICKNAME_MAXLEN) : "") +
+				"%n%n" + FNX.formatLangString(lang, "renameProfileInput")
+			);
 
-			if((nick = (String) inputDialog("Profil umbenennen", message, nick)) != null)
+			if((nick = (String) inputDialog(FNX.getLangString(lang, "renameProfileTitle"), message, nick)) != null)
 			{
 				if(nick.length() > 0)
 				{
@@ -1755,7 +1806,7 @@ public class HTGT
 					}
 					else if(nick.equalsIgnoreCase(SPECIAL_PROFILE) || nick.equalsIgnoreCase(DEFAULT_PROFILE))
 					{
-						errorMessage(String.format("Der Nickname darf nicht %s oder %s sein!", SPECIAL_PROFILE, DEFAULT_PROFILE));
+						errorMessage(FNX.formatLangString(lang, "unsupportedProfileName", SPECIAL_PROFILE, DEFAULT_PROFILE));
 					}
 					else if(nick.equalsIgnoreCase(nickname))
 					{
@@ -1763,7 +1814,7 @@ public class HTGT
 					}
 					else if(OfflineProfiles.getProfileByNick(nick) > -1)
 					{
-						errorMessage("Ein Profil mit diesem Nicknamen existiert bereits!");
+						errorMessage(FNX.formatLangString(lang, "profileAlreadyExists"));
 					}
 					else
 					{
@@ -1795,12 +1846,12 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Das Profil konnte nicht unbenannt werden!");
+			exceptionHandler(e);
 			reloadFile();
 			return;
 		}
 
-		infoDialog("Das Profil wurde umbenannt.");
+		//infoDialog("Das Profil wurde umbenannt.");
 	}
 
 	public static void deleteProfile()
@@ -1833,7 +1884,7 @@ public class HTGT
 
 			if(regularProfiles < 2)
 			{
-				infoDialog(null, "Das letzte reguläre Profil kann nicht gelöscht werden!");
+				infoDialog(null, FNX.formatLangString(lang, "lastRegularProfile"));
 				return;
 			}
 
@@ -1843,14 +1894,14 @@ public class HTGT
 			}
 
 			String message = String.format(
-				"Soll das Profil »%s« inkl. aller Geister und Einstellungen wirklich gelöscht werden?" +
-				"%n%nDabei werden die Dateien OfflineProfiles.xml und Profiles.xml angepasst." +
-				(!ENABLE_AUTOSAVE ? "%nBitte beachte, dass beide XML-Dateien automatisch gespeichert werden." : "") +
-				(ENABLE_AUTOSAVE ? "%nDie Rückgängig/Wiederholen Funktion ist danach temporär nicht verfügbar." : "") +
-				"%n%nBITTE BEENDE DAS SPIEL, BEVOR DU DIESE MÖGLICHKEIT NUTZT!"
-			, nickname);
+				FNX.formatLangString(lang, "deleteProfileQuestion", nickname) +
+				"%n%n" + FNX.getLangString(lang, "profileModification") + "%n" +
+				(!ENABLE_AUTOSAVE ? FNX.getLangString(lang, "profileNoAutosave") : "") +
+				(ENABLE_AUTOSAVE ? FNX.getLangString(lang, "profileAutosave") : "") +
+				"%n%n" + FNX.getLangString(lang, "profileWarning")
+			);
 
-			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, "Profil entfernen", message))
+			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, FNX.getLangString(lang, "deleteProfileTitle"), message))
 			{
 				return;
 			}
@@ -1871,15 +1922,15 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Das Profil konnte nicht gelöscht werden!");
+			exceptionHandler(e);
 			reloadFile();
 			return;
 		}
 
-		infoDialog("Das Profil wurde gelöscht.");
+		// infoDialog("Das Profil wurde gelöscht.");
 	}
 
-	private static boolean multiGhostEnabled()
+	private static boolean foreignGhostEnabled()
 	{
 		File userConfigFile = new File(String.format("%2$s%1$s%3$s", File.separator, file.getParent().toString(), "UserConfig.xml"));
 
@@ -1893,10 +1944,16 @@ public class HTGT
 
 			try
 			{
-				if((new UserConfig(userConfigFile)).getMultiGhost())
+				UserConfig config = new UserConfig(userConfigFile);
+
+				if(config.getMultiGhost())
 				{
 					dbg("MultiGhost setting is enabled.");
-
+					return true;
+				}
+				else if(config.getTrainingGhostNick() != null)
+				{
+					dbg("TrainingGhostNick selection is not empty.");
 					return true;
 				}
 			}
@@ -1907,6 +1964,7 @@ public class HTGT
 		}
 
 		dbg("MultiGhost setting is disabled.");
+		dbg("TrainingGhostNick selection is empty.");
 
 		return false;
 	}
@@ -1999,7 +2057,7 @@ public class HTGT
 
 			if(!auto)
 			{
-				errorMessage(null, "Es wurde keine DLL-Datei gefunden.");
+				errorMessage(null, FNX.formatLangString(lang, "patchUpdatesDLL404"));
 			}
 
 			return;
@@ -2037,14 +2095,14 @@ public class HTGT
 
 					if(Desktop.isDesktopSupported())
 					{
-						if(confirmDialog(JOptionPane.INFORMATION_MESSAGE, null, String.format("Es ist eine neue Version vom OC-Patch verfügbar!%n%nWillst du die Website öffnen, um ihn herunterzuladen?")))
+						if(confirmDialog(JOptionPane.INFORMATION_MESSAGE, null, FNX.formatLangString(lang, "patchUpdatesAvailableExtended")))
 						{
 							Desktop.getDesktop().browse(new URI(getRedirectURL("update-dll")));
 						}
 					}
 					else
 					{
-						infoDialog("Es ist eine neue Version vom OC-Patch verfügbar! Besuche das Forum, um ihn herunterzuladen.");
+						infoDialog(FNX.formatLangString(lang, "patchUpdatesAvailable"));
 					}
 				}
 				else
@@ -2053,7 +2111,7 @@ public class HTGT
 
 					if(!auto)
 					{
-						infoDialog("Es gibt keinen neueren OC-Patch, du verwendest bereits die aktuellste Version.");
+						infoDialog(FNX.formatLangString(lang, "patchUpdatesNone"));
 					}
 				}
 			}
@@ -2061,7 +2119,7 @@ public class HTGT
 			{
 				if(!auto)
 				{
-					APIError(e, "Prüfung der DLL-Datei fehlgeschlagen!");
+					APIError(e);
 				}
 				else
 				{
@@ -2247,14 +2305,14 @@ public class HTGT
 		{
 			dbgf("New threesome (yes/always/no) dialog: %s", title);
 			values = new Integer[]{BUTTON_YES, BUTTON_ALWAYS, BUTTON_NO};
-			buttons = new String[]{"Ja", "Immer", "Nein"};
+			buttons = FNX.getLangStrings(lang, new String[]{"yes", "always", "no"});
 			defaultButton = buttons[0];
 		}
 		else
 		{
 			dbgf("New threesome (yes/never/no) dialog: %s", title);
 			values = new Integer[]{BUTTON_YES, BUTTON_NEVER, BUTTON_NO};
-			buttons = new String[]{"Ja", "Niemals", "Nein"};
+			buttons = FNX.getLangStrings(lang, new String[]{"yes", "never", "no"});
 			defaultButton = buttons[0];
 		}
 
@@ -2354,18 +2412,22 @@ public class HTGT
 			panel.add(textField);
 		}
 
+		String langPrev = String.format("« %s", FNX.getLangString(lang, "prev"));
+		String langCancel = String.format("%s", FNX.getLangString(lang, "cancel"));
+		String langNext = String.format("%s »", FNX.getLangString(lang, "next"));
+
 		if(prev)
 		{
 			dbgf("New prev/next step %s dialog: %s", dialogType, title);
 			values = new Integer[]{BUTTON_PREV, BUTTON_CANCEL, BUTTON_NEXT};
-			buttons = new String[]{"Zurück", "Abbrechen", "Weiter"};
+			buttons = new String[]{langPrev, langCancel, langNext};
 			defaultButton = buttons[2];
 		}
 		else
 		{
 			dbgf("New next step %s dialog: %s", dialogType, title);
 			values = new Integer[]{BUTTON_CANCEL, BUTTON_NEXT};
-			buttons = new String[]{"Abbrechen", "Weiter"};
+			buttons = new String[]{langCancel, langNext};
 			defaultButton = buttons[1];
 		}
 
@@ -2405,7 +2467,7 @@ public class HTGT
 
 	private static void errorMessage(String msg)
 	{
-		errorMessage("Fehler", msg);
+		errorMessage(FNX.getLangString(lang, "errorTitle"), msg);
 	}
 
 	private static void errorMessage(String title, String msg)
@@ -2443,6 +2505,110 @@ public class HTGT
 	{
 		dbg("No selection available!");
 		return false;
+	}
+
+	public static void selectLanguage()
+	{
+		selectLanguage(false, false);
+	}
+
+	public static void selectLanguage(boolean init, boolean updates)
+	{
+		Locale locale;
+		String[] localeParts;
+
+		Locale defaultLocale = null;
+		String defaultLocaleString;
+
+		if((defaultLocaleString = cfg(CFG_LOCALE)) != null)
+		{
+			localeParts = splitLocaleString(defaultLocaleString);
+
+			if(localeParts != null)
+			{
+				defaultLocale = new Locale.Builder().setLanguage(localeParts[0]).setRegion(localeParts[1]).build();
+			}
+		}
+
+		if(defaultLocale == null)
+		{
+			defaultLocale = Locale.getDefault();
+		}
+
+		String[] values = new String[LOCALES.length];
+		String selection = null;
+
+		for(int i = 0; i < LOCALES.length; i++)
+		{
+			localeParts = splitLocaleString(LOCALES[i]);
+			locale = new Locale.Builder().setLanguage(localeParts[0]).setRegion(localeParts[1]).build();
+
+			values[i] = String.format("[%s] %s", locale.getLanguage().toUpperCase(), locale.getDisplayLanguage());
+
+			if(locale.getLanguage().equals(defaultLocale.getLanguage()))
+			{
+				selection = values[i];
+			}
+		}
+
+		Integer selected = (Integer) inputDialog(FNX.getLangString(lang, "languageSelectionTitle"), String.format((updates ? FNX.getLangString(lang, "languageSelectionExtended") + "%n%n" : "") + FNX.getLangString(lang, "languageSelectionBody")), values, selection);
+
+		if(selected != null && !LOCALES[selected].equals(defaultLocale.toString()))
+		{
+			cfg(CFG_LOCALE, LOCALES[selected]);
+
+			if(!init)
+			{
+				// Es wäre extrem aufwändig die ganze GUI neu aufzubauen und alle externen Klassen neu zu laden. Ein Neustart ist einfacher!
+				messageDialog(FNX.getLangString(lang, "languageSelectionTitle"), FNX.formatLangString(lang, "languageSelectionRestart"));
+			}
+			else
+			{
+				setupLocale();
+			}
+		}
+	}
+
+	private static void updateDefaultLocale()
+	{
+		String locale = cfg(CFG_LOCALE);
+
+		if(locale != null && Arrays.asList(LOCALES).contains(locale))
+		{
+			String[] localeParts = splitLocaleString(locale);
+
+			if(localeParts != null)
+			{
+				dbgf("Old default locale: %s", Locale.getDefault());
+				Locale.setDefault(new Locale(localeParts[0], localeParts[1]));
+				dbgf("New default locale: %s", Locale.getDefault());
+			}
+		}
+		else
+		{
+			dbgf("Unknown locale string: %s", locale);
+			dbgf("Default locale: %s", Locale.getDefault());
+		}
+	}
+
+	private static void setupLocale()
+	{
+		updateDefaultLocale();
+		lang = FNX.getLangBundle("HTGT");
+	}
+
+	private static String[] splitLocaleString(String locale)
+	{
+		String[] localeParts = locale.split("_");
+
+		if(localeParts.length == 2)
+		{
+			return localeParts;
+		}
+
+		dbgf("Invalid locale string: %s", locale);
+
+		return null;
 	}
 
 /***********************************************************************
@@ -2543,6 +2709,11 @@ public class HTGT
  *                             API ACTIONS                             *
  ***********************************************************************/
 
+	private static void APIError(eSportsAPIException e)
+	{
+		APIError(e, null);
+	}
+
 	// Fehlermeldung der API formatiert ausgeben.
 	private static void APIError(eSportsAPIException e, String msg)
 	{
@@ -2554,8 +2725,8 @@ public class HTGT
 			updateToken(null);
 		}
 
-		msg = (msg == null) ? "Der Server gab bei der API-Anfrage einen Fehler zurück!" : msg;
-		errorMessage(APPLICATION_API, String.format("%s%n%nFehlercode: %s%n%s", msg, e.getErrorCode(), e.getErrorMessage()).trim());
+		msg = (msg == null) ? FNX.formatLangString(lang, "APIError") : msg;
+		errorMessage(APPLICATION_API, FNX.formatLangString(lang, "APIErrorDetails", msg, e.getErrorCode(), e.getErrorMessage()).trim());
 	}
 
 	// Erzwungene Updateprüfung.
@@ -2576,7 +2747,7 @@ public class HTGT
 
 			if(!auto)
 			{
-				infoDialog("Du verwendest eine Entwicklerversion, da macht eine Updateprüfung keinen Sinn.");
+				infoDialog(FNX.formatLangString(lang, "updatesDevBuild"));
 			}
 
 			return;
@@ -2610,14 +2781,14 @@ public class HTGT
 
 					if(Desktop.isDesktopSupported())
 					{
-						if(confirmDialog(JOptionPane.INFORMATION_MESSAGE, null, String.format("Es ist ein neues Update verfügbar!%n%nWillst du die Website öffnen, um es herunterzuladen?")))
+						if(confirmDialog(JOptionPane.INFORMATION_MESSAGE, null, FNX.formatLangString(lang, "updatesAvailableExtended")))
 						{
 							Desktop.getDesktop().browse(new URI(getRedirectURL("update")));
 						}
 					}
 					else
 					{
-						infoDialog("Es ist ein neues Update verfügbar! Besuche die Website, um es herunterzuladen.");
+						infoDialog(FNX.formatLangString(lang, "updatesAvailable"));
 					}
 				}
 				else
@@ -2626,7 +2797,7 @@ public class HTGT
 
 					if(!auto)
 					{
-						infoDialog("Es gibt keine Updates, du verwendest bereits die aktuellste Version.");
+						infoDialog(FNX.formatLangString(lang, "updatesNone"));
 					}
 				}
 			}
@@ -2634,7 +2805,7 @@ public class HTGT
 			{
 				if(!auto)
 				{
-					APIError(e, "Updateprüfung fehlgeschlagen!");
+					APIError(e);
 				}
 				else
 				{
@@ -2657,12 +2828,7 @@ public class HTGT
 
 		try
 		{
-			if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format(
-				"Soll der hinterlegte API-Token wirklich ins aktuelle Profil der XML-Datei kopiert werden?" +
-				"%n%nFür manche Rennen (z.B. mit limitierten Startversuchen) ist das zwingend erforderlich." +
-				"%nDu darfst die OfflineProfiles.xml danach aber nicht mehr öffentlich mit anderen teilen!" +
-				"%nAndere könnten ansonsten in deinem Namen Zeiten eintragen und Fahrkarten lösen."
-			)))
+			if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, FNX.formatLangString(lang, "copyTokenToProfileQuestion")))
 			{
 				dbg("Copying token to active profile...");
 				OfflineProfiles.setToken(token);
@@ -2700,7 +2866,7 @@ public class HTGT
 			}
 			else
 			{
-				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei verwendet werden?%n%nDer bisher genutzte API-Token wird dadurch verworfen.")))
+				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, FNX.formatLangString(lang, "copyTokenFromProfileQuestion")))
 				{
 					dbg("Copying token from active profile...");
 					updateToken(newToken);
@@ -2726,7 +2892,7 @@ public class HTGT
 			{
 				dbg("No token in active profile!");
 			}
-			else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Soll der API-Token aus dem aktuellen Profil der XML-Datei wirklich gelöscht werden?%n%nDu kannst dann nicht mehr an Rennen teilnehmen, bei denen es z.B. limitierte Startversuche gibt.")))
+			else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, FNX.formatLangString(lang, "deleTokenFromProfileQuestion")))
 			{
 				dbg("Removing token from active profile...");
 				OfflineProfiles.deleteToken();
@@ -2758,8 +2924,10 @@ public class HTGT
 	// API-Token aus der Konfiguration löschen.
 	public static void deleteToken()
 	{
-		updateToken(null);
-		infoDialog(APPLICATION_API, String.format("Dein Zugangsschlüssel wurde aus der lokalen Konfiguration gelöscht!%n%nDu kannst ihn über das Menü jederzeit erneut eintragen."));
+		if(confirmDialog(APPLICATION_API, FNX.formatLangString(lang, "deleteToken")))
+		{
+			updateToken(null);
+		}
 	}
 
 	// API-Token erstmalig eintragen oder ändern.
@@ -2771,13 +2939,13 @@ public class HTGT
 
 		while(true)
 		{
-			if((newToken = (String) inputDialog(APPLICATION_API, "Bitte gib deinen persönlichen Zugriffsschlüssel ein:", oldToken)) != null)
+			if((newToken = (String) inputDialog(APPLICATION_API, FNX.formatLangString(lang, "tokenInput"), oldToken)) != null)
 			{
 				newToken = newToken.toLowerCase();
 				if(!newToken.matches("^[a-f0-9]+$"))
 				{
 					dbg("Invalid API token! Asking once again...");
-					errorMessage("Ungültiger API-Zugangsschlüssel! Bitte versuche es nochmals.");
+					errorMessage(FNX.formatLangString(lang, "invalidToken"));
 					continue;
 				}
 				else if(oldToken == null || !oldToken.equals(newToken))
@@ -2884,13 +3052,13 @@ public class HTGT
 			if(ghostIDs.length != ghosts.length)
 			{
 				dbgf("ghosts(%d) != selection(%d)", ghostIDs.length, ghosts.length);
-				errorMessage("Die Menge der von der API empfangenen Geist-IDs entspricht nicht der angeforderten Anzahl.");
+				exceptionHandler(new eSportsAPIException("SERVER_DUMB"));
 				return false;
 			}
 		}
 		catch(eSportsAPIException e)
 		{
-			APIError(e, "Upload fehlgeschlagen...");
+			APIError(e);
 			return false;
 		}
 
@@ -2910,7 +3078,7 @@ public class HTGT
 				}
 				else
 				{
-					action = threesomeDialog(APPLICATION_API, String.format("Willst du das nachfolgende Ergebnis wirklich in die Rangliste eintragen?%n%nNickname: %s%nSpiemodus: %s%nStrecke: %s (%s)%nErgebnis: %s", ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult()), true);
+					action = threesomeDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplyQuestion", ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult()), true);
 				}
 
 				if(action == BUTTON_ALWAYS)
@@ -2929,7 +3097,7 @@ public class HTGT
 
 							if(!silent)
 							{
-								infoDialog(APPLICATION_API, String.format("Das Ergebnis vom Geist mit der ID %d wurde erfolgreich eingetragen!%nDie Aktualisierung der Ranglisten erfolgt aber erst in einigen Minuten.", ghostIDs[i]));
+								infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostIDs[i]));
 							}
 						}
 						else
@@ -2941,7 +3109,7 @@ public class HTGT
 					{
 						error = true;
 						dbgf("Failed to apply ghost with ID %d.", ghostIDs[i]);
-						APIError(e, String.format("Der Geist mit der ID %d konnte nicht übernommen werden!", ghostIDs[i]));
+						APIError(e, FNX.formatLangString(lang, "ghostApplyFailed", ghostIDs[i]));
 					}
 				}
 			}
@@ -2970,7 +3138,7 @@ public class HTGT
 		{
 			while(true)
 			{
-				if((input = (String) inputDialog(APPLICATION_API, "Um einen oder mehrere Geister vom Server herunterzuladen, trage einfach die Geist-IDs ein:", input)) != null)
+				if((input = (String) inputDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostDownloadByID"), input)) != null)
 				{
 					ids = new ArrayList<Integer>(0);
 					parts = input.split("[^0-9]+");
@@ -2989,7 +3157,7 @@ public class HTGT
 					}
 					else
 					{
-						infoDialog("Der Download von mindestens einem Geist war erfolgreich.");
+						//infoDialog("Der Download von mindestens einem Geist war erfolgreich.");
 
 						autoSave();
 					}
@@ -3064,7 +3232,7 @@ public class HTGT
 		}
 		catch(eSportsAPIException e)
 		{
-			APIError(e, "Download fehlgeschlagen...");
+			APIError(e);
 		}
 
 		return false;
@@ -3109,7 +3277,7 @@ public class HTGT
 				}
 			}
 
-			input = (Integer) stepDialog(APPLICATION_API, "Um einen Geist direkt aus der Rangliste herunterzuladen, wähle zuerst den gewünschten Spielmodus aus:", values, selection);
+			input = (Integer) stepDialog(APPLICATION_API, FNX.getLangString(lang, "ghostDownloadModes"), values, selection);
 
 			if(input >= 0)
 			{
@@ -3271,7 +3439,7 @@ public class HTGT
 					}
 				}
 
-				input = (Integer) stepDialog(APPLICATION_API, "Wähle nun die gewünschte Strecke und das Wetter aus:", values, selection, true);
+				input = (Integer) stepDialog(APPLICATION_API, FNX.getLangString(lang, "ghostDownloadTracks"), values, selection, true);
 
 				if(input >= 0)
 				{
@@ -3356,7 +3524,7 @@ public class HTGT
 						}
 					}
 
-					selection = (Integer) stepDialog(APPLICATION_API, "Nachfolgend alle verfügbaren Geister der gewählten Strecke:", values, preSelection, true);
+					selection = (Integer) stepDialog(APPLICATION_API, FNX.getLangString(lang, "ghostDownloadGhosts"), values, preSelection, true);
 
 					if(selection >= 0)
 					{
@@ -3376,15 +3544,15 @@ public class HTGT
 				}
 				else
 				{
-					// Das sollte nicht passieren, da RESULT_EMPTY zurückgegeben wird.
+					// Das sollte nie passieren, da es RESULT_EMPTY gibt!
 					dbg("Something went really wrong! We got an empty result list...");
-					errorMessage(APPLICATION_API, "Der Server hat offenbar Schluckauf!");
+					throw new eSportsAPIException("SERVER_DUMB");
 				}
 			}
 		}
 		catch(eSportsAPIException e)
 		{
-			APIError(e, "Die Rangliste konnte nicht geladen werden...");
+			APIError(e);
 		}
 
 		return false;
@@ -3400,12 +3568,12 @@ public class HTGT
 				Map<String,Object> data = api.getPlayerInfo();
 				data.forEach((k,v) -> dbgf("playerDetails.%s: %s", k, v));
 
-				messageDialog(APPLICATION_API, String.format("Nachfolgend alle Details des angegebenen API-Tokens.%n%nHAPPYTEC-Account: %1$s%nBewerb: %3$s%nTeilnehmer: %2$s", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
+				messageDialog(APPLICATION_API, FNX.formatLangString(lang, "playerInfo", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
 			}
 		}
 		catch(eSportsAPIException e)
 		{
-			APIError(e, null);
+			APIError(e);
 		}
 	}
 
@@ -3444,7 +3612,7 @@ public class HTGT
 				}
 				catch(eSportsAPIException e)
 				{
-					APIError(e, "Die Streckendetails konnten nicht geladen werden.");
+					APIError(e);
 				}
 				catch(gmException e)
 				{
@@ -3536,12 +3704,12 @@ public class HTGT
 		}
 		catch(FileNotFoundException e)
 		{
-			errorMessage(String.format("Datei nicht gefunden: %s", e.getMessage()));
+			errorMessage(FNX.formatLangString(lang, "fileNotFound", e.getMessage()));
 		}
 		catch(Exception e)
 		{
 			reset();
-			exceptionHandler(e, "Die XML-Datei konnte nicht geöffnet werden!");
+			exceptionHandler(e);
 		}
 
 		checkDLL();
@@ -3606,7 +3774,7 @@ public class HTGT
 			}
 			else
 			{
-				errorMessage(String.format("Nicht unterstützter Wert für os.name: %s", osName));
+				exceptionHandler(new Exception(String.format("Unsupported value for os.name: %s", osName)));
 				return null;
 			}
 		}
@@ -3617,8 +3785,10 @@ public class HTGT
 	// Standardpfad zurücksetzen.
 	public static void resetDefaultFile()
 	{
-		cfg(CFG_DEFAULT, null);
-		infoDialog(null, "Der Standardpfad wurde zurückgesetzt.");
+		if(confirmDialog(FNX.formatLangString(lang, "resetDefaultPath")))
+		{
+			cfg(CFG_DEFAULT, null);
+		}
 	}
 
 	// Standardpfad ändern.
@@ -3628,7 +3798,7 @@ public class HTGT
 
 		while(true)
 		{
-			if((defaultFile = (String) inputDialog(null, "Standardpfad der XML-Datei:", defaultFile)) == null)
+			if((defaultFile = (String) inputDialog(null, FNX.formatLangString(lang, "defaultPathSetup"), defaultFile)) == null)
 			{
 				break;
 			}
@@ -3639,12 +3809,11 @@ public class HTGT
 
 				if(defaultFileHandler == null || !defaultFileHandler.exists() || !defaultFileHandler.isFile())
 				{
-					errorMessage(null, "Der angegebene Pfad existiert nicht!");
+					errorMessage(FNX.formatLangString(lang, "pathNotFound"));
 				}
 				else
 				{
 					cfg(CFG_DEFAULT, defaultFile);
-					infoDialog("Der Standardpfad wurde aktualisiert.");
 					return;
 				}
 			}
@@ -3657,7 +3826,6 @@ public class HTGT
 		if(OfflineProfiles != null)
 		{
 			cfg(CFG_DEFAULT, file.getAbsolutePath());
-			infoDialog("Die aktuelle Datei ist nun der Standardpfad.");
 		}
 	}
 
@@ -3671,7 +3839,7 @@ public class HTGT
 		}
 		catch(Exception e)
 		{
-			exceptionHandler(e, "Fehler beim Neuladen der Datei");
+			exceptionHandler(e);
 		}
 	}
 
@@ -3712,18 +3880,14 @@ public class HTGT
 			}
 			else
 			{
-				infoDialog(String.format(
-					"Hinweis: Änderungen an der XML-Datei werden seit Version 0.1.0 automatisch gespeichert!" +
-					"%nDu musst somit nicht mehr auf Speichern klicken, das übernimmt das Programm für dich." +
-					"%n%nSolltest du versehentlich eine Aktion getätigt haben, nutze die Rückgängig-Funktion im Menü »Bearbeiten«."
-				));
+				infoDialog(FNX.formatLangString(lang, "autoSaveEnabled"));
 			}
 		}
 
 		if(!saveFile(false))
 		{
 			dbg("Failed to save file! (safe internal state)");
-			errorMessage("Die Datei konnte nicht gespeichert werden!");
+			errorMessage(FNX.formatLangString(lang, "fileSaveFailed"));
 		}
 	}
 
@@ -3801,7 +3965,7 @@ public class HTGT
 			}
 			catch(Exception e)
 			{
-				exceptionHandler(e, "Die Datei konnte nicht gespeichert werden!");
+				exceptionHandler(e);
 			}
 		}
 	}
@@ -3812,7 +3976,7 @@ public class HTGT
 	{
 		if(OfflineProfiles != null && OfflineProfiles.changed())
 		{
-			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, null, String.format("Deine Bearbeitungen wurden noch nicht gespeichert.%nWenn du fortfährst, gehen die Änderungen verloren!%n%nTrotzdem ohne Speichern fortfahren?")))
+			if(!confirmDialog(JOptionPane.WARNING_MESSAGE, null, FNX.formatLangString(lang, "unsavedChanges")))
 			{
 				return true;
 			}
@@ -3912,13 +4076,13 @@ public class HTGT
 				pw.printf("%s", data.toString()); pw.close();
 
 				dbg("Export to file successfully!");
-				infoDialog(String.format("Die Geister wurden erfolgreich exportiert:%n%n%s", selectedFile));
+				infoDialog(FNX.formatLangString(lang, "exportToFileSuccess", selectedFile));
 
 				return true;
 			}
 			catch(Exception e)
 			{
-				exceptionHandler(e, "Beim Export trat ein Fehler auf!");
+				exceptionHandler(e);
 			}
 		}
 
@@ -3941,17 +4105,17 @@ public class HTGT
 				if((importCounter = ghostImport(selectedFile)) > 0)
 				{
 					dbgf("importCounter = %d (ok)", importCounter);
-					infoDialog(String.format("Anzahl importierter Geister: %d", importCounter));
+					infoDialog(FNX.formatLangString(lang, "importedGhostsCount", importCounter));
 				}
 				else if(importCounter == 0)
 				{
 					dbg("importCounter = 0 (none)");
-					errorMessage("In der ausgewählten Datei sind keine Geister vorhanden!");
+					errorMessage(FNX.formatLangString(lang, "noGhostsInFile"));
 				}
 			}
 			catch(Exception e)
 			{
-				exceptionHandler(e, "Bei der Verarbeitung der XML-Datei kam es zu einem Fehler!");
+				exceptionHandler(e);
 			}
 
 			autoSave();
@@ -4214,7 +4378,7 @@ public class HTGT
 	// aber mit Rückfrage und Statusmeldung.
 	public static void clearConfigDialog()
 	{
-		if(confirmDialog(null, "Soll die gesamte Konfiguration dieses Programms wirklich gelöscht werden?"))
+		if(confirmDialog(null, FNX.formatLangString(lang, "resetConfigQuestion")))
 		{
 			clearConfig();
 		}
@@ -4238,7 +4402,7 @@ public class HTGT
 	{
 		if(OfflineProfiles != null && maintable != null)
 		{
-			String title = move ? "Verschiebe zu Profil" : "Kopiere zu Profil";
+			String title = FNX.getLangString(lang, (move ? "move" : "copy") + "ToProfile");
 			String message = "";
 
 			boolean warnSRC = false;
@@ -4311,14 +4475,11 @@ public class HTGT
 
 				if(warnSRC)
 				{
-					message = String.format(
-						"Es sind mehrere Geister der gleichen Spielmodus/Strecken/Wetter Kombination markiert.%n" +
-						"Allerdings unterstützt nur das Spezialprofil mehrere Geister bei gleichen Bedingungen.%n%n"
-					);
+					message = FNX.getLangString(lang, "multipleGhostsWarning") + "%n%n";
 
 					if(isSpecialProfile())
 					{
-						if(confirmDialog(JOptionPane.WARNING_MESSAGE, title, String.format(message + "Sollen die markierten Geister stattdessen in eine Datei exportiert werden?")))
+						if(confirmDialog(JOptionPane.WARNING_MESSAGE, title, String.format(message + FNX.getLangString(lang, "exportGhostsToFileQuestion"))))
 						{
 							exportFile();
 						}
@@ -4343,11 +4504,11 @@ public class HTGT
 
 					if(i == OfflineProfiles.defaultProfile())
 					{
-						suffix = "Standardprofil";
+						suffix = FNX.getLangString(lang, "defaultProfile");
 					}
 					else if(isSpecialProfile(profiles[i]))
 					{
-						suffix = "Spezialprofil";
+						suffix = FNX.getLangString(lang, "specialProfile");
 					}
 					else
 					{
@@ -4372,11 +4533,11 @@ public class HTGT
 
 				if(warnSRC && values[0] == null)
 				{
-					errorMessage(title, message + "Fehler: Es ist kein Spezialprofil vorhanden! Bitte installiere das Spiel erneut...");
+					errorMessage(title, message + FNX.formatLangString(lang, "noSpecialProfileAvailable"));
 					return;
 				}
 
-				Integer selected = (Integer) inputDialog(title, message + "Bitte wähle das gewünschte Zielprofil:", values, defaultSelection);
+				Integer selected = (Integer) inputDialog(title, message + FNX.formatLangString(lang, "selectDestinationProfile"), values, defaultSelection);
 
 				if(selected == null)
 				{
