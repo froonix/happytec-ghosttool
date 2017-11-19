@@ -2214,8 +2214,9 @@ public class HTGT
 		}
 
 		// dbg("File dialog: FILTER *.xml");
-		FileFilter filter = new FileNameExtensionFilter("XML-Dateien", "xml");
-		chooser.addChoosableFileFilter(filter); chooser.setFileFilter(filter);
+		FileFilter filter = new FileNameExtensionFilter(FNX.getLangString(lang, "xmlFiles"), "xml");
+		chooser.addChoosableFileFilter(filter);
+		chooser.setFileFilter(filter);
 
 		if(open)
 		{
