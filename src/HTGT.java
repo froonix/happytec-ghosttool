@@ -119,7 +119,7 @@ public class HTGT
 	final private static Dimension WINDOW_SIZE_START   = new Dimension(900, 600);
 	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
-	final private static long      WEATHER_INTERVAL    = 900000L; // 15 minutes
+	final private static long      WEATHER_INTERVAL    = 3600000L; // hourly
 	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
 	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
 	final private static String    DEFAULT_PROFILE     = "DefaultUser";
@@ -150,11 +150,11 @@ public class HTGT
 	// Bei jeder neuen verfügbaren Sprache muss dieser Wert erhöht werden.
 	// Dadurch wird der Dialog für die Sprachauswahl erneut angezeigt werden.
 	// Es sollte nicht dazu verwendet werden, um die Sprachen zu zählen!
-	private final static int TRANSLATION_VERSION = 1;
+	private final static int TRANSLATION_VERSION = 2;
 
 	// Alle verfügbaren Sprachen als Locale-String.
 	// In dieser Reihenfolge werden sie auch angezeigt!
-	private final static String[] LOCALES = new String[]{ "de_DE", "en_UK" };
+	private final static String[] LOCALES = new String[]{ "de_DE", "en_UK", "sk_SK" };
 
 	// Konfigurationsnamen für java.util.prefs
 	final private static String CFG_LOCALE      = "locale";
@@ -174,6 +174,7 @@ public class HTGT
 	final private static String CFG_ARG         = "always-replace";
 	final private static String CFG_AAR         = "always-apply";
 	final private static String CFG_WC          = "weather-check";
+	final private static String CFG_TRACKS      = "track-order";
 	final private static String CFG_RACE        = "race.%s.%s";
 
 	final private static int PROFILE_NONE    =  0;
@@ -278,15 +279,17 @@ public class HTGT
 			+ "		<b>Application:</b> %1$s<br /><b>Version:</b> %3$s"
 			+ "		<br /><br />Website: <a href='https://%5$s'>%5$s</a><br />%2$s: <a href='https://%6$s'>%6$s</a>"
 			+ "		<br /><br /><pre style='font-family: monospace; padding: 10px; color: #AAAAAA; border: 1px solid #CCCCCC;'>%4$s</pre>"
+			+ "		<br /><br />"
+			+ "		<table align=\"center\" border=\"0\" style=\"border: 1px solid #888888;\">"
+			+ "			<tr><th align=\"center\" colspan=\"2\" style=\"background-color: #888888; color: #FFFFFF;\">Thanks to all translators!</th></tr>"
+			+ "			<tr><td align=\"right\">Slovak:</td><td align=\"left\"><a href=\"https://www.forum.happytec.at/profile.php?mode=viewprofile&amp;u=837\" style=\"color: #000000;\"><b>SVK_starec</b></a></td></tr>"
+			+ "		</table>"
 			+ "		<br /><br /><div align='center'><i>" + FNX.getLangString(lang, "aboutExtendedHeader") + "</i><br /><br /><a href='%7$s' style='text-decoration: none;'><b>" + FNX.getLangString(lang, "aboutExtendedLink") + "</b></a></div>"
 			+ "	</body>"
 			+ "</html>"
 		;
 
 		// TODO: HTML-Ressource und Lizenz auslagern und hier nur ersetzen?
-		// ...
-
-		// TODO: Übersetzer auflisten?
 		// ...
 
 		JOptionPane.showOptionDialog(mainWindow, FNX.getHTMLPane(String.format(content, APPLICATION_NAME, APPLICATION_API, getVersion(true), licence, URL_WWW, URL_API, getRedirectURL("support"))), FNX.getLangString(lang, "aboutTitle"), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{}, null);
@@ -503,6 +506,14 @@ public class HTGT
 		// Trennlinien in Menüs
 		UIManager.put("Separator.foreground",                           lightGray);
 		*/
+
+		ImprovedFileChooser.setLanguageStrings();
+
+		// Diverse Übersetzungen für Systemdialoge
+		UIManager.put("OptionPane.okButtonText",                        FNX.getLangString(lang, "ok"));
+		UIManager.put("OptionPane.cancelButtonText",                    FNX.getLangString(lang, "cancel"));
+		UIManager.put("OptionPane.yesButtonText",                       FNX.getLangString(lang, "yes"));
+		UIManager.put("OptionPane.noButtonText",                        FNX.getLangString(lang, "no"));
 
 		mainWindow = new JFrame(APPLICATION_TITLE);
 		mainWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -1502,9 +1513,17 @@ public class HTGT
 							{
 								dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
 
-								if(force)
+								if(force || o == eSportsAPI.FO_TICKET)
 								{
-									dbg("Still uploading it because we are in FORCE mode...");
+									if(force)
+									{
+										dbg("Still uploading it because we are in FORCE mode...");
+									}
+									else
+									{
+										dbg("Still uploading it because it's a TICKET ghost...");
+									}
+
 									ghostUpload(new GhostElement[]{ghost}, true, true);
 								}
 							}
@@ -2272,6 +2291,7 @@ public class HTGT
 		FNX.windowToFront(mainWindow);
 
 		dbgf("New yes/no confirm dialog: %s", title);
+
 		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type))
 		{
 			dbg("return TRUE (confirmed)");
@@ -2282,6 +2302,25 @@ public class HTGT
 			dbg("return FALSE (not confirmed)");
 			return false;
 		}
+
+		/*
+		Integer[] values = new Integer[]{BUTTON_YES, BUTTON_NO};
+		String[] buttons = FNX.getLangStrings(lang, new String[]{"yes", "no"});
+		Object defaultButton = buttons[0];
+
+		int result = JOptionPane.showOptionDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type, null, buttons, defaultButton);
+
+		if(result != JOptionPane.CLOSED_OPTION && values[result] == BUTTON_YES)
+		{
+			dbg("return TRUE (confirmed)");
+			return true;
+		}
+		else
+		{
+			dbg("return FALSE (not confirmed)");
+			return false;
+		}
+		*/
 	}
 
 	private static int threesomeDialog(String msg, boolean appendix)
@@ -3295,58 +3334,66 @@ public class HTGT
 		}
 	}
 
-	// Auswahl einer Strecke/Wetter für den Geistdownload. Das passiert
-	// offline, erst die Rangliste wird über die API vom Server geladen.
+	// Auswahl einer Strecke/Wetter für den Geistdownload.
+	// Hierbei braucht es manchmal eine Onlineanbindung.
 	private static Boolean ghostSelect(int mode)
 	{
-		if(OfflineProfiles == null || !prepareAPI())
+		try
 		{
-			return false;
-		}
-
-		Integer input;
-		Boolean result;
-		String selection;
-
-		String[]   tracks      = gmHelper.getTracksByGameMode(mode);
-		int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE, ENABLE_3TC);
-		int        raceWeather = gmHelper.WEATHER_NONE;
-		int        tickets     = ENABLE_3TC ? 1 : 0;
-		int        addition    = 0;
-
-		String[]   values;
-		String[][] conditions;
-
-		if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
-		{
-			if(ENABLE_RACE)
+			if(OfflineProfiles == null || !prepareAPI())
 			{
-				values     = new String[tracks.length * (2 + tickets)];
-				conditions = new String[tracks.length * (2 + tickets)][3];
-				addition++;
+				return false;
+			}
+
+			// Der API-Aufruf muss seit v0.1.1 auf jeden Fall erfolgen!
+			// Wir brauchen nämlich die Streckenreihenfolge, siehe #65.
+			if(/*ENABLE_RACE &&*/ !updateRaceWeather())
+			{
+				return false;
+			}
+
+			String trackOrder = cfg(CFG_TRACKS);
+			if(trackOrder != null && trackOrder.length() > 0)
+			{
+				gmHelper.setTrackOrder(trackOrder.split("[^a-z]+"));
+			}
+
+			Integer input;
+			Boolean result;
+			String selection;
+
+			String[]   tracks      = gmHelper.getTracksByGameMode(mode, true, true);
+			int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE, ENABLE_3TC);
+			int        raceWeather = gmHelper.WEATHER_NONE;
+			int        tickets     = ENABLE_3TC ? 1 : 0;
+			int        addition    = 0;
+
+			String[]   values;
+			String[][] conditions;
+
+			if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+			{
+				if(ENABLE_RACE)
+				{
+					values     = new String[tracks.length * (2 + tickets)];
+					conditions = new String[tracks.length * (2 + tickets)][3];
+					addition++;
+				}
+				else
+				{
+					values     = new String[tracks.length];
+					conditions = new String[tracks.length][3];
+				}
 			}
 			else
 			{
-				values     = new String[tracks.length];
-				conditions = new String[tracks.length][3];
+				values     = new String[tracks.length * weathers.length];
+				conditions = new String[tracks.length * weathers.length][3];
 			}
-		}
-		else
-		{
-			values     = new String[tracks.length * weathers.length];
-			conditions = new String[tracks.length * weathers.length][3];
-		}
 
-		String lastTrack   = cfg(CFG_TRACK);
-		String lastWeather = cfg(CFG_WEATHER);
+			String lastTrack   = cfg(CFG_TRACK);
+			String lastWeather = cfg(CFG_WEATHER);
 
-		if(ENABLE_RACE && !updateRaceWeather())
-		{
-			return false;
-		}
-
-		try
-		{
 			while(true)
 			{
 				selection = null;
@@ -3478,6 +3525,10 @@ public class HTGT
 		{
 			e.printStackTrace();
 		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
 
 		return false;
 	}
@@ -3582,11 +3633,25 @@ public class HTGT
 	{
 		Date date = new Date();
 		long lastWeatherCheck = cfg.getLong(CFG_WC, 0L);
+
+		// Damit die Ranglisten vom Rennen sofort auswählbar sind, dürfen sie
+		// maximal bis zur nächsten vollen Stunde zwischengespeichert werden...
+		long checkInterval = Math.min(3600000L, WEATHER_INTERVAL);
+		checkInterval = date.getTime() / checkInterval * checkInterval;
+
 		dbgf("Current time: %d", date.getTime());
 		dbgf("Last weather check: %d", lastWeatherCheck);
-		dbgf("Check interval: %d", WEATHER_INTERVAL);
+		dbgf("Check interval: %d", checkInterval);
 
-		if(lastWeatherCheck <= 0L || date.getTime() > (lastWeatherCheck + WEATHER_INTERVAL))
+		String trackOrder = cfg(CFG_TRACKS);
+		if(trackOrder == null || trackOrder.length() == 0)
+		{
+			// Upgrade: v0.1.0 » v0.1.1
+			dbg("Forcing cache flush...");
+			lastWeatherCheck = 0L;
+		}
+
+		if(lastWeatherCheck < checkInterval)
 		{
 			if(prepareAPI())
 			{
@@ -3607,6 +3672,9 @@ public class HTGT
 							}
 						}
 					}
+
+					// Streckenreihenfolge für später abspeichern...
+					cfg(CFG_TRACKS, String.join(",", api.getServerTracks()));
 
 					cfg.putLong(CFG_WC, date.getTime());
 					return true;

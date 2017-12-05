@@ -77,6 +77,8 @@ public class eSportsAPI
 	public final static int FO_TICKET =  1;
 //	public final static int FO_ALL    =  1;
 
+	private static String[] serverTracks; // = new String[0];
+
 	public eSportsAPI(String token)
 	{
 		this.setToken(token);
@@ -110,6 +112,16 @@ public class eSportsAPI
 	public void setUseragent(String useragent)
 	{
 		this.useragent = useragent;
+	}
+
+	public String[] getServerTracks()
+	{
+		if(serverTracks == null)
+		{
+			return new String[0];
+		}
+
+		return serverTracks;
 	}
 
 	public int getNextResultIndex()
@@ -502,10 +514,12 @@ public class eSportsAPI
 			args.put("includeTicket", "true"); // DO NOT USE FALSE!
 
 			// Diese Methode liefert weit mehr, als aktuell gebraucht wird.
+			// Immerhin wird mittlerweile auch die Streckenreihenfolge genutzt.
 			String result = this.request("OFFLINE", "track.list", args);
 
 			Document doc = FNX.getDOMDocument(result);
 			NodeList Tracks = doc.getElementsByTagName("Track");
+			String[] tmpTracks = new String[Tracks.getLength()];
 
 			if(Tracks.getLength() > 0)
 			{
@@ -513,10 +527,7 @@ public class eSportsAPI
 				{
 					Element Track = (Element) Tracks.item(i);
 
-					if(!Track.getAttribute("Race").equalsIgnoreCase("true"))
-					{
-						continue;
-					}
+
 
 					String track = Track.getAttribute("Track").toLowerCase();
 					String weather = Track.getAttribute("Weather").toLowerCase();
@@ -554,6 +565,38 @@ public class eSportsAPI
 						}
 					}
 
+					if(t != -1)
+					{
+						int nextTrack = 0;
+						boolean foundTrack = false;
+						for(int h = 0; h < tmpTracks.length; h++)
+						{
+							if(tmpTracks[h] == null)
+							{
+								break;
+							}
+							else if(tmpTracks[h].equals(track))
+							{
+								foundTrack = true;
+								break;
+							}
+							else
+							{
+								nextTrack = h + 1;
+							}
+						}
+
+						if(!foundTrack)
+						{
+							tmpTracks[nextTrack] = track;
+						}
+					}
+
+					if(!Track.getAttribute("Race").equalsIgnoreCase("true"))
+					{
+						continue;
+					}
+
 					if(Track.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
 						o = this.FO_TICKET;
@@ -566,6 +609,22 @@ public class eSportsAPI
 
 					results[o][m][t] = w;
 				}
+			}
+
+			int trackCount = tmpTracks.length;
+			for(int i = 0; i < tmpTracks.length; i++)
+			{
+				if(tmpTracks[i] == null)
+				{
+					trackCount = i;
+					break;
+				}
+			}
+
+			serverTracks = new String[trackCount];
+			for(int i = 0; i < trackCount; i++)
+			{
+				serverTracks[i] = tmpTracks[i];
 			}
 
 		}

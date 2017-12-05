@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ResourceBundle;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 
 public class ImprovedFileChooser extends JFileChooser
 {
@@ -29,6 +30,63 @@ public class ImprovedFileChooser extends JFileChooser
 	public ImprovedFileChooser(String currentDirectoryPath)
 	{
 		super(currentDirectoryPath);
+	}
+
+	public static void setLanguageStrings()
+	{
+		String[] opts = new String[]{
+			"FileChooser.acceptAllFileFilterText",
+			"FileChooser.byDateText",
+			"FileChooser.byNameText",
+			"FileChooser.cancelButtonText",
+			"FileChooser.cancelButtonToolTipText",
+			"FileChooser.chooseButtonText",
+			"FileChooser.createButtonText",
+			"FileChooser.deleteFileButtonText",
+			"FileChooser.detailsViewButtonToolTipText",
+			"FileChooser.directoryDescriptionText",
+			"FileChooser.directoryOpenButtonText",
+			"FileChooser.fileDateHeaderText",
+			"FileChooser.fileDescriptionText",
+			"FileChooser.fileNameHeaderText",
+			"FileChooser.fileNameLabelText",
+			"FileChooser.fileSizeHeaderText",
+			"FileChooser.filesOfTypeLabelText",
+			"FileChooser.filterLabelText",
+			"FileChooser.helpButtonText",
+			"FileChooser.homeFolderToolTipText",
+			"FileChooser.listViewButtonToolTipText",
+			"FileChooser.lookInLabelText",
+			"FileChooser.newFolderButtonText",
+			"FileChooser.newFolderErrorText",
+			"FileChooser.newFolderExistsErrorText",
+			"FileChooser.newFolderPromptText",
+			"FileChooser.newFolderTitleText",
+			"FileChooser.newFolderToolTipText",
+			"FileChooser.openButtonText",
+			"FileChooser.openButtonToolTipText",
+			"FileChooser.openDialogText",
+			"FileChooser.openDialogTitleText",
+			"FileChooser.openTitleText",
+			"FileChooser.renameFileButtonText",
+			"FileChooser.saveButtonText",
+			"FileChooser.saveDialogFileNameLabelText",
+			"FileChooser.saveDialogTitleText",
+			"FileChooser.saveInLabelText",
+			"FileChooser.saveTitleText",
+			"FileChooser.updateButtonText",
+			"FileChooser.upFolderToolTipText"
+		};
+
+		for(int i = 0; i < opts.length; i++)
+		{
+			String newopt = opts[i].replaceAll("^.+\\.", "").replaceAll("Text$", "");
+
+			if(FNX.checkLangStringExists(lang, newopt))
+			{
+				UIManager.put(opts[i], FNX.getLangString(lang, newopt));
+			}
+		}
 	}
 
 	@Override

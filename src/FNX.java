@@ -419,6 +419,11 @@ public abstract class FNX
 		return results;
 	}
 
+	public static boolean checkLangStringExists(ResourceBundle lang, String key)
+	{
+		return lang.containsKey(key);
+	}
+
 	public static void actionCallback(String className, String methodName)
 	{
 		try

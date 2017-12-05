@@ -61,6 +61,7 @@ public abstract class gmHelper
 
 	private static DateFormat ResultFormat;
 	private static ResourceBundle lang;
+	private static String[] TrackKeys;
 
 	public static boolean isReverseGameMode(int gameModeType)
 	{
@@ -303,15 +304,15 @@ public abstract class gmHelper
 
 	public static String[] getTracks(boolean lc)
 	{
-		return getTracksByGameMode(GAMEMODE_DEFAULT, lc);
+		return getTracksByGameMode(GAMEMODE_DEFAULT, lc, false);
 	}
 
 	public static String[] getTracksByGameMode(int mode)
 	{
-		return getTracksByGameMode(mode, false);
+		return getTracksByGameMode(mode, false, false);
 	}
 
-	public static String[] getTracksByGameMode(int mode, boolean lc)
+	public static String[] getTracksByGameMode(int mode, boolean lc, boolean filtered)
 	{
 		String[] values;
 
@@ -335,6 +336,51 @@ public abstract class gmHelper
 			for(int i = 0; i < values.length; i++)
 			{
 				values[i] = values[i].toLowerCase();
+			}
+		}
+
+		if(filtered && TrackKeys != null && TrackKeys.length > 0)
+		{
+			int trackCount = TrackKeys.length;
+			String tmp[] = new String[trackCount];
+
+			for(int i = 0; i < TrackKeys.length; i++)
+			{
+				boolean trackFound = false;
+				for(int h = 0; h < values.length; h++)
+				{
+					if((!lc && TrackKeys[i].toLowerCase().equals(values[h])) || (lc && TrackKeys[i].equals(values[h])))
+					{
+						trackFound = true;
+						break;
+					}
+				}
+
+				if(trackFound)
+				{
+					tmp[i] = TrackKeys[i];
+				}
+				else
+				{
+					trackCount--;
+				}
+			}
+
+			if(trackCount != tmp.length)
+			{
+				values = new String[trackCount];
+
+				for(int i = 0, h = 0; i < tmp.length; i++)
+				{
+					if(tmp[i] != null)
+					{
+						values[h++] = tmp[i];
+					}
+				}
+			}
+			else
+			{
+				values = tmp;
 			}
 		}
 
@@ -389,5 +435,18 @@ public abstract class gmHelper
 		}
 
 		return lang;
+	}
+
+	public static void setTrackOrder(String[] tracks) throws Exception
+	{
+		TrackKeys = new String[tracks.length];
+
+		for(int i = 0; i < tracks.length; i++)
+		{
+			// Simple check...
+			getTrack(tracks[i]);
+
+			TrackKeys[i] = tracks[i].toLowerCase();
+		}
 	}
 }
