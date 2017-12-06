@@ -92,6 +92,7 @@ public class Profiles
 			if(compareProfile(profile, nickname))
 			{
 				profile.getParentNode().removeChild(profile);
+				resetCurrentProfile();
 				return;
 			}
 		}
@@ -190,6 +191,26 @@ public class Profiles
 		}
 
 		return false;
+	}
+
+	public int getCurrentProfile() throws ProfileException
+	{
+		return FNX.intval(this.document.getDocumentElement().getAttribute("CurrentProfile"));
+	}
+
+	public void resetCurrentProfile() throws ProfileException
+	{
+		this.setCurrentProfile(0);
+	}
+
+	public void setCurrentProfile(int n) throws ProfileException
+	{
+		this.document.getDocumentElement().setAttribute("CurrentProfile", String.valueOf(n));
+
+		if(this.getCurrentProfile() != n)
+		{
+			throw new ProfileException("Could not set current profile");
+		}
 	}
 
 	public void saveProfiles() throws Exception
