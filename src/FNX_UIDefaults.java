@@ -1,6 +1,6 @@
 /**
  * FNX_UIDefaults.java: Context menu for everything
- * Copyright (C) 2017 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2018 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
