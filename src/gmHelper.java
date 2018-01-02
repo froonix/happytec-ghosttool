@@ -293,8 +293,14 @@ public abstract class gmHelper
 		{
 			return "??-??-??";
 		}
-
-		return String.format("%02d-%02d-%02d", ski[0], ski[1], ski[2]);
+		else if(ski[0] == 100 || ski[1] == 100 || ski[2] == 100)
+		{
+			return String.format("%d-%d-%d", ski[0], ski[1], ski[2]);
+		}
+		else
+		{
+			return String.format("%02d-%02d-%02d", ski[0], ski[1], ski[2]);
+		}
 	}
 
 	public static String[] getTracks()
