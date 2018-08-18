@@ -28,6 +28,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -52,6 +55,7 @@ public class GhostElement
 	private static Pattern GhostsPattern;
 
 	private Element XML;
+	private String  Hash;
 	private boolean Ticket;
 	private int     GameMode;
 	private String  Track;
@@ -329,6 +333,32 @@ public class GhostElement
 		}
 	}
 
+	public String getHash()
+	{
+		if(this.Hash == null)
+		{
+			try
+			{
+				byte[] bytes = MessageDigest.getInstance("SHA-512").digest(this.DataBinary);
+				StringBuilder hash = new StringBuilder();
+
+				for(int i=0; i< bytes.length ;i++)
+				{
+					hash.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+				}
+
+				this.Hash = String.format("%08x%s", this.DataBinary.length, hash.toString());
+			}
+			catch(NoSuchAlgorithmException e)
+			{
+				e.printStackTrace();
+				this.Hash = null;
+			}
+		}
+
+		return this.Hash;
+	}
+
 	public void printDetails()
 	{
 		try
@@ -341,6 +371,7 @@ public class GhostElement
 			System.out.printf(" Mode:    [%s] %s (%d)%n", gmHelper.getGameMode(this.GameMode).toUpperCase(), this.getGameModeName(), this.getGameMode());
 			System.out.printf(" Ski:     %d-%d-%d%n", this.Ski[0], this.Ski[1], this.Ski[2]);
 			System.out.printf(" Ticket:  %s%n", this.Ticket ? "Yes" : "No");
+			System.out.printf(" Hash:    %s%n", this.getHash());
 			// System.out.printf("%n%s%n", DataRaw);
 			System.out.printf("--------------------------------%n");
 		}
