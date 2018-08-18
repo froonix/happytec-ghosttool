@@ -342,7 +342,7 @@ public class GhostElement
 				byte[] bytes = MessageDigest.getInstance("SHA-512").digest(this.DataBinary);
 				StringBuilder hash = new StringBuilder();
 
-				for(int i=0; i< bytes.length ;i++)
+				for(int i = 0; i < bytes.length; i++)
 				{
 					hash.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
 				}
