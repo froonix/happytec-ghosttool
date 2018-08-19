@@ -337,23 +337,7 @@ public class GhostElement
 	{
 		if(this.Hash == null)
 		{
-			try
-			{
-				byte[] bytes = MessageDigest.getInstance("SHA-512").digest(this.DataBinary);
-				StringBuilder hash = new StringBuilder();
-
-				for(int i = 0; i < bytes.length; i++)
-				{
-					hash.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
-				}
-
-				this.Hash = String.format("%08x%s", this.DataBinary.length, hash.toString());
-			}
-			catch(NoSuchAlgorithmException e)
-			{
-				e.printStackTrace();
-				this.Hash = null;
-			}
+			this.Hash = String.format("%08x%s", this.DataBinary.length, FNX.sha512(this.DataBinary));
 		}
 
 		return this.Hash;
