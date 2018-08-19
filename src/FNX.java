@@ -295,13 +295,26 @@ public abstract class FNX
 
 	public static String sha512(String input)
 	{
+		try
+		{
+			return sha512(input.getBytes("ISO-8859-1"));
+		}
+		catch(UnsupportedEncodingException e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public static String sha512(byte[] input)
+	{
 		byte[] bytes;
 		StringBuilder sb;
 		String hash = null;
 
 		try
 		{
-			bytes = MessageDigest.getInstance("SHA-512").digest(input.getBytes("UTF-8"));
+			bytes = MessageDigest.getInstance("SHA-512").digest(input);
 			sb = new StringBuilder();
 
 			for(int i = 0; i < bytes.length; i++)
@@ -311,7 +324,7 @@ public abstract class FNX
 
 			hash = sb.toString();
 		}
-		catch(NoSuchAlgorithmException|UnsupportedEncodingException e)
+		catch(NoSuchAlgorithmException e)
 		{
 			e.printStackTrace();
 			return null;
