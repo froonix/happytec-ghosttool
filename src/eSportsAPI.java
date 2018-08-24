@@ -75,7 +75,8 @@ public class eSportsAPI
 //	public final static int FO_REV    = -1;
 	public final static int FO_NONE   =  0;
 	public final static int FO_TICKET =  1;
-//	public final static int FO_ALL    =  1;
+	public final static int FO_SUC    =  2;
+//	public final static int FO_ALL    =  3;
 
 	private static String[] serverTracks; // = new String[0];
 
@@ -469,6 +470,9 @@ public class eSportsAPI
 						o = this.FO_TICKET;
 					}
 
+					// FO_SUC?
+					// ...
+
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t][w] != -1)
 					{
 						throw new eSportsAPIException();
@@ -601,6 +605,9 @@ public class eSportsAPI
 					{
 						o = this.FO_TICKET;
 					}
+
+					// FO_SUC?
+					// ...
 
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t] != gmHelper.WEATHER_NONE)
 					{

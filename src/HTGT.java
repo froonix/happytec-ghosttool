@@ -1503,6 +1503,9 @@ public class HTGT
 								o = eSportsAPI.FO_TICKET;
 							}
 
+							// eSportsAPI.FO_SUC?
+							// ...
+
 							if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
 							{
 								dbgf("Uploading ghost: %s", ghost.getDebugDetails());
@@ -1526,6 +1529,9 @@ public class HTGT
 
 									ghostUpload(new GhostElement[]{ghost}, true, true);
 								}
+
+								// eSportsAPI.FO_SUC?
+								// ...
 							}
 						}
 					}
