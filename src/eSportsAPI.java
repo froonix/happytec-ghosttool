@@ -58,7 +58,7 @@ public class eSportsAPI
 	private final static String API_VERSION = "1.0";
 	private final static String API_REQUEST = "%s/%s/%s/%s";
 	private final static String API_MAINURL = "https://%s/api";
-	private final static String API_HOST    = "www.esports.happytec.at";
+	private final static String API_HOST    = "htgt.app";
 	private final static int    API_TIMEOUT = 10000;
 
 	private static String host;
