@@ -13,7 +13,7 @@ Schritte für eine neue Veröffentlichung:
 ```bash
 # Example commands...
 RELEASE="0.0.0-beta10"
-git checkout -b "v${RELEASE}"
+git checkout master -b "v${RELEASE}"
 sed -i -r "s/(APPLICATION_VERSION) = \"git-master\";\$/\1 = \"${RELEASE}\";/" src/HTGT.java
 
 git commit -a -S -m "Prepare v${RELEASE} release"
