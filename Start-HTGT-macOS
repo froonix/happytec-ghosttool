@@ -1,0 +1,6 @@
+#!/bin/sh
+/usr/libexec/java_home 2> /dev/null && java=`which java` || \
+java="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin/java"
+
+cd "$(dirname $0)" && \
+"$java" -jar "HTGT.jar"
