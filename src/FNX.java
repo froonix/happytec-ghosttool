@@ -379,7 +379,7 @@ public abstract class FNX
 
 	public static ResourceBundle getLangBundle(String bundle)
 	{
-		return ResourceBundle.getBundle(String.format("LangBundle_%s", bundle));
+		return ResourceBundle.getBundle(String.format("RealLangBundle_%s", bundle));
 	}
 
 	/*
@@ -396,15 +396,7 @@ public abstract class FNX
 
 	public static String getLangString(ResourceBundle lang, String key)
 	{
-		try
-		{
-			return new String(lang.getString(key).getBytes("ISO-8859-1"), "UTF-8");
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			e.printStackTrace();
-			return "{" + key + "}";
-		}
+		return lang.getString(key);
 	}
 
 	public static String[] getLangStrings(ResourceBundle lang, String[] keys)
