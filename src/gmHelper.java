@@ -209,7 +209,7 @@ public abstract class gmHelper
 				break;
 
 			case WEATHER_TICKET:
-				weatherString = "3tc";
+				weatherString = "xtc";
 				break;
 
 			default:
