@@ -130,7 +130,7 @@ public class HTGT
 	final private static String    NICKNAME_REGEX_NOT  = "^[0-9]+$";
 	final private static boolean   ENABLE_AUTOSAVE     = true;
 	final private static boolean   ENABLE_RACE         = true;
-	final private static boolean   ENABLE_3TC          = true;
+	final private static boolean   ENABLE_XTC          = true;
 	final private static int       FONTSIZE            = 13;
 	final private static double    FONTSMALL           = 0.75;
 	final private static int       HISTORY_SIZE        = 10;
@@ -3369,9 +3369,9 @@ public class HTGT
 			String selection;
 
 			String[]   tracks      = gmHelper.getTracksByGameMode(mode, true, true);
-			int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE, ENABLE_3TC);
+			int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE, ENABLE_XTC);
 			int        raceWeather = gmHelper.WEATHER_NONE;
-			int        tickets     = ENABLE_3TC ? 1 : 0;
+			int        tickets     = ENABLE_XTC ? 1 : 0;
 			int        addition    = 0;
 
 			String[]   values;
