@@ -289,11 +289,16 @@ public abstract class gmHelper
 
 	public static String formatSki(int[] ski)
 	{
+		return formatSki(ski, false);
+	}
+
+	public static String formatSki(int[] ski, boolean raw)
+	{
 		if(ski == null || ski.length != 3)
 		{
 			return "??-??-??";
 		}
-		else if(ski[0] == 100 || ski[1] == 100 || ski[2] == 100)
+		else if(raw || ski[0] == 100 || ski[1] == 100 || ski[2] == 100)
 		{
 			return String.format("%d-%d-%d", ski[0], ski[1], ski[2]);
 		}

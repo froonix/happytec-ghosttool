@@ -4135,7 +4135,7 @@ public class HTGT
 				{
 					GhostElement ghost = OfflineProfiles.getGhost(selection[i]);
 					dbgf("Exporting line %d: %s", selection[i], ghost.getDebugDetails());
-					data.insert(0, String.format("\t<!-- %s @ %s (%s): %s (%s) -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult(), gmHelper.formatSki(ghost.getSki()), ghost.toString()));
+					data.insert(0, String.format("\t<!-- %s @ %s (%s / %s): %s (%s) -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getGameModeName(), ghost.getWeatherName(), ghost.getResult(), gmHelper.formatSki(ghost.getSki(), true), ghost.toString()));
 				}
 
 				data.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<GhostList>\r\n\r\n");
