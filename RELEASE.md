@@ -25,8 +25,7 @@ git push origin "release-${RELEASE}"
 make clean && make sig
 # edit new release/tag on github
 # upload binary files to github
-# protect release branch on github
-git checkout master
+git checkout legacy-0.1
 ```
 
 ----
