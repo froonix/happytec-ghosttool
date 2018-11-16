@@ -6,14 +6,14 @@ Schritte für eine neue Veröffentlichung:
 * `make clean && make && make sig` (GPG-Sig!)
 * Neuen Tag anlegen. (z.B. `release-0.0.0`)
 * Neues Release auf GitHub eintragen.
-* Zurück zum `master` Branch wechseln.
+* Zurück zum `legacy-0.1` Branch wechseln.
 
 ----
 
 ```bash
 # Example commands...
 RELEASE="0.0.0-beta10"
-git checkout -b "v${RELEASE}"
+git checkout legacy-0.1 -b "v${RELEASE}"
 sed -i -r "s/(APPLICATION_VERSION) = \"git-master\";\$/\1 = \"${RELEASE}\";/" src/HTGT.java
 
 git commit -a -S -m "Prepare v${RELEASE} release"
