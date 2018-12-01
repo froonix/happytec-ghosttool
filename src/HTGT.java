@@ -150,11 +150,11 @@ public class HTGT
 	// Bei jeder neuen verfügbaren Sprache muss dieser Wert erhöht werden.
 	// Dadurch wird der Dialog für die Sprachauswahl erneut angezeigt werden.
 	// Es sollte nicht dazu verwendet werden, um die Sprachen zu zählen!
-	private final static int TRANSLATION_VERSION = 2;
+	private final static int TRANSLATION_VERSION = 3;
 
 	// Alle verfügbaren Sprachen als Locale-String.
 	// In dieser Reihenfolge werden sie auch angezeigt!
-	private final static String[] LOCALES = new String[]{ "de_DE", "en_UK", "sk_SK" };
+	private final static String[] LOCALES = new String[]{ "de_DE", "en_UK", "it_IT", "sk_SK" };
 
 	// Konfigurationsnamen für java.util.prefs
 	final private static String CFG_LOCALE      = "locale";
@@ -283,6 +283,7 @@ public class HTGT
 			+ "		<table align=\"center\" border=\"0\" style=\"border: 1px solid #888888;\">"
 			+ "			<tr><th align=\"center\" colspan=\"2\" style=\"background-color: #888888; color: #FFFFFF;\">Thanks to all translators!</th></tr>"
 			+ "			<tr><td align=\"right\">Slovak:</td><td align=\"left\"><a href=\"https://www.forum.happytec.at/profile.php?mode=viewprofile&amp;u=837\" style=\"color: #000000;\"><b>SVK_starec</b></a></td></tr>"
+			+ "			<tr><td align=\"right\">Italian:</td><td align=\"left\"><a href=\"https://www.forum.happytec.at/profile.php?mode=viewprofile&amp;u=1593\" style=\"color: #000000;\"><b>RivaStyle</b></a></td></tr>"
 			+ "		</table>"
 			+ "		<br /><br /><div align='center'><i>" + FNX.getLangString(lang, "aboutExtendedHeader") + "</i><br /><br /><a href='%7$s' style='text-decoration: none;'><b>" + FNX.getLangString(lang, "aboutExtendedLink") + "</b></a></div>"
 			+ "	</body>"
@@ -2589,7 +2590,7 @@ public class HTGT
 			localeParts = splitLocaleString(LOCALES[i]);
 			locale = new Locale.Builder().setLanguage(localeParts[0]).setRegion(localeParts[1]).build();
 
-			values[i] = String.format("[%s] %s", locale.getLanguage().toUpperCase(), locale.getDisplayLanguage());
+			values[i] = String.format("%2$s (%1$s)", locale.getLanguage().toUpperCase(), locale.getDisplayLanguage());
 
 			if(locale.getLanguage().equals(defaultLocale.getLanguage()))
 			{
