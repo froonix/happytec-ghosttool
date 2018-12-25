@@ -71,11 +71,12 @@ public class eSportsAPI
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
 
-	public final static int FOS       =  2;
+	public final static int FOS       =  3;
 //	public final static int FO_REV    = -1;
 	public final static int FO_NONE   =  0;
 	public final static int FO_TICKET =  1;
-//	public final static int FO_ALL    =  1;
+	public final static int FO_SUC    =  2;
+//	public final static int FO_ALL    =  3;
 
 	private static String[] serverTracks; // = new String[0];
 
@@ -187,6 +188,11 @@ public class eSportsAPI
 
 	public int[] getGhostIDs(GhostElement[] ghosts) throws eSportsAPIException
 	{
+		return getSimpleGhostIDs(ghosts);
+	}
+
+	public int[] getSimpleGhostIDs(GhostElement[] ghosts) throws eSportsAPIException
+	{
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
@@ -211,6 +217,61 @@ public class eSportsAPI
 			}
 
 			return ghostIDs;
+		}
+		catch(SAXException|ParserConfigurationException|IOException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
+	public List<Map<String,Object>> getExtendedGhostIDs(GhostElement[] ghosts) throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			StringBuilder data = new StringBuilder();
+
+			for(int i = 0; i < ghosts.length; i++)
+			{
+				data.append(ghosts[i].toString());
+			}
+
+			args.put("XML", data.toString());
+			args.put("Applicable", "true");
+
+			String result = this.request("OFFLINE", "ghost.put", args);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList GhostNodes = doc.getElementsByTagName("Ghost");
+
+			if(ghosts.length != GhostNodes.getLength())
+			{
+				throw new eSportsAPIException("SERVER_DUMB");
+			}
+
+			List<Map<String,Object>> info = new ArrayList<Map<String,Object>>(GhostNodes.getLength());
+
+			for(int i = 0; i < GhostNodes.getLength(); i++)
+			{
+				Element ghost = (Element) GhostNodes.item(i);
+				Map<String,Object> hm = new HashMap<String,Object>(3);
+
+				hm.put("GhostID", Integer.parseInt(ghost.getAttribute("ID")));
+				hm.put("Applicable", (!ghost.hasAttribute("Applicable") || !ghost.getAttribute("Applicable").equalsIgnoreCase("false")) ? 1 : 0);
+
+				if(!ghost.hasAttribute("FO"))
+				{
+					hm.put("FilterOption", ghosts[i].hasTicket() ? this.FO_TICKET : this.FO_NONE);
+				}
+				else
+				{
+					hm.put("FilterOption", FNX.intval(ghost.getAttribute("FO")));
+				}
+
+				info.add(i, hm);
+			}
+
+			return info;
 		}
 		catch(SAXException|ParserConfigurationException|IOException e)
 		{
@@ -395,7 +456,10 @@ public class eSportsAPI
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
-			args.put("includeTicket", "true"); // DO NOT USE FALSE!
+
+			// DO NOT USE FALSE!
+			args.put("includeTicket", "true");
+			args.put("includeSUC", "true");
 
 			if(filter != null)
 			{
@@ -468,6 +532,10 @@ public class eSportsAPI
 					{
 						o = this.FO_TICKET;
 					}
+					else if(OfflineResult.getAttribute("SUC").equalsIgnoreCase("true"))
+					{
+						o = this.FO_SUC;
+					}
 
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t][w] != -1)
 					{
@@ -494,8 +562,8 @@ public class eSportsAPI
 
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
-		int[] weathers = gmHelper.getWeatherIDs(true, true);
-		int results[][][] = new int[2][modes.length][tracks.length];
+		int[] weathers = gmHelper.getWeatherIDs(true, true, true);
+		int results[][][] = new int[this.FOS][modes.length][tracks.length];
 
 		for(int o = 0; o < this.FOS; o++)
 		{
@@ -511,7 +579,10 @@ public class eSportsAPI
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
-			args.put("includeTicket", "true"); // DO NOT USE FALSE!
+
+			// DO NOT USE FALSE!
+			args.put("includeTicket", "true");
+			args.put("includeSUC", "true");
 
 			// Diese Methode liefert weit mehr, als aktuell gebraucht wird.
 			// Immerhin wird mittlerweile auch die Streckenreihenfolge genutzt.
@@ -526,8 +597,6 @@ public class eSportsAPI
 				for(int i = 0; i < Tracks.getLength(); i++)
 				{
 					Element Track = (Element) Tracks.item(i);
-
-
 
 					String track = Track.getAttribute("Track").toLowerCase();
 					String weather = Track.getAttribute("Weather").toLowerCase();
@@ -600,6 +669,10 @@ public class eSportsAPI
 					if(Track.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
 						o = this.FO_TICKET;
+					}
+					else if(Track.getAttribute("SUC").equalsIgnoreCase("true"))
+					{
+						o = this.FO_SUC;
 					}
 
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t] != gmHelper.WEATHER_NONE)

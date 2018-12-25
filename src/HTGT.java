@@ -131,6 +131,7 @@ public class HTGT
 	final private static boolean   ENABLE_AUTOSAVE     = true;
 	final private static boolean   ENABLE_RACE         = true;
 	final private static boolean   ENABLE_XTC          = true;
+	final private static boolean   ENABLE_SUC          = true;
 	final private static int       FONTSIZE            = 13;
 	final private static double    FONTSMALL           = 0.75;
 	final private static int       HISTORY_SIZE        = 10;
@@ -177,6 +178,11 @@ public class HTGT
 	final private static String CFG_TRACKS      = "track-order";
 	final private static String CFG_RACE        = "race.%s.%s";
 
+	// ALWAYS THE INDEX NUMBER! WITHOUT THE EXTRA COUNT.
+	final private static int OFFSET_RACE   =  0;
+	final private static int OFFSET_TICKET =  1;
+	final private static int OFFSET_SUC    =  2;
+
 	final private static int PROFILE_NONE    =  0;
 	final private static int PROFILE_DEFAULT = -1;
 	final private static int PROFILE_SPECIAL = -2;
@@ -217,6 +223,9 @@ public class HTGT
 	private static String                     token;
 	private static eSportsAPI                 anonAPI;
 	private static eSportsAPI                 api;
+
+	private static int                        lastFilterOption;
+	private static boolean                    lastApplicationStatus;
 
 	private static boolean                    debugMode;
 	private static DateFormat                 debugDate;
@@ -405,6 +414,17 @@ public class HTGT
 			{
 				debugMode = false;
 			}
+		}
+
+		// Beim Debuggen aus dem Editor heraus sollen standardmäßig alle Debugausgaben sichtbar sein.
+		// Heißt im Detail: Wenn die Versionsdatei im JAR nicht existiert, wird der Debugmodus aktiviert.
+		// In allen anderen Fällen, wenn übers Makefile ein normales Build generiert wurde, ist er inaktiv.
+		// Er kann natürlich trotzdem jederzeit über den Parameter "-d" bzw. das Debugscript aktiviert werden.
+		if(HTGT.class.getResource("/" + VERSION_FILE) == null)
+		{
+			debugMode = true;
+
+			dbg("Huh? This isn't a JAR! Happy debugging... :-)");
 		}
 
 		dbgf("%s version: %s", APPLICATION_NAME, getVersion(true));
@@ -680,7 +700,8 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetDefaultPath",          "resetDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_R,      SHIFT)));
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".applyDefaultPath",          "applyDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_A,      SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".reset",                     "clearConfigDialog",      KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetQuestions",            "resetQuestions",         KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetConfiguration",        "clearConfigDialog",      KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL)));
 				break;
 
 			default:
@@ -1347,7 +1368,7 @@ public class HTGT
 			{
 				JOptionPane msg = new JOptionPane(FNX.formatLangString(lang, "fastFollowModeBody"), JOptionPane.PLAIN_MESSAGE);
 				msg.setOptions(new String[]{FNX.getLangString(lang, "cancel")});
-				ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
+				ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode" + (force ? "Force" : "")));
 
 				ffState = true;
 				dbg("Starting worker thread...");
@@ -1384,7 +1405,7 @@ public class HTGT
 					if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
 					{
 						dbgf("Unsupported changes: %d != %d || %d != %d", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
-						errorMessage(FNX.getLangString(lang, "fastFollowMode"), "Es wurden nicht unterstützte Änderungen festgestellt!");
+						errorMessage(FNX.getLangString(lang, "fastFollowMode"), "Unsupported changes detected!");
 						return;
 					}
 
@@ -1472,6 +1493,9 @@ public class HTGT
 										{
 											lastUploadedWeather = gmHelper.WEATHER_TICKET;
 										}
+
+										// gmHelper.WEATHER_SUC?
+										// ...
 									}
 								}
 							}
@@ -1480,67 +1504,116 @@ public class HTGT
 
 					if(ghosts.size() > 0)
 					{
-						int[][] filter = new int[ghosts.size()][3];
-						for(int i = 0; i < ghosts.size(); i++)
+						if(force)
 						{
-							filter[i][0] = modes[(int) ghosts.get(i).get(0)];
-							filter[i][1] = (int) ghosts.get(i).get(1);
-							filter[i][2] = weathers[(int) ghosts.get(i).get(2)];
-						}
-
-						results = api.getSelectiveResults(filter);
-
-						for(int i = 0; i < ghosts.size(); i++)
-						{
-							ArrayList item = ghosts.get(i);
-							GhostElement ghost = (GhostElement) item.get(3);
-							int w = (int) item.get(2);
-							int t = (int) item.get(1);
-							int m = (int) item.get(0);
-							int o = eSportsAPI.FO_NONE;
-
-							if(ghost.hasTicket())
+							for(int i = 0; i < ghosts.size(); i++)
 							{
-								o = eSportsAPI.FO_TICKET;
-							}
+								ArrayList item = ghosts.get(i);
+								GhostElement ghost = (GhostElement) item.get(3);
+								int w = (int) item.get(2);
 
-							if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
-							{
-								dbgf("Uploading ghost: %s", ghost.getDebugDetails());
+								dbgf("Uploading ghost in FORCE mode: %s", ghost.getDebugDetails());
 								ghostUpload(ghost, true);
-								realUpload = true;
-							}
-							else
-							{
-								dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
 
-								if(force || o == eSportsAPI.FO_TICKET)
+								realUpload = lastApplicationStatus;
+
+								dbgf("Last FO from server reply: %d", lastFilterOption);
+
+								switch(lastFilterOption)
 								{
-									if(force)
-									{
-										dbg("Still uploading it because we are in FORCE mode...");
-									}
-									else
+									case eSportsAPI.FO_TICKET:
+										lastUploadedWeather = gmHelper.WEATHER_TICKET;
+										break;
+
+									case eSportsAPI.FO_SUC:
+										lastUploadedWeather = gmHelper.WEATHER_SUC;
+										break;
+
+									default: // eSportsAPI.FO_NONE
+										lastUploadedWeather = w;
+										break;
+								}
+
+								dbgf("Set lastUploadedWeather to: %d", lastUploadedWeather);
+							}
+						}
+						else
+						{
+							int[][] filter = new int[ghosts.size()][3];
+							for(int i = 0; i < ghosts.size(); i++)
+							{
+								filter[i][0] = modes[(int) ghosts.get(i).get(0)];
+								filter[i][1] = (int) ghosts.get(i).get(1);
+								filter[i][2] = weathers[(int) ghosts.get(i).get(2)];
+							}
+
+							results = api.getSelectiveResults(filter);
+
+							for(int i = 0; i < ghosts.size(); i++)
+							{
+								ArrayList item = ghosts.get(i);
+								GhostElement ghost = (GhostElement) item.get(3);
+								int w = (int) item.get(2);
+								int t = (int) item.get(1);
+								int m = (int) item.get(0);
+								int o = eSportsAPI.FO_NONE;
+
+								if(ghost.hasTicket())
+								{
+									o = eSportsAPI.FO_TICKET;
+								}
+
+								// eSportsAPI.FO_SUC?
+								// ...
+
+								if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
+								{
+									dbgf("Uploading ghost: %s", ghost.getDebugDetails());
+									ghostUpload(ghost, true);
+									realUpload = true;
+								}
+								else
+								{
+									dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
+
+									if(o == eSportsAPI.FO_TICKET)
 									{
 										dbg("Still uploading it because it's a TICKET ghost...");
+										ghostUpload(new GhostElement[]{ghost}, true, true);
 									}
 
-									ghostUpload(new GhostElement[]{ghost}, true, true);
+									// eSportsAPI.FO_SUC?
+									// ...
 								}
+
+								// eSportsAPI.FO_SUC?
+								// ...
 							}
 						}
 					}
 
 					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
 					{
-						if(/*lastFromDefault &&*/ lastUploadedWeather != gmHelper.WEATHER_TICKET && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
+						if(/*lastFromDefault &&*/ lastUploadedWeather > -1 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
 						{
 							currentGhost = String.format("%s%n", FNX.formatLangString(lang, "fastFollowCurrentGhost", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult()));
 						}
 
 						if(cfg(CFG_NDG) == null)
 						{
-							int realWeather = (lastUploadedWeather == gmHelper.WEATHER_TICKET) ? gmHelper.WEATHER_TICKET : weathers[lastUploadedWeather];
+							int realWeather;
+							switch(lastUploadedWeather)
+							{
+								case gmHelper.WEATHER_SUC:
+								case gmHelper.WEATHER_TICKET:
+									realWeather = lastUploadedWeather;
+									break;
+
+								default:
+									realWeather = weathers[lastUploadedWeather];
+									break;
+							}
+
 							int action = threesomeDialog(FNX.getLangString(lang, "fastFollowMode"),
 								FNX.formatLangString(lang, "fastFollowGhostQuestion", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather)) +
 								(!ENABLE_AUTOSAVE ? String.format("%n%s", FNX.formatLangString(lang, "fastFollowNoAutosave")) : "") + (currentGhost != null ? String.format("%n%s", currentGhost) : "")
@@ -1552,7 +1625,7 @@ public class HTGT
 							}
 							else if(action == BUTTON_YES)
 							{
-								Boolean result = ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather == gmHelper.WEATHER_TICKET) ? true : false));
+								Boolean result = ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather < -1) ? true : false));
 
 								if(result != null && result == true)
 								{
@@ -2767,7 +2840,16 @@ public class HTGT
 		}
 
 		msg = (msg == null) ? FNX.formatLangString(lang, "APIError") : msg;
-		errorMessage(APPLICATION_API, FNX.formatLangString(lang, "APIErrorDetails", msg, e.getErrorCode(), e.getErrorMessage()).trim());
+		msg = FNX.formatLangString(lang, "APIErrorDetails", msg, e.getErrorCode(), e.getErrorMessage()).trim();
+
+		if(e.getCalming())
+		{
+			infoDialog(APPLICATION_API, msg);
+		}
+		else
+		{
+			errorMessage(APPLICATION_API, msg);
+		}
 	}
 
 	// Erzwungene Updateprüfung.
@@ -3079,7 +3161,8 @@ public class HTGT
 	// Interne Funktion für den sofortigen Upload von Geistern.
 	private static boolean ghostUpload(GhostElement[] ghosts, boolean silent, boolean doNotApply)
 	{
-		int[] ghostIDs = null;
+		lastApplicationStatus = false;
+		List<Map<String,Object>> result;
 		boolean error = false;
 
 		if(!prepareAPI())
@@ -3089,10 +3172,10 @@ public class HTGT
 
 		try
 		{
-			ghostIDs = api.getGhostIDs(ghosts);
-			if(ghostIDs.length != ghosts.length)
+			result = api.getExtendedGhostIDs(ghosts);
+			if(result.size() != ghosts.length)
 			{
-				dbgf("ghosts(%d) != selection(%d)", ghostIDs.length, ghosts.length);
+				dbgf("ghosts(%d) != selection(%d)", result.size(), ghosts.length);
 				exceptionHandler(new eSportsAPIException("SERVER_DUMB"));
 				return false;
 			}
@@ -3103,12 +3186,28 @@ public class HTGT
 			return false;
 		}
 
-		for(int i = 0; i < ghostIDs.length; i++)
+		for(int i = 0; i < result.size(); i++)
 		{
 			GhostElement ghost = ghosts[i];
-			dbgf("Item #%d uploaded as ghost ID %d: %s", i, ghostIDs[i], ghost.getDebugDetails());
+			Map<String,Object> info = result.get(i);
 
-			if(!doNotApply)
+			int ghostID = Integer.parseInt(info.get("GhostID").toString());
+			boolean applicable = (Integer.parseInt(info.get("Applicable").toString()) > 0);
+
+			lastFilterOption = Integer.parseInt(info.get("FilterOption").toString());
+
+			dbgf("Item #%d uploaded as ghost ID %d: %s", i, ghostID, ghost.getDebugDetails());
+
+			if(!applicable)
+			{
+				dbgf("Ghost with ID %d not applicable, skipping...", ghostID);
+
+				if(!silent)
+				{
+					infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostNotApplicable", ghostID));
+				}
+			}
+			else if(!doNotApply)
 			{
 				int action;
 
@@ -3119,7 +3218,30 @@ public class HTGT
 				}
 				else
 				{
-					action = threesomeDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplyQuestion", ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), ghost.getResult()), true);
+					int w = ghost.getWeather();
+					String weatherName = "?";
+
+					switch(lastFilterOption)
+					{
+						case eSportsAPI.FO_TICKET:
+							w = gmHelper.WEATHER_TICKET;
+							break;
+
+						case eSportsAPI.FO_SUC:
+							w = gmHelper.WEATHER_SUC;
+							break;
+					}
+
+					try
+					{
+						weatherName = gmHelper.getWeatherName(w);
+					}
+					catch(gmException e)
+					{
+						/* ... */
+					}
+
+					action = threesomeDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplyQuestion", ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), weatherName, ghost.getResult()), true);
 				}
 
 				if(action == BUTTON_ALWAYS)
@@ -3132,14 +3254,16 @@ public class HTGT
 				{
 					try
 					{
-						if(api.applyResultByGhostID(ghostIDs[i]))
+						if(api.applyResultByGhostID(ghostID))
 						{
-							dbgf("Successfully applied result from ghost with ID %d.", ghostIDs[i]);
+							dbgf("Successfully applied result from ghost with ID %d.", ghostID);
 
 							if(!silent)
 							{
-								infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostIDs[i]));
+								infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostID));
 							}
+
+							lastApplicationStatus = true;
 						}
 						else
 						{
@@ -3149,8 +3273,8 @@ public class HTGT
 					catch(eSportsAPIException e)
 					{
 						error = true;
-						dbgf("Failed to apply ghost with ID %d.", ghostIDs[i]);
-						APIError(e, FNX.formatLangString(lang, "ghostApplyFailed", ghostIDs[i]));
+						dbgf("Failed to apply ghost with ID %d.", ghostID);
+						APIError(e, FNX.formatLangString(lang, "ghostApplyFailed", ghostID));
 					}
 				}
 			}
@@ -3364,9 +3488,10 @@ public class HTGT
 			String selection;
 
 			String[]   tracks      = gmHelper.getTracksByGameMode(mode, true, true);
-			int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE, ENABLE_XTC);
+			int[]      weathers    = gmHelper.getWeatherIDs(ENABLE_RACE, ENABLE_XTC, ENABLE_SUC);
 			int        raceWeather = gmHelper.WEATHER_NONE;
 			int        tickets     = ENABLE_XTC ? 1 : 0;
+			int        suc         = ENABLE_SUC ? 1 : 0;
 			int        addition    = 0;
 
 			String[]   values;
@@ -3376,8 +3501,8 @@ public class HTGT
 			{
 				if(ENABLE_RACE)
 				{
-					values     = new String[tracks.length * (2 + tickets)];
-					conditions = new String[tracks.length * (2 + tickets)][3];
+					values     = new String[tracks.length * (2 + tickets + suc)];
+					conditions = new String[tracks.length * (2 + tickets + suc)][3];
 					addition++;
 				}
 				else
@@ -3406,15 +3531,19 @@ public class HTGT
 
 						if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 						{
-							key = i * (addition + 1 + tickets);
+							key = i * (addition + 1 + tickets + suc);
 
 							if(weathers[h] == gmHelper.WEATHER_RACE)
 							{
-								key++;
+								key += OFFSET_RACE + 1;
 							}
 							else if(weathers[h] == gmHelper.WEATHER_TICKET)
 							{
-								key += 2;
+								key += OFFSET_TICKET + 1;
+							}
+							else if(weathers[h] == gmHelper.WEATHER_SUC)
+							{
+								key += OFFSET_SUC + 1;
 							}
 							else if(weathers[h] != gmHelper.WEATHER_ICE)
 							{
@@ -3422,9 +3551,20 @@ public class HTGT
 							}
 						}
 
-						if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
+						if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] < -1)
 						{
-							String suffix = (weathers[h] == gmHelper.WEATHER_TICKET) ? "-T" : "";
+							String suffix = "";
+							switch(weathers[h])
+							{
+								case gmHelper.WEATHER_TICKET:
+									suffix = "-T";
+									break;
+
+								case gmHelper.WEATHER_SUC:
+									suffix = "-S";
+									break;
+							}
+
 							raceWeather = cfg.getInt(String.format(CFG_RACE, gmHelper.getGameMode(mode, true), tracks[i].toUpperCase() + suffix), gmHelper.WEATHER_NONE);
 
 							if(raceWeather == gmHelper.WEATHER_NONE)
@@ -3438,7 +3578,7 @@ public class HTGT
 						{
 							if(mode == gmHelper.GAMEMODE_DEFAULT)
 							{
-								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
+								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] < -1)
 								{
 									values[key] = String.format("%s – %s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
 								}
@@ -3449,7 +3589,7 @@ public class HTGT
 							}
 							else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
 							{
-								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
+								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] < -1)
 								{
 									values[key] = String.format("%s: %s – %s", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
 								}
@@ -3460,7 +3600,7 @@ public class HTGT
 							}
 							else
 							{
-								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] == gmHelper.WEATHER_TICKET)
+								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] < -1)
 								{
 									values[key] = String.format("%s: %s – %s (%s)", gmHelper.getGameModeName(mode), gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]), gmHelper.getWeatherName(raceWeather));
 								}
@@ -3668,8 +3808,20 @@ public class HTGT
 						{
 							for(int t = 0; t < tracks.length; t++)
 							{
+								String s = "";
+								switch(i)
+								{
+									case OFFSET_TICKET:
+										s = "-T";
+										break;
+
+									case OFFSET_SUC:
+										s = "-S";
+										break;
+								}
+
 								dbgf("Race weather: %s @ %s (%d) = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), i, test[i][m][t]);
-								cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase() + (i != 0 ? "-T" : "")), test[i][m][t]);
+								cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase() + s), test[i][m][t]);
 							}
 						}
 					}
@@ -4452,6 +4604,15 @@ public class HTGT
 		{
 			clearConfig();
 		}
+	}
+
+	// Alle Immer/Nie Fragen zurücksetzen.
+	// Braucht definitiv keine Bestätigung.
+	public static void resetQuestions()
+	{
+		removeConfig(CFG_NDG);
+		removeConfig(CFG_ARG);
+		removeConfig(CFG_AAR);
 	}
 
 /***********************************************************************
