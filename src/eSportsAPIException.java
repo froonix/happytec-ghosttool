@@ -23,6 +23,7 @@ public class eSportsAPIException extends Exception
 {
 	private ResourceBundle lang;
 	private Exception primaryException;
+	private boolean calmDown = false;
 
 	public eSportsAPIException()
 	{
@@ -32,6 +33,7 @@ public class eSportsAPIException extends Exception
 	public eSportsAPIException(String code)
 	{
 		super(code);
+		this.processCode(code);
 	}
 
 	public eSportsAPIException(Exception e)
@@ -44,6 +46,23 @@ public class eSportsAPIException extends Exception
 	{
 		super(code);
 		this.setException(e);
+		this.processCode(code);
+	}
+
+	private void processCode(String code)
+	{
+		if(code != null)
+		{
+			switch(code.toUpperCase())
+			{
+				case "SEASON_OVER":
+				case "RESULT_EMPTY":
+				case "GHOST_PRIVATE":
+				case "PLAYER_SUSPENDED":
+					this.setCalming(true);
+					break;
+			}
+		}
 	}
 
 	private void setException(Exception e)
@@ -83,5 +102,15 @@ public class eSportsAPIException extends Exception
 		// Es gibt noch deutlich mehr Fehlercodes, die haben aber
 		// keine Bedeutung, wenn die API korrekt benutzt wird...
 		return "Unknown API error code.";
+	}
+
+	public void setCalming(boolean state)
+	{
+		this.calmDown = state;
+	}
+
+	public boolean getCalming()
+	{
+		return this.calmDown;
 	}
 }

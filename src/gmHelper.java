@@ -37,6 +37,7 @@ public abstract class gmHelper
 	// Wird für eSportsAPI.FO_* benötigt.
 	// Bitte niemals "-1" dafür verwenden!
 	public final static int WEATHER_TICKET = -6;
+	public final static int WEATHER_SUC    = -7;
 
 	// ----------------------- //
 	// GentleMagic Wetter IDs: //
@@ -210,6 +211,10 @@ public abstract class gmHelper
 
 			case WEATHER_TICKET:
 				weatherString = "xtc";
+				break;
+
+			case WEATHER_SUC:
+				weatherString = "suc";
 				break;
 
 			default:
@@ -410,15 +415,31 @@ public abstract class gmHelper
 		return getWeatherIDs(race, false);
 	}
 
-	public static int[] getWeatherIDs(boolean race, boolean option)
+	public static int[] getWeatherIDs(boolean race, boolean ticket)
+	{
+		return getWeatherIDs(race, ticket, false);
+	}
+
+	public static int[] getWeatherIDs(boolean race, boolean ticket, boolean suc)
 	{
 		if(race)
 		{
 			int[] values;
 
-			if(option)
+			// TODO: Use ArrayList and convert it to an array at the end!
+			// ...
+
+			if(ticket && suc)
 			{
-				values = new int[]  {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE, WEATHER_TICKET};
+				values = new int[] {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE, WEATHER_TICKET, WEATHER_SUC};
+			}
+			else if(!ticket && suc)
+			{
+				values = new int[] {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE, WEATHER_SUC};
+			}
+			else if(ticket && !suc)
+			{
+				values = new int[] {WEATHER_SUN, WEATHER_SNOW, WEATHER_ICE, WEATHER_RACE, WEATHER_TICKET};
 			}
 			else
 			{
