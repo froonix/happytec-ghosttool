@@ -1585,9 +1585,6 @@ public class HTGT
 									// eSportsAPI.FO_SUC?
 									// ...
 								}
-
-								// eSportsAPI.FO_SUC?
-								// ...
 							}
 						}
 					}
