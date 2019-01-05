@@ -59,6 +59,7 @@ public class eSportsAPIException extends Exception
 				case "RESULT_EMPTY":
 				case "GHOST_PRIVATE":
 				case "PLAYER_SUSPENDED":
+				case "ACCOUNT_INACTIVE":
 					this.setCalming(true);
 					break;
 			}
