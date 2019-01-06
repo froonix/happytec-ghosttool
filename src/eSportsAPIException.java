@@ -55,6 +55,7 @@ public class eSportsAPIException extends Exception
 		{
 			switch(code.toUpperCase())
 			{
+				case "BANNED":
 				case "SEASON_OVER":
 				case "RESULT_EMPTY":
 				case "GHOST_PRIVATE":
