@@ -226,6 +226,7 @@ public class HTGT
 
 	private static int                        lastFilterOption;
 	private static boolean                    lastApplicationStatus;
+	private static int                        lastApplicationPosition;
 
 	private static boolean                    debugMode;
 	private static DateFormat                 debugDate;
@@ -1588,6 +1589,9 @@ public class HTGT
 							}
 						}
 					}
+
+					// lastApplicationPosition? (ExpectedPosition)
+					// ...
 
 					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
 					{
@@ -3158,6 +3162,7 @@ public class HTGT
 	// Interne Funktion für den sofortigen Upload von Geistern.
 	private static boolean ghostUpload(GhostElement[] ghosts, boolean silent, boolean doNotApply)
 	{
+		lastApplicationPosition = 0;
 		lastApplicationStatus = false;
 		List<Map<String,Object>> result;
 		boolean error = false;
@@ -3251,15 +3256,36 @@ public class HTGT
 				{
 					try
 					{
-						if(api.applyResultByGhostID(ghostID))
+						boolean status = false;
+						int position = -1;
+
+						if(silent)
 						{
-							dbgf("Successfully applied result from ghost with ID %d.", ghostID);
+							status = api.applyResultByGhostID(ghostID);
+						}
+						else
+						{
+							position = api.applyResultByGhostIDExtended(ghostID);
+							status = (position >= 0);
+						}
+
+						if(status)
+						{
+							dbgf("Successfully applied result from ghost with ID %d. (expected rank %d)", ghostID, position);
 
 							if(!silent)
 							{
-								infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostID));
+								if(position > 0)
+								{
+									infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccessExtended", ghostID, position));
+								}
+								else
+								{
+									infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostID));
+								}
 							}
 
+							lastApplicationPosition = position;
 							lastApplicationStatus = true;
 						}
 						else

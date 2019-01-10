@@ -315,6 +315,53 @@ public class eSportsAPI
 		}
 	}
 
+	public int applyResultByGhostIDExtended(int ghostID) throws eSportsAPIException
+	{
+		try
+		{
+			Map<String,Object> args = new HashMap<String,Object>();
+			args.put("ghostID", Integer.toString(ghostID));
+			args.put("includePosition", "true");
+
+			String result = this.request("OFFLINE", "result.apply", args);
+
+			Document doc = FNX.getDOMDocument(result);
+			NodeList GhostNodes = doc.getElementsByTagName("Ghost");
+
+			if(GhostNodes.getLength() > 0)
+			{
+				Element ghost = (Element) GhostNodes.item(0);
+				int id = Integer.parseInt(ghost.getAttribute("ID"));
+
+				if(id == ghostID)
+				{
+					NodeList position = doc.getElementsByTagName("ExpectedPosition");
+
+					if(position.getLength() > 0)
+					{
+						return Integer.parseInt(position.item(0).getTextContent());
+					}
+					else
+					{
+						return 0;
+					}
+				}
+				else
+				{
+					return -1;
+				}
+			}
+			else
+			{
+				throw new ParserConfigurationException("Missing <Ghost> tag in reply");
+			}
+		}
+		catch(SAXException|ParserConfigurationException|IOException e)
+		{
+			throw new eSportsAPIException(e);
+		}
+	}
+
 	public Map<String,Object> getPlayerInfo() throws eSportsAPIException
 	{
 		try
