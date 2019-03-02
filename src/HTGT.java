@@ -1082,10 +1082,18 @@ public class HTGT
 
 	public static void selectProfile()
 	{
+		selectProfile(true);
+	}
+
+	public static void selectProfile(boolean all)
+	{
 		String suffix = null;
 		String selection = null;
 		String[] profiles;
 		String[] values;
+
+		int c, h;
+		c = h = 0;
 
 		try
 		{
@@ -1109,15 +1117,34 @@ public class HTGT
 
 				if(suffix.length() > 0)
 				{
+					if(!all)
+					{
+						continue;
+					}
+
 					suffix = String.format(" (%s)", suffix);
 				}
 
 				values[i] = String.format("[%0" + Integer.toString(FNX.strlen(profiles.length)) + "d] %s%s", i + 1, profiles[i], suffix);
+				c++;
 
 				if(profile == i)
 				{
 					selection = values[i];
 				}
+			}
+
+			if(c != values.length)
+			{
+				String[] realValues = new String[c];
+				for(int i = 0; i < values.length; i++)
+				{
+					if(values[i] != null)
+					{
+						realValues[h++] = values[i];
+					}
+				}
+				values = realValues;
 			}
 
 			Integer selected = (Integer) inputDialog(FNX.getLangString(lang, "profileSelectionTitle"), FNX.formatLangString(lang, "profileSelectionBody"), values, selection);
@@ -1333,7 +1360,7 @@ public class HTGT
 				{
 					if(confirmDialog(FNX.formatLangString(lang, "incompatibleProfile")))
 					{
-						selectProfile();
+						selectProfile(false);
 					}
 
 					if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
