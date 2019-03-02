@@ -1320,17 +1320,32 @@ public class HTGT
 
 	private static boolean checkProfile()
 	{
-		if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
+		try
 		{
-			if(confirmDialog(FNX.formatLangString(lang, "incompatibleProfile")))
-			{
-				selectProfile();
-			}
-
 			if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
 			{
-				return true;
+				if(getRegularProfileCount() == 1)
+				{
+					dbg("There is only one regular profile!");
+					selectProfile(0);
+				}
+				else
+				{
+					if(confirmDialog(FNX.formatLangString(lang, "incompatibleProfile")))
+					{
+						selectProfile();
+					}
+
+					if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
+					{
+						return true;
+					}
+				}
 			}
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
 		}
 
 		return false;
@@ -1964,19 +1979,7 @@ public class HTGT
 				return;
 			}
 
-			int defaultProfile = OfflineProfiles.defaultProfile();
-			String[] allProfiles = OfflineProfiles.getProfiles();
-			int regularProfiles = 0;
-
-			for(int i = 0; i < allProfiles.length; i++)
-			{
-				if(i != defaultProfile && !isSpecialProfile(allProfiles[i]))
-				{
-					regularProfiles++;
-				}
-			}
-
-			if(regularProfiles < 2)
+			if(getRegularProfileCount() < 2)
 			{
 				infoDialog(null, FNX.formatLangString(lang, "lastRegularProfile"));
 				return;
@@ -3908,6 +3911,23 @@ public class HTGT
 		}
 
 		return nick.equals(SPECIAL_PROFILE);
+	}
+
+	public static int getRegularProfileCount() throws ProfileException
+	{
+		int defaultProfile = OfflineProfiles.defaultProfile();
+		String[] allProfiles = OfflineProfiles.getProfiles();
+		int regularProfiles = 0;
+
+		for(int i = 0; i < allProfiles.length; i++)
+		{
+			if(i != defaultProfile && !isSpecialProfile(allProfiles[i]))
+			{
+				regularProfiles++;
+			}
+		}
+
+		return regularProfiles;
 	}
 
 /***********************************************************************
