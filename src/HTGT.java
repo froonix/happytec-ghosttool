@@ -167,6 +167,7 @@ public class HTGT
 	final private static String CFG_TOKEN       = "esports-token";
 	final private static String CFG_CWD         = "last-directory";
 	final private static String CFG_CWDPORT     = "last-port-directory";
+	final private static String CFG_RPROFILE    = "last-regular-profile";
 	final private static String CFG_PROFILE     = "last-profile";
 	final private static String CFG_MODE        = "last-gamemode";
 	final private static String CFG_WEATHER     = "last-weather";
@@ -663,6 +664,10 @@ public class HTGT
 
 			case "view":
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectProfile",             "selectProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_F6,     NONE)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectSpecialProfile",      "selectSpecialProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_S,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectDefaultProfile",      "selectDefaultProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_D,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectRegularProfile",      "selectRegularProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_A,      SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".createProfile",             "createProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_N,      CTRL | SHIFT)));
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".renameProfile",             "renameProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
@@ -1190,6 +1195,8 @@ public class HTGT
 			}
 			else
 			{
+				cfg(CFG_RPROFILE, Integer.toString(index));
+
 				lastProfile = index + 1;
 			}
 
@@ -1243,6 +1250,62 @@ public class HTGT
 			}
 
 			selectProfile(selectedProfile);
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+	}
+
+	public static void selectDefaultProfile()
+	{
+		try
+		{
+			int defaultProfile = OfflineProfiles.defaultProfile();
+
+			if(defaultProfile < 0)
+			{
+				throw new Exception("Default profile not found!");
+			}
+			else
+			{
+				selectProfile(defaultProfile);
+			}
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+	}
+
+	public static void selectSpecialProfile()
+	{
+		try
+		{
+			String[] profiles = OfflineProfiles.getProfiles();
+
+			for(int i = 0; i < profiles.length; i++)
+			{
+				if(isSpecialProfile(profiles[i]))
+				{
+					selectProfile(i);
+					return;
+				}
+			}
+
+			throw new Exception("Special profile not found!");
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+	}
+
+	public static void selectRegularProfile()
+	{
+		try
+		{
+			selectProfile(FNX.intval(cfg(CFG_RPROFILE)));
 		}
 		catch(Exception e)
 		{
