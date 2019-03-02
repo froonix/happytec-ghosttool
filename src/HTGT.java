@@ -1141,6 +1141,15 @@ public class HTGT
 
 			if(c != values.length)
 			{
+				// -------------------------------------------- //
+				// Diese Lösung ist leider noch nicht perfekt.  //
+				// Damit sie keine Probleme macht, geht das     //
+				// Programm davon aus, dass das Spezial- und    //
+				// Standardprofil am Ende der Liste existieren. //
+				// Das ist zwar standardmäßig der Fall, aber    //
+				// eigentlich eine nicht korrekte Vermutung.    //
+				// -------------------------------------------- //
+
 				String[] realValues = new String[c];
 				for(int i = 0; i < values.length; i++)
 				{
