@@ -1972,14 +1972,14 @@ public class HTGT
 
 	public static void renameProfile()
 	{
-		if(OfflineProfiles == null)
+		if(OfflineProfiles == null || checkProfile() || unsavedChanges())
 		{
 			return;
 		}
 
 		Profiles profiles = getProfileHandle(nickname);
 
-		if(profiles == null || checkProfile() || unsavedChanges())
+		if(profiles == null)
 		{
 			return;
 		}
