@@ -1410,11 +1410,16 @@ public class HTGT
 
 	private static boolean checkProfile()
 	{
+		return checkProfile(false);
+	}
+
+	private static boolean checkProfile(boolean simple)
+	{
 		try
 		{
 			if(profile == OfflineProfiles.defaultProfile() || isSpecialProfile())
 			{
-				if(getRegularProfileCount() == 1)
+				if(simple && getRegularProfileCount() == 1)
 				{
 					dbg("There is only one regular profile!");
 					selectProfile(0);
@@ -1453,7 +1458,7 @@ public class HTGT
 
 	public static void fastFollow(boolean force)
 	{
-		if(OfflineProfiles == null || checkProfile() || unsavedChanges())
+		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
 		{
 			return;
 		}
