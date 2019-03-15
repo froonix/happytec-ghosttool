@@ -526,7 +526,7 @@ public class eSportsAPI
 			}
 
 			// Diese Methode liefert aber nur aktive Strecken zurück!
-			// Allerdings mit automatischer Qualifikation/Rennen Erkennung.
+			// Allerdings mit automatischer Training/Rennen Erkennung.
 			String result = this.request("OFFLINE", "result.dump", args);
 
 			Document doc = FNX.getDOMDocument(result);
