@@ -4183,6 +4183,7 @@ public class HTGT
 				else
 				{
 					cfg(CFG_DEFAULT, defaultFile);
+					dll = null; checkDLL();
 					return;
 				}
 			}
