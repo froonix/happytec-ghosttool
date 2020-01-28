@@ -21,6 +21,13 @@ class Worker extends SwingWorker
 
 	protected void process(List chunks)
 	{
+		if(isCancelled())
+		{
+			Helper.dbg("Already cancelled, not updating GUI anymore.");
+			
+			return;
+		}
+		
 		int val = (Integer) chunks.get(chunks.size()-1);
 
 		GUI.updateStatus(String.valueOf(val));
