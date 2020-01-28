@@ -253,7 +253,10 @@ public class HTGT
 				debugDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZZZZ");
 			}
 
-			System.err.printf("[%s] %s - %s%n", debugDate.format(new Date()), Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
+			Long threadID = Thread.currentThread().getId();
+			String threadType = (threadID == 1) ? "R" : (javax.swing.SwingUtilities.isEventDispatchThread() ? "E" : "W");
+
+			System.err.printf("%2$5d-%3$s [%1$s] %4$s - %5$s%n", debugDate.format(new Date()), threadID, threadType, Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
 		}
 	}
 
