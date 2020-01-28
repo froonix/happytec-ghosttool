@@ -1894,6 +1894,8 @@ public class HTGT
 
 			wFFM = new HTGT_FastFollowMode_WT();
 			wFFM.execute();
+
+			FastFollowBlock();
 		}
 		/*
 		catch(eSportsAPIException e)
@@ -5296,7 +5298,7 @@ class HTGT_FastFollowMode_EDT extends HTGT_FastFollowMode
 	{
 		HTGT.dbg("process() called");
 
-		HTGT.FastFollowBlock();
+		//HTGT.FastFollowBlock();
 
 		if(isCancelled())
 		{
