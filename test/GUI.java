@@ -47,6 +47,12 @@ abstract class GUI
 		btn.addActionListener(new FlexibleActionHandler(GUI.class.getName(), "stopThread"));
 		mainFrame.add(btn);
 
+		JMenuBar menuBar = new JMenuBar();
+		JMenu menu = new JMenu("Test");
+		menu.add(new DynamicMenuItem("...", GUI.class.getName(), "doSomethingElse", null));
+		menuBar.add(menu);
+		mainFrame.setJMenuBar(menuBar);
+
 		mainFrame.setVisible(true);
 	}
 
