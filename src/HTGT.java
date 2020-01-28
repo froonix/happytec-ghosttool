@@ -50,6 +50,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+
 import java.util.prefs.Preferences;
 
 import java.util.regex.Matcher;
@@ -93,6 +96,7 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 
 import javax.swing.event.ListSelectionEvent;
@@ -683,6 +687,10 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_STOKEN,   langKey + ".uploadGhosts",              "ghostUpload",            KeyStroke.getKeyStroke(KeyEvent.VK_F3,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".downloadGhost",             "ghostSelect",            KeyStroke.getKeyStroke(KeyEvent.VK_F4,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".downloadGhostsByIDs",       "ghostDownload",          KeyStroke.getKeyStroke(KeyEvent.VK_F4,     SHIFT)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowMode",            "fastFollowTest"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowMode",            "fastFollow",             KeyStroke.getKeyStroke(KeyEvent.VK_F7,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowModeForce",       "fastFollowForce",        KeyStroke.getKeyStroke(KeyEvent.VK_F8,     NONE)));
@@ -1862,6 +1870,105 @@ public class HTGT
 			dbg("Cleanup. Goodbye...");
 		}
 	}
+
+	private static SwingWorker eFFM;
+	private static SwingWorker wFFM;
+	public static void fastFollowTest()
+	{
+		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
+		{
+			return;
+		}
+
+		try
+		{
+			if(!prepareAPI())
+			{
+				return;
+			}
+
+			startedFFM = 1;
+
+			eFFM = new HTGT_FastFollowMode_EDT();
+			eFFM.execute();
+
+			wFFM = new HTGT_FastFollowMode_WT();
+			wFFM.execute();
+		}
+		/*
+		catch(eSportsAPIException e)
+		{
+			APIError(e);
+		}
+		catch(InterruptedException e)
+		{
+			e.printStackTrace();
+		}
+		*/
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+		finally
+		{
+			try
+			{
+				// Das ursprüngliche Profil aktivieren!
+				dbgf("Restoring profile %d...", profile);
+				OfflineProfiles.selectProfile(profile);
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e);
+				syncGUI();
+			}
+		}
+	}
+
+	private static int startedFFM = 0;
+	public static void FastFollowBlock()
+	{
+		if(startedFFM < 1)
+		{
+			dbg("startedFFM < 1");
+			return;
+		}
+		else
+		{
+			dbg("startedFFM = 1");
+			startedFFM = -1;
+		}
+
+		dbg("Opening new dialog...");
+
+		JOptionPane msg = new JOptionPane(FNX.formatLangString(lang, "fastFollowModeBody"), JOptionPane.PLAIN_MESSAGE);
+		msg.setOptions(new String[]{FNX.getLangString(lang, "cancel")});
+		ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
+		ffDialog.setVisible(true);
+
+		dbg("Dialog closed?");
+		HTGT.FastFollowUnblock();
+	}
+
+	public static void FastFollowUnblock()
+	{
+		if(startedFFM == 0)
+		{
+			dbg("not started?!");
+			return;
+		}
+
+		dbg("stopping FFM now!");
+
+		eFFM.cancel(true);
+		wFFM.cancel(true);
+
+		ffDialog.setVisible(false);
+		startedFFM = 0;
+	}
+
+	// todo: update text at ffDialog?
+	// ...
 
 	private static Profiles getProfileHandle(String nick)
 	{
@@ -5155,5 +5262,151 @@ class HTGT_SelectionHandler implements javax.swing.event.ListSelectionListener
 				HTGT.updateSelectionMenuItems(true);
 			}
 		}
+	}
+}
+
+class HTGT_FastFollowMode_EDT extends HTGT_FastFollowMode
+{
+	public HTGT_FastFollowMode_EDT()
+	{
+		super();
+
+		HTGT.dbg("FFM-EDT started");
+	}
+
+	protected Integer doInBackground() throws Exception
+	{
+		HTGT.dbg("doInBackground() called");
+
+		int i = 0;
+		while(i > -1)
+		{
+			HTGT.dbg("doInBackground(): publishing something");
+			publish(i++);
+
+			HTGT.dbg("doInBackground(): sleeping 1000ms");
+			Thread.sleep(1000);
+		}
+
+		HTGT.dbg("doInBackground() finished");
+		return 0;
+	}
+
+	protected void process(List chunks)
+	{
+		HTGT.dbg("process() called");
+
+		HTGT.FastFollowBlock();
+
+		if(isCancelled())
+		{
+			HTGT.dbg("process(): Already cancelled");
+
+			return;
+		}
+
+		HTGT.dbgf("process(): chunk %d received", chunks.get(chunks.size() - 1));
+	}
+
+	protected void done()
+	{
+		HTGT.dbg("done() called");
+
+		try
+		{
+			get();
+
+			//GUI.updateStatus((String) get());
+		}
+		catch(InterruptedException e)
+		{
+			//GUI.updateStatus("InterruptedException");
+		}
+		catch(ExecutionException e)
+		{
+			//GUI.updateStatus("ExecutionException");
+		}
+		catch(CancellationException e)
+		{
+			//GUI.updateStatus("CancellationException");
+		}
+
+		HTGT.dbg("done() finished");
+	}
+}
+
+class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
+{
+	public HTGT_FastFollowMode_WT()
+	{
+		super();
+
+		HTGT.dbg("FFM-WT started");
+	}
+
+	protected Integer doInBackground() throws Exception
+	{
+		HTGT.dbg("doInBackground() called");
+
+		Thread.sleep(10000);
+
+		HTGT.dbg("doInBackground() finished");
+		return 0;
+	}
+
+	protected void process(List chunks)
+	{
+		HTGT.dbg("process() called");
+
+		if(isCancelled())
+		{
+			HTGT.dbg("process(): Already cancelled");
+
+			return;
+		}
+
+		HTGT.dbgf("process(): chunk %d received", chunks.get(chunks.size() - 1));
+	}
+
+	protected void done()
+	{
+		HTGT.dbg("done() called");
+
+		try
+		{
+			get();
+
+			//GUI.updateStatus((String) get());
+		}
+		catch(InterruptedException e)
+		{
+			//GUI.updateStatus("InterruptedException");
+		}
+		catch(ExecutionException e)
+		{
+			//GUI.updateStatus("ExecutionException");
+		}
+		catch(CancellationException e)
+		{
+			//GUI.updateStatus("CancellationException");
+		}
+
+		HTGT.FastFollowUnblock();
+		HTGT.dbg("done() finished");
+	}
+}
+
+class HTGT_FastFollowMode extends SwingWorker<Integer,Integer>
+{
+	public HTGT_FastFollowMode()
+	{
+		super();
+
+		HTGT.dbg("FFM started");
+	}
+
+	protected Integer doInBackground() throws Exception
+	{
+		return 0;
 	}
 }
