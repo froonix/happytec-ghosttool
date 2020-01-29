@@ -1845,8 +1845,8 @@ public class HTGT
 		}
 	}
 
-	private static HTGT_FastFollowMode_EDT eFFM;
-	private static HTGT_FastFollowMode_WT  wFFM;
+	private static HTGT_FFM_Analyst  aFFM;
+	private static HTGT_FFM_Observer oFFM;
 	public static void fastFollowTest()
 	{
 		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
@@ -1863,15 +1863,15 @@ public class HTGT
 
 			startedFFM = 1;
 
-			eFFM = new HTGT_FastFollowMode_EDT();
-			eFFM.execute();
+			//eFFM = new HTGT_FFM_EDT();
+			//eFFM.execute();
 
-			wFFM = new HTGT_FastFollowMode_WT();
-			wFFM.setInterval(FF_CHECK_INTERVAL);
-			wFFM.setFile(file);
-			wFFM.execute();
+			oFFM = new HTGT_FFM_Observer();
+			oFFM.setInterval(FF_CHECK_INTERVAL);
+			oFFM.setFile(file);
+			oFFM.execute();
 
-			FastFollowBlock();
+			fastFollowBlock();
 		}
 		/*
 		catch(eSportsAPIException e)
@@ -1887,6 +1887,7 @@ public class HTGT
 		{
 			exceptionHandler(e);
 		}
+		/*
 		finally
 		{
 			try
@@ -1901,10 +1902,52 @@ public class HTGT
 				syncGUI();
 			}
 		}
+		*/
+	}
+
+	public static int fastFollowEvaluation()
+	{
+		// do not forget to take an extra nap before loading xml file!
+		// ...
+
+		// hier wird alles gemacht, was der fastfollowmodus bisher macht.
+		// allerdings in einem dry-mode! es darf hierbei zu keinen rückfragen kommen.
+		// ich nehme mal an, dabei soll noch kein upload von geistern stattfinden?
+		// es reicht, wenn man an dieser stelle weiß, ob ein upload erforderlich ist
+		// und ob es dabei im regelfall zu rückfragen kommen würde.
+		// ...
+
+		return -1;
+	}
+
+	public static boolean fastFollowAnalyze()
+	{
+		// Wir müssen sicherstellen, dass nur ein Thread gleichzeitig läuft.
+		// Beim Observer-Thread ist das noch einfach, da die GUI blockiert ist.
+		// Die Analyst-Threads werden jedoch immer sofort bei Bedarf angeworfen.
+		if(aFFM != null && !aFFM.isDone())
+		{
+			// Wenn der Thread bereits läuft, wird er einfach beim nächsten
+			// Durchlauf von process() ausgeführt werden. Das ist unkritisch,
+			// weil das Interval niedrig genug ist. Sollten sich zwischenzeitlich
+			// mehrere Anfragen ansammeln, sollte das theoretisch auch unkritisch
+			// sein, weil immer nur der neueste Request eine Ausführung bewirkt.
+			return false;
+		}
+
+		// TODO: Kritisch wird es allerdings, wenn Rückfragen oder Fehler für den FFM angezeigt werden.
+		// Was passiert dann mit weiteren neuen Threads im Hintergrund? Oder können die währendessen
+		// eh nicht gestartet werden? Wäre logisch, weil im gleichen Thread, sollte aber getestet werden!
+		// ...
+
+		aFFM = new HTGT_FFM_Analyst();
+		aFFM.execute();
+
+		return true;
 	}
 
 	private static int startedFFM = 0;
-	public static void FastFollowBlock()
+	public static void fastFollowBlock()
 	{
 		if(startedFFM < 1)
 		{
@@ -1925,10 +1968,10 @@ public class HTGT
 		ffDialog.setVisible(true);
 
 		FNX.dbg("Dialog closed?");
-		HTGT.FastFollowUnblock();
+		HTGT.fastFollowUnblock();
 	}
 
-	public static void FastFollowUnblock()
+	public static void fastFollowUnblock()
 	{
 		if(startedFFM == 0)
 		{
@@ -1938,8 +1981,11 @@ public class HTGT
 
 		FNX.dbg("stopping FFM now!");
 
-		eFFM.cancel(true);
-		wFFM.cancel(true);
+		if(oFFM != null)
+		oFFM.cancel(true);
+
+		if(aFFM != null)
+		aFFM.cancel(true);
 
 		ffDialog.setVisible(false);
 		startedFFM = 0;
@@ -5243,105 +5289,27 @@ class HTGT_SelectionHandler implements javax.swing.event.ListSelectionListener
 	}
 }
 
-class HTGT_FastFollowMode_EDT extends HTGT_FastFollowMode
-{
-	public HTGT_FastFollowMode_EDT()
-	{
-		super();
-
-		FNX.dbg("FFM-EDT started");
-	}
-
-	protected Integer doInBackground() throws Exception
-	{
-		/*
-		FNX.dbg("doInBackground() called");
-
-		int i = 0;
-		while(i > -1)
-		{
-			FNX.dbg("doInBackground(): publishing something");
-			publish(i++);
-
-			FNX.dbg("doInBackground(): sleeping 1000ms");
-			Thread.sleep(1000);
-		}
-
-		FNX.dbg("doInBackground() finished");
-		*/
-
-		return 0;
-	}
-
-	protected void process(List chunks)
-	{
-		/*
-		FNX.dbg("process() called");
-
-		//HTGT.FastFollowBlock();
-
-		if(isCancelled())
-		{
-			FNX.dbg("process(): Already cancelled");
-
-			return;
-		}
-
-		FNX.dbgf("process(): chunk %d received", chunks.get(chunks.size() - 1));
-		*/
-	}
-
-	protected void done()
-	{
-		/*
-		FNX.dbg("done() called");
-
-		try
-		{
-			get();
-
-			//GUI.updateStatus((String) get());
-		}
-		catch(InterruptedException e)
-		{
-			//GUI.updateStatus("InterruptedException");
-		}
-		catch(ExecutionException e)
-		{
-			//GUI.updateStatus("ExecutionException");
-		}
-		catch(CancellationException e)
-		{
-			//GUI.updateStatus("CancellationException");
-		}
-
-		FNX.dbg("done() finished");
-		*/
-	}
-}
-
-class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
+class HTGT_FFM_Observer extends HTGT_FastFollowMode
 {
 	private File fileHandle;
 	private int checkInterval;
+	private boolean queueState;
 	private FileTime oldTime;
 	private FileTime newTime;
 
-	public HTGT_FastFollowMode_WT()
+	public HTGT_FFM_Observer()
 	{
 		super();
-
-		FNX.dbg("FFM-WT started");
-	}
-
-	public void setInterval(int i)
-	{
-		checkInterval = i;
 	}
 
 	public void setFile(File f)
 	{
 		fileHandle = f;
+	}
+
+	public void setInterval(int i)
+	{
+		checkInterval = i;
 	}
 
 	protected Integer doInBackground() throws IOException, InterruptedException
@@ -5399,42 +5367,26 @@ class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
 		{
 			FNX.dbg("Already cancelled!");
 		}
-		else if(invokeCheck)
+		else if(invokeCheck || queueState)
 		{
-			FNX.dbg("Woohoo! Ready to party...");
-
-			// Das einzige Problem, was wir jetzt haben: Wenn wir in
-			// diesem Thread prüfen, ob es etwas zu tun gibt, blockieren
-			// wir damit wieder die GUI! Der User kann dadurch z.B. nicht
-			// mehr auf Abbrechen klicken oder das Fenster schließen. Es
-			// wäre somit weiterhin sinnvoll, wenn wir auch das in einen
-			// eigenen Thread auslagern. Erst, wenn es wirklich Rückfragen
-			// oder Fehlermeldungen gibt, soll der Hauptthread aktiv werden.
-			// Dabei muss allerdings sichergestellt sein, dass nicht mehrere
-			// FFM-Threads im Hintergrund gestartet werden. Es wäre somit
-			// sinnvoll, wenn process() an dieser Stelle wartet, bis der
-			// neu gestartete Thread beendet ist.
-			// ...
-
-			// do not forget to take an extra nap before loading xml file!
-			// ...
-
-			// do something (simulate real FFM)
-			// ...
-
-			// restore profile?
-			// ...
-
-			// test
-			//HTGT.FastFollowUnblock();
-
-			try
+			if(queueState)
 			{
-				Thread.sleep(10000);
+				FNX.dbg("Executing earlier queue request(s)...");
 			}
-			catch(Exception e)
+			else
 			{
+				FNX.dbg("Woohoo! Ready to party...");
+			}
 
+			if(!HTGT.fastFollowAnalyze())
+			{
+				FNX.dbg("Worker thread busy, waiting for next run...");
+
+				queueState = true;
+			}
+			else
+			{
+				queueState = false;
 			}
 		}
 		else
@@ -5452,8 +5404,6 @@ class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
 		try
 		{
 			get();
-
-			//GUI.updateStatus((String) get());
 		}
 		catch(CancellationException e)
 		{
@@ -5469,19 +5419,49 @@ class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
 			HTGT.exceptionHandler(e);
 		}
 
-		HTGT.FastFollowUnblock();
+		HTGT.fastFollowUnblock();
 		FNX.dbg("done() finished");
+	}
+}
+
+class HTGT_FFM_Analyst extends HTGT_FastFollowMode
+{
+	public HTGT_FFM_Analyst()
+	{
+		super();
+	}
+
+	protected Integer doInBackground()
+	{
+		FNX.dbg("FFM evaluation thread started.");
+
+		try
+		{
+			// DEBUY ONLY !!!
+			Thread.sleep(10000);
+		}
+		catch(Exception e)
+		{
+
+		}
+
+		return HTGT.fastFollowEvaluation();
+	}
+
+	protected void done()
+	{
+		// get()
+		// ...
+
+		FNX.dbg("FFM evaluation thread stopped.");
 	}
 }
 
 class HTGT_FastFollowMode extends SwingWorker<Integer,Integer>
 {
-
 	public HTGT_FastFollowMode()
 	{
 		super();
-
-		FNX.dbg("FFM started");
 	}
 
 	protected Integer doInBackground() throws Exception
