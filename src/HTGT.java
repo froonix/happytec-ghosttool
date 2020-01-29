@@ -5410,6 +5410,10 @@ class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
 			// wäre somit weiterhin sinnvoll, wenn wir auch das in einen
 			// eigenen Thread auslagern. Erst, wenn es wirklich Rückfragen
 			// oder Fehlermeldungen gibt, soll der Hauptthread aktiv werden.
+			// Dabei muss allerdings sichergestellt sein, dass nicht mehrere
+			// FFM-Threads im Hintergrund gestartet werden. Es wäre somit
+			// sinnvoll, wenn process() an dieser Stelle wartet, bis der
+			// neu gestartete Thread beendet ist.
 			// ...
 
 			// do not forget to take an extra nap before loading xml file!
