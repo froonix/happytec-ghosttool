@@ -75,8 +75,12 @@ import org.xml.sax.SAXException;
 public abstract class FNX
 {
 	private static DateFormat             dateFormat;
+
 	private static DocumentBuilderFactory dbFactory;
 	private static DocumentBuilder        dBuilder;
+
+	private static boolean                debugMode;
+	private static DateFormat             debugDate;
 
 	public static String getDateString()
 	{
@@ -441,5 +445,51 @@ public abstract class FNX
 		{
 			e.printStackTrace();
 		}
+	}
+
+	public static void enableDebugging()
+	{
+		setDebugging(true);
+	}
+
+	public static void disableDebugging()
+	{
+		setDebugging(false);
+	}
+
+	public static void setDebugging(boolean value)
+	{
+		debugMode = value;
+	}
+
+	public static boolean getDebugging()
+	{
+		return debugMode;
+	}
+
+	private static void dbg(String msg, int trace)
+	{
+		if(debugMode)
+		{
+			if(debugDate == null)
+			{
+				debugDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZZZZ");
+			}
+
+			Long threadID = Thread.currentThread().getId();
+			String threadType = (threadID == 1) ? "R" : (javax.swing.SwingUtilities.isEventDispatchThread() ? "E" : "W");
+
+			System.err.printf("%2$5d-%3$s [%1$s] %4$s - %5$s%n", debugDate.format(new Date()), threadID, threadType, Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
+		}
+	}
+
+	public static void dbgf(String msg, Object... args)
+	{
+		dbg(String.format(msg, args), 1);
+	}
+
+	public static void dbg(String msg)
+	{
+		dbg(msg, 1);
 	}
 }

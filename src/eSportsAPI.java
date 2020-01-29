@@ -817,7 +817,7 @@ public class eSportsAPI
 
 		String postdata = (data != null) ? FNX.buildQueryString(data) : "";
 		String url = String.format(API_REQUEST, apihost, API_VERSION, module, method);
-		System.err.printf("HTTP POST: %s (%d byte)%n", url, postdata.length());
+		FNX.dbgf("HTTP POST: %s (%d byte)%n", url, postdata.length());
 		// System.err.printf("POST DATA: %s%n", postdata);
 
 		try
@@ -867,7 +867,7 @@ public class eSportsAPI
 			rx.close();
 
 			String content = response.toString();
-			System.err.printf("HTTP %d: %s (%s; %d byte)%n", code, url, msg, content.length());
+			FNX.dbgf("HTTP %d: %s (%s; %d byte)%n", code, url, msg, content.length());
 
 			if(code != 200)
 			{

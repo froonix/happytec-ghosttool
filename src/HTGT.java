@@ -124,7 +124,7 @@ public class HTGT
 	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
 	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
 	final private static long      WEATHER_INTERVAL    = 3600000L; // hourly
-	final private static int       FF_CHECK_INTERVAL   = 5000; // 5 seconds
+	final private static int       FF_CHECK_INTERVAL   = 1000; // 1 second
 	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
 	final private static String    DEFAULT_PROFILE     = "DefaultUser";
 	final private static String    VERSION_FILE        = "htgt-version.txt";
@@ -141,7 +141,7 @@ public class HTGT
 	final private static int       HISTORY_SIZE        = 10;
 
 	final public static int        NONE  = 0;
-	final public static int        CTRL  = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+	final public static int        CTRL  = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
 	final public static int        SHIFT = ActionEvent.SHIFT_MASK;
 	final public static int        ALT   = ActionEvent.ALT_MASK;
 
@@ -233,9 +233,6 @@ public class HTGT
 	private static boolean                    lastApplicationStatus;
 	private static int                        lastApplicationPosition;
 
-	private static boolean                    debugMode;
-	private static DateFormat                 debugDate;
-
 	private static OfflineProfiles            OfflineProfiles;
 
 	private static volatile boolean           ffState;
@@ -247,32 +244,6 @@ public class HTGT
 	private static DefaultTableModel          mainmodel;
 
 	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
-
-	private static void dbg(String msg, int trace)
-	{
-		if(debugMode)
-		{
-			if(debugDate == null)
-			{
-				debugDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZZZZ");
-			}
-
-			Long threadID = Thread.currentThread().getId();
-			String threadType = (threadID == 1) ? "R" : (javax.swing.SwingUtilities.isEventDispatchThread() ? "E" : "W");
-
-			System.err.printf("%2$5d-%3$s [%1$s] %4$s - %5$s%n", debugDate.format(new Date()), threadID, threadType, Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
-		}
-	}
-
-	public static void dbgf(String msg, Object... args)
-	{
-		dbg(String.format(msg, args), 1);
-	}
-
-	public static void dbg(String msg)
-	{
-		dbg(msg, 1);
-	}
 
 	public static void about()
 	{
@@ -339,13 +310,16 @@ public class HTGT
 		}
 	}
 
-	private static void exceptionHandler(Exception e)
+	public static void exceptionHandler(Exception e)
 	{
 		exceptionHandler(e, null);
 	}
 
 	private static void exceptionHandler(Exception e, String msg)
 	{
+		// Check if we're in EDT?
+		// ...
+
 		FNX.windowToFront(mainWindow);
 		FNX.displayExceptionSummary(e, FNX.formatLangString(lang, "errorTitle"), msg, FNX.formatLangString(lang, "errorBody"));
 	}
@@ -417,11 +391,7 @@ public class HTGT
 			}
 			else if(args[0].equals("-d"))
 			{
-				debugMode = true;
-			}
-			else
-			{
-				debugMode = false;
+				FNX.enableDebugging();
 			}
 		}
 
@@ -431,12 +401,12 @@ public class HTGT
 		// Er kann natürlich trotzdem jederzeit über den Parameter "-d" bzw. das Debugscript aktiviert werden.
 		if(HTGT.class.getResource("/" + VERSION_FILE) == null)
 		{
-			debugMode = true;
+			FNX.enableDebugging();
 
-			dbg("Huh? This isn't a JAR! Happy debugging... :-)");
+			FNX.dbg("Huh? This isn't a JAR! Happy debugging... :-)");
 		}
 
-		dbgf("%s version: %s", APPLICATION_NAME, getVersion(true));
+		FNX.dbgf("%s version: %s", APPLICATION_NAME, getVersion(true));
 
 		// Aktuell gibt es nur eine Konfiguration für den ganzen User-
 		// account. Das heißt, dass mehrere unterschiedliche Bewerbe und
@@ -450,7 +420,7 @@ public class HTGT
 		// Eventuell ist jetzt seine bevorzugte Muttersprache endlich dabei.
 		if(FNX.intval(cfg(CFG_TRANSLATION)) < TRANSLATION_VERSION)
 		{
-			dbgf("New translation(s) available! [cfg=%s; cur=%d]", cfg(CFG_TRANSLATION), TRANSLATION_VERSION);
+			FNX.dbgf("New translation(s) available! [cfg=%s; cur=%d]", cfg(CFG_TRANSLATION), TRANSLATION_VERSION);
 
 			selectLanguage(true, (cfg(CFG_TRANSLATION) != null ? true : false));
 			cfg(CFG_TRANSLATION, Integer.toString(TRANSLATION_VERSION));
@@ -459,7 +429,7 @@ public class HTGT
 		String apihost = cfg(CFG_API);
 		if(apihost != null && apihost.length() > 0)
 		{
-			dbg("API FQDN: " + apihost);
+			FNX.dbg("API FQDN: " + apihost);
 			eSportsAPI.setHost(apihost);
 		}
 
@@ -593,6 +563,10 @@ public class HTGT
 
 		// Die automatische Updateprüfung wird im Hintergrund ausgeführt...
 		new Thread(new HTGT_Background(HTGT_Background.EXEC_UPDATECHECK)).start();
+
+		// DEBUG ONLY !!!
+		openDefaultFile();
+		fastFollowTest();
 	}
 
 	private static JMenuBar getMenubar()
@@ -722,7 +696,7 @@ public class HTGT
 				break;
 
 			default:
-				dbgf("Unknown menu »%s«", key);
+				FNX.dbgf("Unknown menu »%s«", key);
 				return null;
 		}
 
@@ -1031,7 +1005,7 @@ public class HTGT
 
 	public static int ghostImport(GhostElement[] ghosts, boolean force)
 	{
-		dbg("ghosts.length: " + ghosts.length);
+		FNX.dbg("ghosts.length: " + ghosts.length);
 		ArrayList<Integer> selection = new ArrayList<Integer>();
 		boolean deleteDuplicates = isSpecialProfile() ? false : true;
 		boolean delete = false;
@@ -1242,7 +1216,7 @@ public class HTGT
 			if(lastProfile == PROFILE_DEFAULT)
 			{
 				selectedProfile = OfflineProfiles.defaultProfile();
-				dbgf("Last used profile: DEFAULT (%d)", selectedProfile);
+				FNX.dbgf("Last used profile: DEFAULT (%d)", selectedProfile);
 			}
 			else if(lastProfile == PROFILE_SPECIAL)
 			{
@@ -1253,7 +1227,7 @@ public class HTGT
 					if(isSpecialProfile(profiles[i]))
 					{
 						selectedProfile = i;
-						dbgf("Last used profile: SPECIAL (%d)", selectedProfile);
+						FNX.dbgf("Last used profile: SPECIAL (%d)", selectedProfile);
 						break;
 					}
 				}
@@ -1262,11 +1236,11 @@ public class HTGT
 			{
 				selectedProfile = lastProfile - 1;
 				selectedProfile = (selectedProfile < 0 || selectedProfile >= OfflineProfiles.getProfileCount()) ? PROFILE_NONE : selectedProfile;
-				dbgf("Last used profile: %d", selectedProfile);
+				FNX.dbgf("Last used profile: %d", selectedProfile);
 			}
 			else
 			{
-				dbg("Last used profile unknown...");
+				FNX.dbg("Last used profile unknown...");
 			}
 
 			selectProfile(selectedProfile);
@@ -1406,7 +1380,7 @@ public class HTGT
 
 		if(cfg(CFG_ARG) != null)
 		{
-			dbg("Forcing ghost replacement because of previous choice...");
+			FNX.dbg("Forcing ghost replacement because of previous choice...");
 			action = BUTTON_YES;
 		}
 		else
@@ -1441,7 +1415,7 @@ public class HTGT
 			{
 				if(simple && getRegularProfileCount() == 1)
 				{
-					dbg("There is only one regular profile!");
+					FNX.dbg("There is only one regular profile!");
 					selectProfile(0);
 				}
 				else
@@ -1502,15 +1476,15 @@ public class HTGT
 				ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode" + (force ? "Force" : "")));
 
 				ffState = true;
-				dbg("Starting worker thread...");
+				FNX.dbg("Starting worker thread...");
 				new Thread(new HTGT_Background(HTGT_Background.EXEC_FASTFOLLOW)).start();
-				dbg("Opening blocking info dialog...");
+				FNX.dbg("Opening blocking info dialog...");
 				ffDialog.setVisible(true);
 				ffState = false;
 
 				if(ffChanged)
 				{
-					dbg("We are back in the main thread!");
+					FNX.dbg("We are back in the main thread!");
 
 					GhostElement[][][] oldProfileGhosts = null;
 					GhostElement[][][] oldDefaultGhosts = null;
@@ -1535,7 +1509,7 @@ public class HTGT
 
 					if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
 					{
-						dbgf("Unsupported changes: %d != %d || %d != %d", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
+						FNX.dbgf("Unsupported changes: %d != %d || %d != %d", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
 						errorMessage(FNX.getLangString(lang, "fastFollowMode"), "Unsupported changes detected!");
 						return;
 					}
@@ -1544,12 +1518,12 @@ public class HTGT
 
 					if(newDefaultProfile > -1)
 					{
-						dbgf("Switching to profile %d...", newDefaultProfile);
+						FNX.dbgf("Switching to profile %d...", newDefaultProfile);
 						OfflineProfiles.selectProfile(newDefaultProfile);
 
 						newDefaultGhosts = OfflineProfiles.getAllGhosts();
 
-						dbgf("Using old profile %d...", profile);
+						FNX.dbgf("Using old profile %d...", profile);
 						OfflineProfiles.selectProfile(profile);
 					}
 
@@ -1574,7 +1548,7 @@ public class HTGT
 							{
 								if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
 								{
-									dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
+									FNX.dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
 									// ghostUpload(newProfileGhosts[t][w], true);
 
@@ -1606,7 +1580,7 @@ public class HTGT
 								{
 									if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
 									{
-										dbgf("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
+										FNX.dbgf("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
 										// ghostUpload(newDefaultGhosts[t][w], true);
 
@@ -1643,12 +1617,12 @@ public class HTGT
 								GhostElement ghost = (GhostElement) item.get(3);
 								int w = (int) item.get(2);
 
-								dbgf("Uploading ghost in FORCE mode: %s", ghost.getDebugDetails());
+								FNX.dbgf("Uploading ghost in FORCE mode: %s", ghost.getDebugDetails());
 								ghostUpload(ghost, true);
 
 								realUpload = lastApplicationStatus;
 
-								dbgf("Last FO from server reply: %d", lastFilterOption);
+								FNX.dbgf("Last FO from server reply: %d", lastFilterOption);
 
 								switch(lastFilterOption)
 								{
@@ -1665,7 +1639,7 @@ public class HTGT
 										break;
 								}
 
-								dbgf("Set lastUploadedWeather to: %d", lastUploadedWeather);
+								FNX.dbgf("Set lastUploadedWeather to: %d", lastUploadedWeather);
 							}
 						}
 						else
@@ -1699,17 +1673,17 @@ public class HTGT
 
 								if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
 								{
-									dbgf("Uploading ghost: %s", ghost.getDebugDetails());
+									FNX.dbgf("Uploading ghost: %s", ghost.getDebugDetails());
 									ghostUpload(ghost, true);
 									realUpload = true;
 								}
 								else
 								{
-									dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
+									FNX.dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
 
 									if(o == eSportsAPI.FO_TICKET)
 									{
-										dbg("Still uploading it because it's a TICKET ghost...");
+										FNX.dbg("Still uploading it because it's a TICKET ghost...");
 										ghostUpload(new GhostElement[]{ghost}, true, true);
 									}
 
@@ -1769,7 +1743,7 @@ public class HTGT
 						}
 						else
 						{
-							dbg("Skipping ghost download because of previous choice...");
+							FNX.dbg("Skipping ghost download because of previous choice...");
 						}
 					}
 
@@ -1777,7 +1751,7 @@ public class HTGT
 				}
 				else
 				{
-					dbg("Dialog canceled or closed.");
+					FNX.dbg("Dialog canceled or closed.");
 					break;
 				}
 
@@ -1801,7 +1775,7 @@ public class HTGT
 			try
 			{
 				// Das ursprüngliche Profil aktivieren!
-				dbgf("Restoring profile %d...", profile);
+				FNX.dbgf("Restoring profile %d...", profile);
 				OfflineProfiles.selectProfile(profile);
 			}
 			catch(Exception e)
@@ -1832,7 +1806,7 @@ public class HTGT
 			{
 				if(!ffState)
 				{
-					dbg("Killed via external state variable.");
+					FNX.dbg("Killed via external state variable.");
 					return;
 				}
 
@@ -1840,7 +1814,7 @@ public class HTGT
 
 				if(newTime.compareTo(oldTime) > 0)
 				{
-					dbg("File modification time changed!");
+					FNX.dbg("File modification time changed!");
 					Thread.sleep(1000);
 					oldTime = newTime;
 					ffChanged = true;
@@ -1848,7 +1822,7 @@ public class HTGT
 				}
 				else
 				{
-					dbg("Nothing to do. Sleeping...");
+					FNX.dbg("Nothing to do. Sleeping...");
 				}
 
 				Thread.sleep(FF_CHECK_INTERVAL);
@@ -1867,12 +1841,12 @@ public class HTGT
 		{
 			ffState = false;
 			ffDialog.setVisible(false);
-			dbg("Cleanup. Goodbye...");
+			FNX.dbg("Cleanup. Goodbye...");
 		}
 	}
 
-	private static SwingWorker eFFM;
-	private static SwingWorker wFFM;
+	private static HTGT_FastFollowMode_EDT eFFM;
+	private static HTGT_FastFollowMode_WT  wFFM;
 	public static void fastFollowTest()
 	{
 		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
@@ -1893,6 +1867,8 @@ public class HTGT
 			eFFM.execute();
 
 			wFFM = new HTGT_FastFollowMode_WT();
+			wFFM.setInterval(FF_CHECK_INTERVAL);
+			wFFM.setFile(file);
 			wFFM.execute();
 
 			FastFollowBlock();
@@ -1916,7 +1892,7 @@ public class HTGT
 			try
 			{
 				// Das ursprüngliche Profil aktivieren!
-				dbgf("Restoring profile %d...", profile);
+				FNX.dbgf("Restoring profile %d...", profile);
 				OfflineProfiles.selectProfile(profile);
 			}
 			catch(Exception e)
@@ -1932,23 +1908,23 @@ public class HTGT
 	{
 		if(startedFFM < 1)
 		{
-			dbg("startedFFM < 1");
+			FNX.dbg("startedFFM < 1");
 			return;
 		}
 		else
 		{
-			dbg("startedFFM = 1");
+			FNX.dbg("startedFFM = 1");
 			startedFFM = -1;
 		}
 
-		dbg("Opening new dialog...");
+		FNX.dbg("Opening new dialog...");
 
 		JOptionPane msg = new JOptionPane(FNX.formatLangString(lang, "fastFollowModeBody"), JOptionPane.PLAIN_MESSAGE);
 		msg.setOptions(new String[]{FNX.getLangString(lang, "cancel")});
 		ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
 		ffDialog.setVisible(true);
 
-		dbg("Dialog closed?");
+		FNX.dbg("Dialog closed?");
 		HTGT.FastFollowUnblock();
 	}
 
@@ -1956,11 +1932,11 @@ public class HTGT
 	{
 		if(startedFFM == 0)
 		{
-			dbg("not started?!");
+			FNX.dbg("not started?!");
 			return;
 		}
 
-		dbg("stopping FFM now!");
+		FNX.dbg("stopping FFM now!");
 
 		eFFM.cancel(true);
 		wFFM.cancel(true);
@@ -1978,12 +1954,12 @@ public class HTGT
 
 		if(profilesFile == null || !profilesFile.exists() || !profilesFile.isFile())
 		{
-			dbgf("Other XML file not found: %s", profilesFile);
+			FNX.dbgf("Other XML file not found: %s", profilesFile);
 			errorMessage(null, FNX.formatLangString(lang, "fileNotFound", "Profiles.xml"));
 		}
 		else
 		{
-			dbgf("Other XML file: %s", profilesFile);
+			FNX.dbgf("Other XML file: %s", profilesFile);
 
 			try
 			{
@@ -2249,11 +2225,11 @@ public class HTGT
 
 		if(userConfigFile == null || !userConfigFile.exists() || !userConfigFile.isFile())
 		{
-			dbgf("User config XML file not found: %s", userConfigFile);
+			FNX.dbgf("User config XML file not found: %s", userConfigFile);
 		}
 		else
 		{
-			dbgf("User config XML file: %s", userConfigFile);
+			FNX.dbgf("User config XML file: %s", userConfigFile);
 
 			try
 			{
@@ -2261,12 +2237,12 @@ public class HTGT
 
 				if(config.getMultiGhost())
 				{
-					dbg("MultiGhost setting is enabled.");
+					FNX.dbg("MultiGhost setting is enabled.");
 					return true;
 				}
 				else if(config.getTrainingGhostNick() != null)
 				{
-					dbg("TrainingGhostNick selection is not empty.");
+					FNX.dbg("TrainingGhostNick selection is not empty.");
 					return true;
 				}
 			}
@@ -2276,8 +2252,8 @@ public class HTGT
 			}
 		}
 
-		dbg("MultiGhost setting is disabled.");
-		dbg("TrainingGhostNick selection is empty.");
+		FNX.dbg("MultiGhost setting is disabled.");
+		FNX.dbg("TrainingGhostNick selection is empty.");
 
 		return false;
 	}
@@ -2366,7 +2342,7 @@ public class HTGT
 
 		if(dll == null || !dll.exists() || !dll.isFile())
 		{
-			dbg("DLL not initialized or not found.");
+			FNX.dbg("DLL not initialized or not found.");
 
 			if(!auto)
 			{
@@ -2378,9 +2354,9 @@ public class HTGT
 
 		Date date = new Date();
 		lastDLLCheck = cfg.getLong(CFG_DC, 0L);
-		dbgf("Current time: %d", date.getTime());
-		dbgf("Last DLL check: %d", lastDLLCheck);
-		dbgf("Check interval: %d", UPDATE_INTERVAL);
+		FNX.dbgf("Current time: %d", date.getTime());
+		FNX.dbgf("Last DLL check: %d", lastDLLCheck);
+		FNX.dbgf("Check interval: %d", UPDATE_INTERVAL);
 
 		if(lastDLLCheck <= 0L || date.getTime() > (lastDLLCheck + UPDATE_INTERVAL))
 		{
@@ -2400,11 +2376,11 @@ public class HTGT
 			{
 				// TODO: Check for NULL?
 				String hash = FNX.sha512(dll);
-				dbgf("SHA512: %s", hash);
+				FNX.dbgf("SHA512: %s", hash);
 
 				if(anonAPI.updateAvailable("SC.DLL", hash, auto))
 				{
-					dbg("New DLL available!" + ((auto) ? " (autocheck)" : ""));
+					FNX.dbg("New DLL available!" + ((auto) ? " (autocheck)" : ""));
 
 					if(Desktop.isDesktopSupported())
 					{
@@ -2420,7 +2396,7 @@ public class HTGT
 				}
 				else
 				{
-					dbg("No new DLL available..." + ((auto) ? " (autocheck)" : ""));
+					FNX.dbg("No new DLL available..." + ((auto) ? " (autocheck)" : ""));
 
 					if(!auto)
 					{
@@ -2455,18 +2431,18 @@ public class HTGT
 	{
 		if(selectionValues != null)
 		{
-			dbgf("Input dialog: SELECTION %s", title);
+			FNX.dbgf("Input dialog: SELECTION %s", title);
 		}
 		else
 		{
-			dbgf("Input dialog: INPUTFIELD %s", title);
+			FNX.dbgf("Input dialog: INPUTFIELD %s", title);
 		}
 
 		Object input = JOptionPane.showInputDialog(mainWindow, message, title, JOptionPane.PLAIN_MESSAGE, null, selectionValues, initialSelectionValue);
 
 		if(input == null)
 		{
-			dbg("Input dialog: CANCEL");
+			FNX.dbg("Input dialog: CANCEL");
 			return null;
 		}
 
@@ -2478,18 +2454,18 @@ public class HTGT
 			{
 				if(selected.equals(selectionValues[i]))
 				{
-					dbgf("Input dialog: SELECTED #%d", i);
+					FNX.dbgf("Input dialog: SELECTED #%d", i);
 					return i;
 				}
 			}
 
-			dbg("Input dialog: SELECTION UNKNOWN");
+			FNX.dbg("Input dialog: SELECTION UNKNOWN");
 			return null;
 		}
 		else
 		{
 			selected = selected.trim();
-			dbgf("Input dialog: VALUE(%d) %s", selected.length(), selected);
+			FNX.dbgf("Input dialog: VALUE(%d) %s", selected.length(), selected);
 			return selected;
 		}
 	}
@@ -2511,22 +2487,22 @@ public class HTGT
 
 		if(open)
 		{
-			dbgf("File dialog: OPEN %s", directory);
+			FNX.dbgf("File dialog: OPEN %s", directory);
 			chooser = new JFileChooser(directory);
 		}
 		else
 		{
-			dbgf("File dialog: SAVE %s", directory);
+			FNX.dbgf("File dialog: SAVE %s", directory);
 			chooser = new ImprovedFileChooser(directory);
 		}
 
 		if(selection != null)
 		{
-			dbgf("File dialog: SET %s", selection.getAbsolutePath());
+			FNX.dbgf("File dialog: SET %s", selection.getAbsolutePath());
 			chooser.setSelectedFile(selection);
 		}
 
-		// dbg("File dialog: FILTER *.xml");
+		// FNX.dbg("File dialog: FILTER *.xml");
 		FileFilter filter = new FileNameExtensionFilter(FNX.getLangString(lang, "xmlFiles"), "xml");
 		chooser.addChoosableFileFilter(filter);
 		chooser.setFileFilter(filter);
@@ -2543,7 +2519,7 @@ public class HTGT
 		if(code == JFileChooser.APPROVE_OPTION)
 		{
 			File selectedFile = chooser.getSelectedFile();
-			dbgf("File dialog: APPROVE %s", selectedFile);
+			FNX.dbgf("File dialog: APPROVE %s", selectedFile);
 
 			if(selectedFile != null && (!open || selectedFile.exists()))
 			{
@@ -2551,20 +2527,20 @@ public class HTGT
 			}
 			else
 			{
-				dbg("File dialog: FILE NOT FOUND");
+				FNX.dbg("File dialog: FILE NOT FOUND");
 			}
 		}
 		else if(code == JFileChooser.CANCEL_OPTION)
 		{
-			dbg("File dialog: CANCEL");
+			FNX.dbg("File dialog: CANCEL");
 		}
 		else if(code == JFileChooser.ERROR_OPTION)
 		{
-			dbg("File dialog: ERROR");
+			FNX.dbg("File dialog: ERROR");
 		}
 		else
 		{
-			dbg("File dialog: UNKNOWN");
+			FNX.dbg("File dialog: UNKNOWN");
 		}
 
 		return null;
@@ -2584,16 +2560,16 @@ public class HTGT
 	{
 		FNX.windowToFront(mainWindow);
 
-		dbgf("New yes/no confirm dialog: %s", title);
+		FNX.dbgf("New yes/no confirm dialog: %s", title);
 
 		if(JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type))
 		{
-			dbg("return TRUE (confirmed)");
+			FNX.dbg("return TRUE (confirmed)");
 			return true;
 		}
 		else
 		{
-			dbg("return FALSE (not confirmed)");
+			FNX.dbg("return FALSE (not confirmed)");
 			return false;
 		}
 
@@ -2606,12 +2582,12 @@ public class HTGT
 
 		if(result != JOptionPane.CLOSED_OPTION && values[result] == BUTTON_YES)
 		{
-			dbg("return TRUE (confirmed)");
+			FNX.dbg("return TRUE (confirmed)");
 			return true;
 		}
 		else
 		{
-			dbg("return FALSE (not confirmed)");
+			FNX.dbg("return FALSE (not confirmed)");
 			return false;
 		}
 		*/
@@ -2637,14 +2613,14 @@ public class HTGT
 
 		if(appendix)
 		{
-			dbgf("New threesome (yes/always/no) dialog: %s", title);
+			FNX.dbgf("New threesome (yes/always/no) dialog: %s", title);
 			values = new Integer[]{BUTTON_YES, BUTTON_ALWAYS, BUTTON_NO};
 			buttons = FNX.getLangStrings(lang, new String[]{"yes", "always", "no"});
 			defaultButton = buttons[0];
 		}
 		else
 		{
-			dbgf("New threesome (yes/never/no) dialog: %s", title);
+			FNX.dbgf("New threesome (yes/never/no) dialog: %s", title);
 			values = new Integer[]{BUTTON_YES, BUTTON_NEVER, BUTTON_NO};
 			buttons = FNX.getLangStrings(lang, new String[]{"yes", "never", "no"});
 			defaultButton = buttons[0];
@@ -2654,12 +2630,12 @@ public class HTGT
 
 		if(result == JOptionPane.CLOSED_OPTION)
 		{
-			dbg("return BUTTON_CLOSED");
+			FNX.dbg("return BUTTON_CLOSED");
 			return BUTTON_CLOSED;
 		}
 		else
 		{
-			dbgf("return [%d] (%s)", values[result], buttons[result]);
+			FNX.dbgf("return [%d] (%s)", values[result], buttons[result]);
 			return values[result].intValue();
 		}
 	}
@@ -2752,14 +2728,14 @@ public class HTGT
 
 		if(prev)
 		{
-			dbgf("New prev/next step %s dialog: %s", dialogType, title);
+			FNX.dbgf("New prev/next step %s dialog: %s", dialogType, title);
 			values = new Integer[]{BUTTON_PREV, BUTTON_CANCEL, BUTTON_NEXT};
 			buttons = new String[]{langPrev, langCancel, langNext};
 			defaultButton = buttons[2];
 		}
 		else
 		{
-			dbgf("New next step %s dialog: %s", dialogType, title);
+			FNX.dbgf("New next step %s dialog: %s", dialogType, title);
 			values = new Integer[]{BUTTON_CANCEL, BUTTON_NEXT};
 			buttons = new String[]{langCancel, langNext};
 			defaultButton = buttons[1];
@@ -2769,7 +2745,7 @@ public class HTGT
 
 		if(result == JOptionPane.CLOSED_OPTION)
 		{
-			dbgf("RETURN: %d (CLOSED)", BUTTON_CANCEL);
+			FNX.dbgf("RETURN: %d (CLOSED)", BUTTON_CANCEL);
 			return BUTTON_CANCEL;
 		}
 		else if(buttons[result] == defaultButton)
@@ -2784,18 +2760,18 @@ public class HTGT
 					throw new IndexOutOfBoundsException(String.format("selectedIndex = %d; selectedItem = %s", selectedIndex, selectedItem));
 				}
 
-				dbgf("RETURN SELECTION: %d (%s)", returnValues[selectedIndex], selectedItem);
+				FNX.dbgf("RETURN SELECTION: %d (%s)", returnValues[selectedIndex], selectedItem);
 
 				return (int) returnValues[selectedIndex];
 			}
 			else
 			{
-				dbgf("RETURN INPUT: %s", textField.getText());
+				FNX.dbgf("RETURN INPUT: %s", textField.getText());
 				return textField.getText();
 			}
 		}
 
-		dbgf("RETURN: %d (%s)", values[result], buttons[result]);
+		FNX.dbgf("RETURN: %d (%s)", values[result], buttons[result]);
 		return values[result];
 	}
 
@@ -2837,7 +2813,7 @@ public class HTGT
 
 	private static boolean noSelection()
 	{
-		dbg("No selection available!");
+		FNX.dbg("No selection available!");
 		return false;
 	}
 
@@ -2913,15 +2889,15 @@ public class HTGT
 
 			if(localeParts != null)
 			{
-				dbgf("Old default locale: %s", Locale.getDefault());
+				FNX.dbgf("Old default locale: %s", Locale.getDefault());
 				Locale.setDefault(new Locale(localeParts[0], localeParts[1]));
-				dbgf("New default locale: %s", Locale.getDefault());
+				FNX.dbgf("New default locale: %s", Locale.getDefault());
 			}
 		}
 		else
 		{
-			dbgf("Unknown locale string: %s", locale);
-			dbgf("Default locale: %s", Locale.getDefault());
+			FNX.dbgf("Unknown locale string: %s", locale);
+			FNX.dbgf("Default locale: %s", Locale.getDefault());
 		}
 	}
 
@@ -2940,7 +2916,7 @@ public class HTGT
 			return localeParts;
 		}
 
-		dbgf("Invalid locale string: %s", locale);
+		FNX.dbgf("Invalid locale string: %s", locale);
 
 		return null;
 	}
@@ -3055,7 +3031,7 @@ public class HTGT
 
 		if(e.getErrorCode().equals("TOKEN_INVALID"))
 		{
-			dbg("API token invalid: Removed from prefs!");
+			FNX.dbg("API token invalid: Removed from prefs!");
 			updateToken(null);
 		}
 
@@ -3086,7 +3062,7 @@ public class HTGT
 
 		if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
 		{
-			dbgf("Update check disabled: %s", APPLICATION_VERSION);
+			FNX.dbgf("Update check disabled: %s", APPLICATION_VERSION);
 
 			if(!auto)
 			{
@@ -3098,9 +3074,9 @@ public class HTGT
 
 		Date date = new Date();
 		lastUpdateCheck = cfg.getLong(CFG_UC, 0L);
-		dbgf("Current time: %d", date.getTime());
-		dbgf("Last update check: %d", lastUpdateCheck);
-		dbgf("Check interval: %d", UPDATE_INTERVAL);
+		FNX.dbgf("Current time: %d", date.getTime());
+		FNX.dbgf("Last update check: %d", lastUpdateCheck);
+		FNX.dbgf("Check interval: %d", UPDATE_INTERVAL);
 
 		if(lastUpdateCheck <= 0L || date.getTime() > (lastUpdateCheck + UPDATE_INTERVAL))
 		{
@@ -3120,7 +3096,7 @@ public class HTGT
 			{
 				if(anonAPI.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION, auto))
 				{
-					dbg("New update available!" + ((auto) ? " (autocheck)" : ""));
+					FNX.dbg("New update available!" + ((auto) ? " (autocheck)" : ""));
 
 					if(Desktop.isDesktopSupported())
 					{
@@ -3136,7 +3112,7 @@ public class HTGT
 				}
 				else
 				{
-					dbg("No updates available..." + ((auto) ? " (autocheck)" : ""));
+					FNX.dbg("No updates available..." + ((auto) ? " (autocheck)" : ""));
 
 					if(!auto)
 					{
@@ -3173,7 +3149,7 @@ public class HTGT
 		{
 			if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, FNX.formatLangString(lang, "copyTokenToProfileQuestion")))
 			{
-				dbg("Copying token to active profile...");
+				FNX.dbg("Copying token to active profile...");
 				OfflineProfiles.setToken(token);
 
 				if(!token.equals(OfflineProfiles.getToken()))
@@ -3205,13 +3181,13 @@ public class HTGT
 
 			if(newToken == null)
 			{
-				dbg("No token in active profile!");
+				FNX.dbg("No token in active profile!");
 			}
 			else
 			{
 				if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, FNX.formatLangString(lang, "copyTokenFromProfileQuestion")))
 				{
-					dbg("Copying token from active profile...");
+					FNX.dbg("Copying token from active profile...");
 					updateToken(newToken);
 				}
 			}
@@ -3233,11 +3209,11 @@ public class HTGT
 		{
 			if(OfflineProfiles.getToken() == null)
 			{
-				dbg("No token in active profile!");
+				FNX.dbg("No token in active profile!");
 			}
 			else if(confirmDialog(JOptionPane.WARNING_MESSAGE, null, FNX.formatLangString(lang, "deleTokenFromProfileQuestion")))
 			{
-				dbg("Removing token from active profile...");
+				FNX.dbg("Removing token from active profile...");
 				OfflineProfiles.deleteToken();
 
 				if(OfflineProfiles.getToken() != null)
@@ -3287,7 +3263,7 @@ public class HTGT
 				newToken = newToken.toLowerCase();
 				if(!newToken.matches("^[a-f0-9]+$"))
 				{
-					dbg("Invalid API token! Asking once again...");
+					FNX.dbg("Invalid API token! Asking once again...");
 					errorMessage(FNX.formatLangString(lang, "invalidToken"));
 					continue;
 				}
@@ -3297,7 +3273,7 @@ public class HTGT
 				}
 				else
 				{
-					dbg("API token not changed.");
+					FNX.dbg("API token not changed.");
 				}
 			}
 
@@ -3317,7 +3293,7 @@ public class HTGT
 			{
 				if(oldToken == null || !oldToken.equals(token))
 				{
-					dbg("Token changed! Resetting API instance...");
+					FNX.dbg("Token changed! Resetting API instance...");
 					api = new eSportsAPI(token, getIdent());
 				}
 
@@ -3325,12 +3301,12 @@ public class HTGT
 			}
 			else
 			{
-				dbgf("Asking for API token... (try #%d)", i + 1);
+				FNX.dbgf("Asking for API token... (try #%d)", i + 1);
 				setupToken();
 			}
 		}
 
-		dbg("Three times is enough! No API token available.");
+		FNX.dbg("Three times is enough! No API token available.");
 
 		api = null;
 		token = null;
@@ -3396,7 +3372,7 @@ public class HTGT
 			result = api.getExtendedGhostIDs(ghosts);
 			if(result.size() != ghosts.length)
 			{
-				dbgf("ghosts(%d) != selection(%d)", result.size(), ghosts.length);
+				FNX.dbgf("ghosts(%d) != selection(%d)", result.size(), ghosts.length);
 				exceptionHandler(new eSportsAPIException("SERVER_DUMB"));
 				return false;
 			}
@@ -3417,11 +3393,11 @@ public class HTGT
 
 			lastFilterOption = Integer.parseInt(info.get("FilterOption").toString());
 
-			dbgf("Item #%d uploaded as ghost ID %d: %s", i, ghostID, ghost.getDebugDetails());
+			FNX.dbgf("Item #%d uploaded as ghost ID %d: %s", i, ghostID, ghost.getDebugDetails());
 
 			if(!applicable)
 			{
-				dbgf("Ghost with ID %d not applicable, skipping...", ghostID);
+				FNX.dbgf("Ghost with ID %d not applicable, skipping...", ghostID);
 
 				if(!silent)
 				{
@@ -3434,7 +3410,7 @@ public class HTGT
 
 				if(cfg(CFG_AAR) != null)
 				{
-					dbg("Forcing result registration because of previous choice...");
+					FNX.dbg("Forcing result registration because of previous choice...");
 					action = BUTTON_YES;
 				}
 				else
@@ -3490,7 +3466,7 @@ public class HTGT
 
 						if(status)
 						{
-							dbgf("Successfully applied result from ghost with ID %d. (expected rank %d)", ghostID, position);
+							FNX.dbgf("Successfully applied result from ghost with ID %d. (expected rank %d)", ghostID, position);
 
 							if(!silent)
 							{
@@ -3518,11 +3494,11 @@ public class HTGT
 
 						if(silent && e.getMessage().equals("GHOST_DOPING") && cfg(CFG_AAR) != null)
 						{
-							dbgf("Silently discarding GHOST_DOPING exception at ghost with ID %d.", ghostID);
+							FNX.dbgf("Silently discarding GHOST_DOPING exception at ghost with ID %d.", ghostID);
 						}
 						else
 						{
-							dbgf("Failed to apply ghost with ID %d.", ghostID);
+							FNX.dbgf("Failed to apply ghost with ID %d.", ghostID);
 							APIError(e, FNX.formatLangString(lang, "ghostApplyFailed", ghostID));
 						}
 					}
@@ -3613,18 +3589,18 @@ public class HTGT
 			{
 				if(ids.length == 0)
 				{
-					dbg("ids.length = 0");
+					FNX.dbg("ids.length = 0");
 					return false;
 				}
 				else if(ids.length == 1)
 				{
-					dbg("ids.length = 1");
+					FNX.dbg("ids.length = 1");
 					ghostdata = new GhostElement[1];
 					ghostdata[0] = api.getGhostByID(ids[0]);
 				}
 				else
 				{
-					dbg("ids.length > 1");
+					FNX.dbg("ids.length > 1");
 					ghostdata = api.getGhostsByIDs(ids);
 				}
 
@@ -3636,7 +3612,7 @@ public class HTGT
 				}
 				else if(imported == -1)
 				{
-					dbg("imported = -1");
+					FNX.dbg("imported = -1");
 					return false;
 				}
 				else
@@ -3950,7 +3926,7 @@ public class HTGT
 
 				if(results.size() > 0)
 				{
-					dbgf("Got %d results.", results.size());
+					FNX.dbgf("Got %d results.", results.size());
 					Integer[] ghosts = new Integer[results.size()];
 					String[] values = new String[results.size()];
 					String preSelection = null;
@@ -3988,7 +3964,7 @@ public class HTGT
 				else
 				{
 					// Das sollte nie passieren, da es RESULT_EMPTY gibt!
-					dbg("Something went really wrong! We got an empty result list...");
+					FNX.dbg("Something went really wrong! We got an empty result list...");
 					throw new eSportsAPIException("SERVER_DUMB");
 				}
 			}
@@ -4009,7 +3985,7 @@ public class HTGT
 			if(prepareAPI())
 			{
 				Map<String,Object> data = api.getPlayerInfo();
-				data.forEach((k,v) -> dbgf("playerDetails.%s: %s", k, v));
+				data.forEach((k,v) -> FNX.dbgf("playerDetails.%s: %s", k, v));
 
 				messageDialog(APPLICATION_API, FNX.formatLangString(lang, "playerInfo", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
 			}
@@ -4030,15 +4006,15 @@ public class HTGT
 		long checkInterval = Math.min(3600000L, WEATHER_INTERVAL);
 		checkInterval = date.getTime() / checkInterval * checkInterval;
 
-		dbgf("Current time: %d", date.getTime());
-		dbgf("Last weather check: %d", lastWeatherCheck);
-		dbgf("Check interval: %d", checkInterval);
+		FNX.dbgf("Current time: %d", date.getTime());
+		FNX.dbgf("Last weather check: %d", lastWeatherCheck);
+		FNX.dbgf("Check interval: %d", checkInterval);
 
 		String trackOrder = cfg(CFG_TRACKS);
 		if(trackOrder == null || trackOrder.length() == 0)
 		{
 			// Upgrade: v0.1.0 » v0.1.1
-			dbg("Forcing cache flush...");
+			FNX.dbg("Forcing cache flush...");
 			lastWeatherCheck = 0L;
 		}
 
@@ -4070,7 +4046,7 @@ public class HTGT
 										break;
 								}
 
-								dbgf("Race weather: %s @ %s (%d) = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), i, test[i][m][t]);
+								FNX.dbgf("Race weather: %s @ %s (%d) = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), i, test[i][m][t]);
 								cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase() + s), test[i][m][t]);
 							}
 						}
@@ -4189,7 +4165,7 @@ public class HTGT
 			updateWindowTitle();
 			enableMenuItems();
 
-			dbg("Successfully loaded XML file! Let's rumble...");
+			FNX.dbg("Successfully loaded XML file! Let's rumble...");
 		}
 		catch(FileNotFoundException e)
 		{
@@ -4213,12 +4189,12 @@ public class HTGT
 
 		if(dll.exists() && dll.isFile())
 		{
-			dbgf("DLL file exists: %s", dll.getAbsolutePath().toString());
+			FNX.dbgf("DLL file exists: %s", dll.getAbsolutePath().toString());
 			new Thread(new HTGT_Background(HTGT_Background.EXEC_DLLCHECK)).start();
 		}
 		else
 		{
-			dbgf("DLL file not found: %s", dll.getAbsolutePath().toString());
+			FNX.dbgf("DLL file not found: %s", dll.getAbsolutePath().toString());
 		}
 	}
 
@@ -4342,7 +4318,7 @@ public class HTGT
 			return;
 		}
 
-		dbg("Reloading file...");
+		FNX.dbg("Reloading file...");
 		OfflineProfiles.reload();
 		selectProfile(profile);
 		syncGUI();
@@ -4353,7 +4329,7 @@ public class HTGT
 	{
 		if(ENABLE_AUTOSAVE)
 		{
-			dbg("AUTOSAVE TRIGGERED!");
+			FNX.dbg("AUTOSAVE TRIGGERED!");
 			saveFile(false);
 		}
 	}
@@ -4365,7 +4341,7 @@ public class HTGT
 		{
 			if(unsavedChanges())
 			{
-				dbg("THIS IS A BUG! THERE ARE UNSAVED CHANGES BUT AUTOSAVE IS ENABLED.");
+				FNX.dbg("THIS IS A BUG! THERE ARE UNSAVED CHANGES BUT AUTOSAVE IS ENABLED.");
 				exceptionHandler(new Exception("AUTOSAVE & UNSAVED TRIGGERED"));
 			}
 			else
@@ -4376,7 +4352,7 @@ public class HTGT
 
 		if(!saveFile(false))
 		{
-			dbg("Failed to save file! (safe internal state)");
+			FNX.dbg("Failed to save file! (safe internal state)");
 			errorMessage(FNX.formatLangString(lang, "fileSaveFailed"));
 		}
 	}
@@ -4391,7 +4367,7 @@ public class HTGT
 
 		if(force || OfflineProfiles.changed())
 		{
-			dbg("Something to save...");
+			FNX.dbg("Something to save...");
 
 			if(!saveFile(OfflineProfiles.toString()))
 			{
@@ -4404,7 +4380,7 @@ public class HTGT
 		}
 		else
 		{
-			dbg("Nothing to save...");
+			FNX.dbg("Nothing to save...");
 		}
 
 		return true;
@@ -4451,7 +4427,7 @@ public class HTGT
 				}
 
 				OfflineProfiles.updateFile(file);
-				dbg("File saved to new location.");
+				FNX.dbg("File saved to new location.");
 			}
 			catch(Exception e)
 			{
@@ -4501,12 +4477,12 @@ public class HTGT
 	{
 		if(closeFile())
 		{
-			dbg("Good bye!");
+			FNX.dbg("Good bye!");
 			System.exit(0);
 		}
 		else
 		{
-			dbg("File not closed.");
+			FNX.dbg("File not closed.");
 		}
 	}
 
@@ -4555,7 +4531,7 @@ public class HTGT
 				for(int i = selection.length - 1; i > -1; i--)
 				{
 					GhostElement ghost = OfflineProfiles.getGhost(selection[i]);
-					dbgf("Exporting line %d: %s", selection[i], ghost.getDebugDetails());
+					FNX.dbgf("Exporting line %d: %s", selection[i], ghost.getDebugDetails());
 					data.insert(0, String.format("\t<!-- %s @ %s (%s / %s): %s (%s) -->\r\n\t%s\r\n", ghost.getNickname(), ghost.getTrackName(), ghost.getGameModeName(), ghost.getWeatherName(), ghost.getResult(), gmHelper.formatSki(ghost.getSki(), true), ghost.toString()));
 				}
 
@@ -4565,7 +4541,7 @@ public class HTGT
 				PrintWriter pw = new PrintWriter(selectedFile);
 				pw.printf("%s", data.toString()); pw.close();
 
-				dbg("Export to file successfully!");
+				FNX.dbg("Export to file successfully!");
 				infoDialog(FNX.formatLangString(lang, "exportToFileSuccess", selectedFile));
 
 				return true;
@@ -4594,12 +4570,12 @@ public class HTGT
 			{
 				if((importCounter = ghostImport(selectedFile)) > 0)
 				{
-					dbgf("importCounter = %d (ok)", importCounter);
+					FNX.dbgf("importCounter = %d (ok)", importCounter);
 					infoDialog(FNX.formatLangString(lang, "importedGhostsCount", importCounter));
 				}
 				else if(importCounter == 0)
 				{
-					dbg("importCounter = 0 (none)");
+					FNX.dbg("importCounter = 0 (none)");
 					errorMessage(FNX.formatLangString(lang, "noGhostsInFile"));
 				}
 			}
@@ -4645,7 +4621,7 @@ public class HTGT
 	{
 		historyIndex = 0;
 		history = new String[HISTORY_SIZE];
-		dbg("History cleared! (index: 0)");
+		FNX.dbg("History cleared! (index: 0)");
 
 		disableMenuItems(MENU_UNDO);
 		disableMenuItems(MENU_REDO);
@@ -4666,7 +4642,7 @@ public class HTGT
 		}
 		else if(!force && !OfflineProfiles.changed())
 		{
-			dbg("Nothing changed, not updating history.");
+			FNX.dbg("Nothing changed, not updating history.");
 			return;
 		}
 
@@ -4678,7 +4654,7 @@ public class HTGT
 
 		if(historyIndex != 0)
 		{
-			dbgf("History index is %d, let's rewind...", historyIndex);
+			FNX.dbgf("History index is %d, let's rewind...", historyIndex);
 
 			i = historyIndex;
 			historyIndex = 0;
@@ -4692,7 +4668,7 @@ public class HTGT
 		}
 
 		history = newHistory;
-		dbg("History updated!");
+		FNX.dbg("History updated!");
 
 		//dumpHistory("post-rewind");
 		dumpHistory();
@@ -4714,7 +4690,7 @@ public class HTGT
 	{
 		if(OfflineProfiles != null && newIndex >= 0 && newIndex < history.length && history[newIndex] != null)
 		{
-			dbgf("Restoring from history index %d...", newIndex);
+			FNX.dbgf("Restoring from history index %d...", newIndex);
 
 			try
 			{
@@ -4736,7 +4712,7 @@ public class HTGT
 		}
 		else
 		{
-			dbgf("Restoring from history index %d is impossible!", newIndex);
+			FNX.dbgf("Restoring from history index %d is impossible!", newIndex);
 		}
 
 		dumpHistory();
@@ -4752,15 +4728,15 @@ public class HTGT
 	private static void dumpHistory(String title)
 	{
 		title = (title != null) ? String.format(" (%s)", title) : "";
-		dbgf("----- START OF HISTORY DUMP%s -----", title);
+		FNX.dbgf("----- START OF HISTORY DUMP%s -----", title);
 
 		int length = FNX.strlen(HISTORY_SIZE);
 		for(int i = 0; i < history.length; i++)
 		{
-			dbgf("%3$s[%1$0" + length + "d] = %2$s", i, (history[i] == null ? "NULL" : String.format("%d byte", history[i].length())), (i == historyIndex ? "!" : " "));
+			FNX.dbgf("%3$s[%1$0" + length + "d] = %2$s", i, (history[i] == null ? "NULL" : String.format("%d byte", history[i].length())), (i == historyIndex ? "!" : " "));
 		}
 
-		dbgf("----- END OF HISTORY DUMP%s -----", title);
+		FNX.dbgf("----- END OF HISTORY DUMP%s -----", title);
 	}
 
 /***********************************************************************
@@ -4793,12 +4769,12 @@ public class HTGT
 
 		if(getConfig(key, "").equals(value))
 		{
-			dbgf("Config for key \"%s\" unchanged: %s", key, value);
+			FNX.dbgf("Config for key \"%s\" unchanged: %s", key, value);
 		}
 		else
 		{
-			dbgf("Old config for key \"%s\": %s", key, oldValue);
-			dbgf("New config for key \"%s\": %s", key, newValue);
+			FNX.dbgf("Old config for key \"%s\": %s", key, oldValue);
+			FNX.dbgf("New config for key \"%s\": %s", key, newValue);
 
 			cfg.put(key, value);
 		}
@@ -4818,7 +4794,7 @@ public class HTGT
 			oldValue = getConfig(key, null);
 		}
 
-		dbgf("Removing config for key \"%s\", old value: %s", key, oldValue);
+		FNX.dbgf("Removing config for key \"%s\", old value: %s", key, oldValue);
 
 		cfg.remove(key);
 	}
@@ -4853,7 +4829,7 @@ public class HTGT
 	{
 		try
 		{
-			dbg("Clearing config!");
+			FNX.dbg("Clearing config!");
 			cfg.clear(); return true;
 		}
 		catch(Exception e)
@@ -5043,10 +5019,10 @@ public class HTGT
 					return;
 				}
 
-				dbgf("Selected profile ID: %2$d (item #%1$d)", selected, profileIDs[selected]);
+				FNX.dbgf("Selected profile ID: %2$d (item #%1$d)", selected, profileIDs[selected]);
 				selected = profileIDs[selected];
 
-				dbgf("Switching to profile %d...", selected);
+				FNX.dbgf("Switching to profile %d...", selected);
 				OfflineProfiles.selectProfile(selected);
 
 				if(!isSpecialProfile(selected))
@@ -5095,7 +5071,7 @@ public class HTGT
 					OfflineProfiles.addGhost(ghosts[i]);
 				}
 
-				dbgf("Using old profile %d...", profile);
+				FNX.dbgf("Using old profile %d...", profile);
 				OfflineProfiles.selectProfile(profile);
 
 				if(move)
@@ -5115,7 +5091,7 @@ public class HTGT
 				try
 				{
 					// Das ursprüngliche Profil aktivieren!
-					dbgf("Restoring profile %d...", profile);
+					FNX.dbgf("Restoring profile %d...", profile);
 					OfflineProfiles.selectProfile(profile);
 				}
 				catch(Exception e)
@@ -5255,12 +5231,12 @@ class HTGT_SelectionHandler implements javax.swing.event.ListSelectionListener
 		{
 			if(lsm.isSelectionEmpty())
 			{
-				HTGT.dbg("No selection available - disabling menus...");
+				FNX.dbg("No selection available - disabling menus...");
 				HTGT.updateSelectionMenuItems(false);
 			}
 			else
 			{
-				HTGT.dbg("Selection available - enabling menus...");
+				FNX.dbg("Selection available - enabling menus...");
 				HTGT.updateSelectionMenuItems(true);
 			}
 		}
@@ -5273,46 +5249,52 @@ class HTGT_FastFollowMode_EDT extends HTGT_FastFollowMode
 	{
 		super();
 
-		HTGT.dbg("FFM-EDT started");
+		FNX.dbg("FFM-EDT started");
 	}
 
 	protected Integer doInBackground() throws Exception
 	{
-		HTGT.dbg("doInBackground() called");
+		/*
+		FNX.dbg("doInBackground() called");
 
 		int i = 0;
 		while(i > -1)
 		{
-			HTGT.dbg("doInBackground(): publishing something");
+			FNX.dbg("doInBackground(): publishing something");
 			publish(i++);
 
-			HTGT.dbg("doInBackground(): sleeping 1000ms");
+			FNX.dbg("doInBackground(): sleeping 1000ms");
 			Thread.sleep(1000);
 		}
 
-		HTGT.dbg("doInBackground() finished");
+		FNX.dbg("doInBackground() finished");
+		*/
+
 		return 0;
 	}
 
 	protected void process(List chunks)
 	{
-		HTGT.dbg("process() called");
+		/*
+		FNX.dbg("process() called");
 
 		//HTGT.FastFollowBlock();
 
 		if(isCancelled())
 		{
-			HTGT.dbg("process(): Already cancelled");
+			FNX.dbg("process(): Already cancelled");
 
 			return;
 		}
 
-		HTGT.dbgf("process(): chunk %d received", chunks.get(chunks.size() - 1));
+		FNX.dbgf("process(): chunk %d received", chunks.get(chunks.size() - 1));
+		*/
 	}
 
 	protected void done()
 	{
-		HTGT.dbg("done() called");
+		/*
+		FNX.dbg("done() called");
 
 		try
 		{
@@ -5333,46 +5315,135 @@ class HTGT_FastFollowMode_EDT extends HTGT_FastFollowMode
 			//GUI.updateStatus("CancellationException");
 		}
 
-		HTGT.dbg("done() finished");
+		FNX.dbg("done() finished");
+		*/
 	}
 }
 
 class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
 {
+	private File fileHandle;
+	private int checkInterval;
+	private FileTime oldTime;
+	private FileTime newTime;
+
 	public HTGT_FastFollowMode_WT()
 	{
 		super();
 
-		HTGT.dbg("FFM-WT started");
+		FNX.dbg("FFM-WT started");
 	}
 
-	protected Integer doInBackground() throws Exception
+	public void setInterval(int i)
 	{
-		HTGT.dbg("doInBackground() called");
+		checkInterval = i;
+	}
 
-		Thread.sleep(10000);
+	public void setFile(File f)
+	{
+		fileHandle = f;
+	}
 
-		HTGT.dbg("doInBackground() finished");
-		return 0;
+	protected Integer doInBackground() throws IOException, InterruptedException
+	{
+		FNX.dbg("FFM background thread started.");
+
+		if(fileHandle == null || checkInterval <= 0)
+		{
+			throw new IllegalStateException("FFM not initialized");
+		}
+
+		oldTime = Files.getLastModifiedTime(fileHandle.toPath());
+
+		while(true)
+		{
+			newTime = Files.getLastModifiedTime(fileHandle.toPath());
+
+			if(newTime.compareTo(oldTime) > 0)
+			{
+				FNX.dbgf("File modification time changed: o=%d n=%d", oldTime.toMillis(), newTime.toMillis());
+				publish((int) (newTime.toMillis() / 1000) * -1);
+				oldTime = newTime;
+			}
+			else
+			{
+				FNX.dbgf("Nothing to do, sleeping: o=%d n=%d", oldTime.toMillis(), newTime.toMillis());
+				publish((int) (newTime.toMillis() / 1000));
+			}
+
+			Thread.sleep(checkInterval);
+		}
 	}
 
 	protected void process(List chunks)
 	{
-		HTGT.dbg("process() called");
+		int modificationTime = 0;
+		boolean invokeCheck = false;
+
+		for(int i = 0; i < chunks.size(); i++)
+		{
+			int chunk = (int) chunks.get(i);
+
+			if(chunk < 0)
+			{
+				invokeCheck = true;
+				modificationTime = chunk * -1;
+			}
+			else
+			{
+				modificationTime = chunk;
+			}
+		}
 
 		if(isCancelled())
 		{
-			HTGT.dbg("process(): Already cancelled");
+			FNX.dbg("Already cancelled!");
+		}
+		else if(invokeCheck)
+		{
+			FNX.dbg("Woohoo! Ready to party...");
 
-			return;
+			// Das einzige Problem, was wir jetzt haben: Wenn wir in
+			// diesem Thread prüfen, ob es etwas zu tun gibt, blockieren
+			// wir damit wieder die GUI! Der User kann dadurch z.B. nicht
+			// mehr auf Abbrechen klicken oder das Fenster schließen. Es
+			// wäre somit weiterhin sinnvoll, wenn wir auch das in einen
+			// eigenen Thread auslagern. Erst, wenn es wirklich Rückfragen
+			// oder Fehlermeldungen gibt, soll der Hauptthread aktiv werden.
+			// ...
+
+			// do not forget to take an extra nap before loading xml file!
+			// ...
+
+			// do something (simulate real FFM)
+			// ...
+
+			// restore profile?
+			// ...
+
+			// test
+			//HTGT.FastFollowUnblock();
+
+			try
+			{
+				Thread.sleep(10000);
+			}
+			catch(Exception e)
+			{
+
+			}
+		}
+		else
+		{
+			FNX.dbg("Nothing to do, sleeping...");
 		}
 
-		HTGT.dbgf("process(): chunk %d received", chunks.get(chunks.size() - 1));
+		//HTGT.updateFFMStatus(modificationTime);
 	}
 
 	protected void done()
 	{
-		HTGT.dbg("done() called");
+		FNX.dbg("done() called");
 
 		try
 		{
@@ -5380,31 +5451,33 @@ class HTGT_FastFollowMode_WT extends HTGT_FastFollowMode
 
 			//GUI.updateStatus((String) get());
 		}
+		catch(CancellationException e)
+		{
+			FNX.dbg("FFM background thread stopped by GUI action.");
+		}
 		catch(InterruptedException e)
 		{
-			//GUI.updateStatus("InterruptedException");
+			FNX.dbg("FFM background thread interrupted.");
+			e.printStackTrace();
 		}
 		catch(ExecutionException e)
 		{
-			//GUI.updateStatus("ExecutionException");
-		}
-		catch(CancellationException e)
-		{
-			//GUI.updateStatus("CancellationException");
+			HTGT.exceptionHandler(e);
 		}
 
 		HTGT.FastFollowUnblock();
-		HTGT.dbg("done() finished");
+		FNX.dbg("done() finished");
 	}
 }
 
 class HTGT_FastFollowMode extends SwingWorker<Integer,Integer>
 {
+
 	public HTGT_FastFollowMode()
 	{
 		super();
 
-		HTGT.dbg("FFM started");
+		FNX.dbg("FFM started");
 	}
 
 	protected Integer doInBackground() throws Exception
