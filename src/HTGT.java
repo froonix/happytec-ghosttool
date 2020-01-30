@@ -337,8 +337,12 @@ public class HTGT
 
 	private static void exceptionHandler(Exception e, String msg)
 	{
-		// Check if we're in EDT?
-		// ...
+		if(!FNX.requireEDT())
+		{
+			e.printStackTrace();
+
+			return;
+		}
 
 		FNX.windowToFront(mainWindow);
 		FNX.displayExceptionSummary(e, FNX.formatLangString(lang, "errorTitle"), msg, FNX.formatLangString(lang, "errorBody"));
@@ -1952,10 +1956,7 @@ public class HTGT
 			//eFFM = new HTGT_FFM_EDT();
 			//eFFM.execute();
 
-			oFFM = new HTGT_FFM_Observer();
-			oFFM.setInterval(FF_CHECK_INTERVAL);
-			oFFM.setFile(file);
-			oFFM.execute();
+
 
 			fastFollowBlock();
 		}
@@ -2048,10 +2049,11 @@ public class HTGT
 	private static int startedFFM;
 	public static void fastFollowBlock()
 	{
-		// EDT prüfen
-		// ...
-
-		if(startedFFM != 0)
+		if(!FNX.requireEDT())
+		{
+			return;
+		}
+		else if(startedFFM != 0)
 		{
 			FNX.dbg("startedFFM != 0");
 			return;
@@ -2062,8 +2064,27 @@ public class HTGT
 			startedFFM = 1;
 		}
 
+		boolean firstRun = true;
+
 		while(true)
 		{
+			oFFM = new HTGT_FFM_Observer();
+			oFFM.setInterval(FF_CHECK_INTERVAL);
+			oFFM.setFile(file);
+
+			if(firstRun)
+			{
+				// TODO: Hier wäre die geeignete Stelle, um die erste API-Anfrage abzusetzen!
+				// ...
+
+				firstRun = false;
+				oFFM.firstRun();
+			}
+			else
+			{
+				oFFM.secondRun();
+			}
+
 			FNX.dbg("Opening new dialog...");
 
 			if(ffBody == null)
@@ -2112,39 +2133,58 @@ public class HTGT
 		startedFFM = 0;
 	}
 
+	// TODO: Umbenennen der Methodennamen!
+	// Unblock() sollte zu Stop() werden, aber mit Parameter für den Button.
+	// Block() sollte zu Start() werden.
+	// ...
+
 	public static void fastFollowLock()
 	{
-		// EDT prüfen
-		// ...
-
-		if(ffDialog != null && ffButton != null && ffListener != null)
+		if(!FNX.requireEDT())
 		{
-			FNX.dbg("Locking FFM interface...");
-			//ffDialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-			ffButton.setEnabled(false);
-			ffListener.disable();
+			return;
 		}
+
+		FNX.dbg("Locking FFM interface...");
+
+		//if(ffDialog != null)
+		//ffDialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+		if(ffButton != null)
+		ffButton.setEnabled(false);
+
+		if(ffListener != null)
+		ffListener.disable();
 	}
 
 	public static void fastFollowUnlock()
 	{
-		// EDT prüfen
-		// ...
-
-		if(ffDialog != null && ffButton != null && ffListener != null)
+		if(!FNX.requireEDT())
 		{
-			FNX.dbg("Unlocking FFM interface...");
-			ffDialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-			//ffDialog.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-			ffButton.setEnabled(true);
-			ffListener.enable();
+			return;
 		}
+
+		FNX.dbg("Unlocking FFM interface...");
+
+		//if(ffDialog != null)
+		//ffDialog.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+
+		if(ffDialog != null)
+		ffDialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+		if(ffButton != null)
+		ffButton.setEnabled(true);
+
+		if(ffListener != null)
+		ffListener.enable();
 	}
 
 	public static void fastFollowStatus(int time)
 	{
-		// EDT prüfen
-		// ...
+		if(!FNX.requireEDT())
+		{
+			return;
+		}
 
 		if(ffBody != null)
 		{
@@ -2171,12 +2211,14 @@ public class HTGT
 
 	public static void fastFollowUnblock()
 	{
-		// EDT prüfen
-		// ...
-
-		if(startedFFM == 0)
+		if(!FNX.requireEDT())
 		{
-			FNX.dbg("not started?!");
+			return;
+		}
+		else if(startedFFM == 0)
+		{
+			FNX.dbg("FFM not started! Unable to unblock...");
+
 			return;
 		}
 
@@ -2189,7 +2231,6 @@ public class HTGT
 		aFFM.cancel(true);
 
 		ffDialog.setVisible(false);
-		//startedFFM = 0;
 	}
 
 	private static Profiles getProfileHandle(String nick)
@@ -5572,6 +5613,7 @@ class HTGT_FFM_Observer extends HTGT_FFM
 	private File fileHandle;
 	private int checkInterval;
 	private boolean queueState;
+	private boolean firstRun;
 	private FileTime oldTime;
 	private FileTime newTime;
 
@@ -5588,6 +5630,18 @@ class HTGT_FFM_Observer extends HTGT_FFM
 	public void setInterval(int i)
 	{
 		checkInterval = i;
+	}
+
+	public void firstRun()
+	{
+		firstRun = true;
+
+		secondRun();
+	}
+
+	public void secondRun()
+	{
+		execute();
 	}
 
 	protected Integer doInBackground() throws IOException, InterruptedException
@@ -5609,7 +5663,13 @@ class HTGT_FFM_Observer extends HTGT_FFM
 		// das nichts, da das sowieso im Hintergrund passiert...
 		oldTime = Files.getLastModifiedTime(fileHandle.toPath());
 		FNX.dbgf("FFM background thread started: o=%d", oldTime.toMillis());
-		publish((int) (oldTime.toMillis() / 1000) * -1);
+
+		if(firstRun)
+		{
+			FNX.dbg("This is the first run, triggering now!");
+			publish((int) (oldTime.toMillis() / 1000) * -1);
+			firstRun = false;
+		}
 
 		while(true)
 		{

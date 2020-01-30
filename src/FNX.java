@@ -47,6 +47,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -536,7 +537,7 @@ public abstract class FNX
 			}
 
 			Long threadID = Thread.currentThread().getId();
-			String threadType = (threadID == 1) ? "R" : (javax.swing.SwingUtilities.isEventDispatchThread() ? "E" : "W");
+			String threadType = (threadID == 1) ? "R" : (isEDT() ? "E" : "W");
 
 			System.err.printf("%2$5d-%3$s [%1$s] %4$s - %5$s%n", debugDate.format(new Date()), threadID, threadType, Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
 		}
@@ -550,5 +551,23 @@ public abstract class FNX
 	public static void dbg(String msg)
 	{
 		dbg(msg, 1);
+	}
+
+	public static boolean isEDT()
+	{
+		return SwingUtilities.isEventDispatchThread();
+	}
+
+	public static boolean requireEDT()
+	{
+		if(!isEDT())
+		{
+			FNX.dbg("This is not an EDT! (Event Dispatch Thread)", 1);
+			//throw new RuntimeException("Not in EDT! Oops...");
+
+			return false;
+		}
+
+		return true;
 	}
 }
