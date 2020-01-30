@@ -80,6 +80,9 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
 import javax.swing.Box;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.InputMap;
@@ -667,6 +670,9 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectDefaultProfile",      "selectDefaultProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_D,      SHIFT)));
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectRegularProfile",      "selectRegularProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_A,      SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectPrevProfile",         "selectPrevProfile",      KeyStroke.getKeyStroke(KeyEvent.VK_LEFT,   NONE)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".selectNextProfile",         "selectNextProfile",      KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT,  NONE)));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".createProfile",             "createProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_N,      CTRL | SHIFT)));
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".renameProfile",             "renameProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".deleteProfile",             "deleteProfile",          KeyStroke.getKeyStroke(KeyEvent.VK_D,      CTRL | SHIFT)));
@@ -1216,6 +1222,69 @@ public class HTGT
 
 		profile = index;
 		syncGUI();
+	}
+
+	public static void selectNextProfile()
+	{
+		selectNearProfile(1);
+	}
+
+	public static void selectPrevProfile()
+	{
+		selectNearProfile(-1);
+	}
+
+	private static void selectNearProfile(int n)
+	{
+		if(OfflineProfiles == null)
+		{
+			return;
+		}
+
+		n = profile + n;
+
+		if(n >= OfflineProfiles.getProfileCount())
+		{
+			n = 0;
+		}
+		else if(n < 0)
+		{
+			n = OfflineProfiles.getProfileCount() - 1;
+		}
+
+		try
+		{
+			selectProfile(n);
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
+	}
+
+	public static void selectProfileByNumber(Integer i)
+	{
+		FNX.dbgf("i=%d", i);
+
+		try
+		{
+			if(i > 0)
+			{
+				selectProfile(i - 1);
+			}
+			else if(i < 0)
+			{
+				selectSpecialProfile();
+			}
+			else
+			{
+				selectDefaultProfile();
+			}
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
+		}
 	}
 
 	public static void selectLastProfile()
@@ -5269,36 +5338,121 @@ class HTGT_JTable extends JTable
 	{
 		super(dm);
 
+		HTGT_ActionListener action;
+		ActionMap actionMap = getActionMap();
 		InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP,   HTGT.NONE             ), "scrollUpChangeSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, HTGT.NONE             ), "scrollDownChangeSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP,         HTGT.NONE             ), "scrollUpChangeSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN,       HTGT.NONE             ), "scrollDownChangeSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,        HTGT.NONE             ), "selectPreviousRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,     HTGT.NONE             ), "selectPreviousRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,        HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,     HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,              HTGT.NONE             ), "selectPreviousRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,           HTGT.NONE             ), "selectPreviousRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,              HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,           HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,      HTGT.NONE             ), "selectNextRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,   HTGT.NONE             ), "selectNextRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,      HTGT.SHIFT            ), "selectNextRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,   HTGT.SHIFT            ), "selectNextRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,            HTGT.NONE             ), "selectNextRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,         HTGT.NONE             ), "selectNextRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,            HTGT.SHIFT            ), "selectNextRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,         HTGT.SHIFT            ), "selectNextRowExtendSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.NONE             ), "selectFirstRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.CTRL             ), "selectFirstRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.SHIFT            ), "selectFirstRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.SHIFT + HTGT.CTRL), "selectFirstRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.NONE             ), "selectFirstRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.CTRL             ), "selectFirstRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.SHIFT            ), "selectFirstRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.SHIFT + HTGT.CTRL), "selectFirstRowExtendSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.NONE             ), "selectLastRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.CTRL             ), "selectLastRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.SHIFT            ), "selectLastRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.SHIFT + HTGT.CTRL), "selectLastRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.NONE             ), "selectLastRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.CTRL             ), "selectLastRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.SHIFT            ), "selectLastRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.SHIFT + HTGT.CTRL), "selectLastRowExtendSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,    HTGT.NONE             ), "clearSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A,         HTGT.CTRL             ), "selectAll");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,          HTGT.NONE             ), "clearSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A,               HTGT.CTRL             ), "selectAll");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DIVIDE ,         HTGT.NONE             ), "moveGhostsToProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_MULTIPLY ,       HTGT.NONE             ), "copyGhostsToProfile");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT ,       HTGT.NONE             ), "selectPreviousGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_LEFT,         HTGT.NONE             ), "selectPreviousGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS,           HTGT.NONE             ), "selectPreviousGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB,             HTGT.NONE             ), "selectNextGameProfile");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ADD,             HTGT.NONE             ), "selectNextGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_RIGHT,        HTGT.NONE             ), "selectNextGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PLUS,            HTGT.NONE             ), "selectNextGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB,             HTGT.SHIFT            ), "selectNextGameProfile");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA,           HTGT.NONE             ), "selectSpecialGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD,          HTGT.NONE             ), "selectSpecialGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DECIMAL,         HTGT.NONE             ), "selectSpecialGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SEPARATOR,       HTGT.NONE             ), "selectSpecialGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_CIRCUMFLEX,      HTGT.NONE             ), "selectSpecialGameProfile");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DEAD_CIRCUMFLEX, HTGT.NONE             ), "selectSpecialGameProfile");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMBER_SIGN,     HTGT.NONE             ), "selectDefaultGameProfile");
+
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,           HTGT.NONE             ), "selectRegularGameProfile");
+
+		action = new HTGT_ActionListener();
+		action.setPrivateAction("moveGhosts");
+		actionMap.put("moveGhostsToProfile", action);
+
+		action = new HTGT_ActionListener();
+		action.setPrivateAction("copyGhosts");
+		actionMap.put("copyGhostsToProfile", action);
+
+		action = new HTGT_ActionListener();
+		action.setPrivateAction("selectPrevProfile");
+		actionMap.put("selectPreviousGameProfile", action);
+
+		action = new HTGT_ActionListener();
+		action.setPrivateAction("selectNextProfile");
+		actionMap.put("selectNextGameProfile", action);
+
+		action = new HTGT_ActionListener();
+		action.setPrivateAction("selectDefaultProfile");
+		actionMap.put("selectDefaultGameProfile", action);
+
+		action = new HTGT_ActionListener();
+		action.setPrivateAction("selectRegularProfile");
+		actionMap.put("selectRegularGameProfile", action);
+
+		action = new HTGT_ActionListener();
+		action.setPrivateArguments(new Object[]{-1});
+		action.setPrivateAction("selectProfileByNumber");
+		actionMap.put("selectSpecialGameProfile", action);
+
+		for(int i = 0; i < 10; i++)
+		{
+			try
+			{
+				inputMap.put(KeyStroke.getKeyStroke(KeyEvent.class.getField("VK_NUMPAD" + i).getInt(null), HTGT.NONE), "selectGameProfileWithNumber" + i);
+				inputMap.put(KeyStroke.getKeyStroke(KeyEvent.class.getField("VK_" + i).getInt(null), HTGT.NONE), "selectGameProfileWithNumber" + i);
+
+				action = new HTGT_ActionListener();
+				action.setPrivateArguments(new Object[]{i});
+				action.setPrivateAction("selectProfileByNumber");
+				actionMap.put("selectGameProfileWithNumber" + i, action);
+			}
+			catch(NoSuchFieldException|IllegalAccessException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+
+
+
+
+		// TODO: Irgendwelche Tasten auf das SpecialProfile mappen?
+		// ...
 
 		//getColumnModel().addColumnModelListener(this);
 		getModel().addTableModelListener(this);
+	}
+
+	public void test123()
+	{
+		FNX.dbg("hello world");
 	}
 
 	@Override
@@ -5623,10 +5777,32 @@ class HTGT_FFM_KeyListener extends KeyAdapter /*implements KeyListener*/
 	}
 }
 
+// Wird für zusätzliche Hotkeys ohne Menüeintrag benötigt.
+class HTGT_ActionListener extends AbstractAction
+{
+	private String action;
+	private Object[] args;
+
+	public void setPrivateAction(String m)
+	{
+		action = m;
+	}
+
+	public void setPrivateArguments(Object[] a)
+	{
+		args = a;
+	}
+
+	public void actionPerformed(ActionEvent e)
+	{
+		if(action != null)
+		{
+			FNX.actionCallback("HTGT", action, args);
+		}
+	}
+}
+
 // TODO: Echte Sortierung der Tabelle ermöglichen? Dafür bräuchten wir
 // aber die einzelnen Geister irgendwo versteckt in der Tabelle, oder?
 // https://docs.oracle.com/javase/tutorial/uiswing/components/table.html#sorting
-// ...
-
-// TODO: Profil wechseln mit links/rechts Tasten?
 // ...

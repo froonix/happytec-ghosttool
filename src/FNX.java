@@ -433,13 +433,72 @@ public abstract class FNX
 		return lang.containsKey(key);
 	}
 
+	// Ruft die Methode einer statischen Klasse ohne Argumente auf.
 	public static void actionCallback(String className, String methodName)
 	{
+		actionCallback(className, methodName, new Object[0]);
+	}
+
+	// Ruft die Methode einer statischen Klasse mit beliebigen Argumenten auf.
+	// WICHTIG: Der dritte Parameter muss unbedingt NULL sein, damit es klappt!
+	public static void actionCallback(String className, String methodName, Object ignore, Object... args)
+	{
+		if(ignore != null)
+		{
+			throw new RuntimeException();
+		}
+
+		actionCallback(className, methodName, args);
+	}
+
+	// Ruft die Methode einer statischen Klasse mit den Argumenten in args[] auf.
+	public static void actionCallback(String className, String methodName, Object[] args)
+	{
+		int l = (args != null) ? args.length : 0;
+
+		dbgf("c=%s m=%s a=%d", className, methodName, l);
+
 		try
 		{
+			Class<?> methodParams[] = new Class[l];
+
+			for(int i = 0; i < l; i++)
+			{
+				if(args[i] instanceof Integer)
+				{
+					methodParams[i] = Integer.class;
+				}
+				else if(args[i] instanceof Long)
+				{
+					methodParams[i] = Long.class;
+				}
+				else if(args[i] instanceof String)
+				{
+					methodParams[i] = String.class;
+				}
+				else if(args[i] instanceof Boolean)
+				{
+					methodParams[i] = Boolean.class;
+				}
+				// ...
+				// ...
+				else
+				{
+					methodParams[i] = args[i].getClass().getComponentType();
+				}
+
+				if(methodParams[i] == null)
+				{
+					throw new RuntimeException();
+				}
+
+				//dbgf("methodParams[%d] = %s (%s)", i, args[i]);
+			}
+
 			Class<?> c = Class.forName(className);
-			Method m = c.getDeclaredMethod(methodName);
-			m.invoke(null);
+			Method m = c.getDeclaredMethod(methodName, methodParams);
+
+			m.invoke(null, args);
 		}
 		catch(Exception e)
 		{
