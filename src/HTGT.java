@@ -2089,7 +2089,7 @@ public class HTGT
 
 				ffDialog = ffBody.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
 				ffDialog.addKeyListener(ffListener);
-				ffDialog.setFocusable(true); // <-- wirklich notwendig?
+				ffDialog.setFocusable(true);
 			}
 
 			fastFollowUnlock();
