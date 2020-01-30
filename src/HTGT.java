@@ -5668,7 +5668,13 @@ class HTGT_FFM_Observer extends HTGT_FFM
 		{
 			FNX.dbg("This is the first run, triggering now!");
 			publish((int) (oldTime.toMillis() / 1000) * -1);
+
 			firstRun = false;
+		}
+		else
+		{
+			FNX.dbg("This is not the first run...");
+			publish((int) (oldTime.toMillis() / 1000));
 		}
 
 		while(true)
