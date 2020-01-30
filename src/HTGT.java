@@ -73,7 +73,12 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.Box;
 import javax.swing.DefaultComboBoxModel;
@@ -235,9 +240,21 @@ public class HTGT
 
 	private static OfflineProfiles            OfflineProfiles;
 
-	private static volatile boolean           ffState;
-	private static volatile JDialog           ffDialog;
-	private static volatile boolean           ffChanged;
+	// TODO: Das volatile-Flag kann weg,
+	// sobald der FFM vollständig auf
+	// SwingWorker umgestellt wurde!
+	// ...
+
+	// TODO: Manche Variablen können ganz weg.
+	// ...
+
+	private static volatile boolean              ffState;
+	private static volatile JDialog              ffDialog;
+	private static          JButton              ffButton;
+	private static          JOptionPane          ffBody;
+	private static          HTGT_FFM_KeyListener ffListener;
+	private static volatile boolean              ffChanged;
+
 
 	private static JFrame                     mainWindow;
 	private static JTable                     maintable;
@@ -1917,6 +1934,16 @@ public class HTGT
 		// und ob es dabei im regelfall zu rückfragen kommen würde.
 		// ...
 
+		try
+		{
+			// DEBUY ONLY !!!
+			Thread.sleep(10000);
+		}
+		catch(Exception e)
+		{
+
+		}
+
 		return -1;
 	}
 
@@ -1949,6 +1976,9 @@ public class HTGT
 	private static int startedFFM = 0;
 	public static void fastFollowBlock()
 	{
+		// EDT prüfen
+		// ...
+
 		if(startedFFM < 1)
 		{
 			FNX.dbg("startedFFM < 1");
@@ -1962,17 +1992,90 @@ public class HTGT
 
 		FNX.dbg("Opening new dialog...");
 
-		JOptionPane msg = new JOptionPane(FNX.formatLangString(lang, "fastFollowModeBody"), JOptionPane.PLAIN_MESSAGE);
-		msg.setOptions(new String[]{FNX.getLangString(lang, "cancel")});
-		ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
+		if(ffBody == null)
+		{
+			if(ffButton == null)
+			{
+				ffButton = new JButton(FNX.getLangString(lang, "fastFollowStop"));
+				ffButton.addActionListener(new HTGT_FFM_ActionListener());
+			}
+
+			ffBody = new JOptionPane(null, JOptionPane.PLAIN_MESSAGE);
+			ffBody.setOptions(new Object[]{ffButton});
+		}
+
+		ffBody.setMessage(FNX.formatLangString(lang, "fastFollowModeExtendedBody", 0));
+
+		if(ffDialog == null)
+		{
+			if(ffListener == null)
+			{
+				ffListener = new HTGT_FFM_KeyListener();
+			}
+
+			ffDialog = ffBody.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
+			ffDialog.addKeyListener(ffListener);
+			ffDialog.setFocusable(true); // <-- wirklich notwendig?
+		}
+
+		fastFollowUnlock();
 		ffDialog.setVisible(true);
 
 		FNX.dbg("Dialog closed?");
 		HTGT.fastFollowUnblock();
 	}
 
+	public static void fastFollowLock()
+	{
+		// EDT prüfen
+		// ...
+
+		if(ffDialog != null && ffButton != null && ffListener != null)
+		{
+			FNX.dbg("Locking FFM interface...");
+			//ffDialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			ffButton.setEnabled(false);
+			ffListener.disable();
+		}
+	}
+
+	public static void fastFollowUnlock()
+	{
+		// EDT prüfen
+		// ...
+
+		if(ffDialog != null && ffButton != null && ffListener != null)
+		{
+			FNX.dbg("Unlocking FFM interface...");
+			ffDialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			//ffDialog.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+			ffButton.setEnabled(true);
+			ffListener.enable();
+		}
+	}
+
+	public static void fastFollowStatus(int time)
+	{
+		// EDT prüfen
+		// ...
+
+		if(ffBody != null)
+		{
+			// ACHTUNG: Wir können an dieser Stelle zwar den Text aktualisieren,
+			// aber die Größe des Dialogs passt sich dadurch nicht automatisch an!
+			// Das betrifft vor allem die Höhe (Anzahl der Zeilenumbrüche) sowie die
+			// Breite der Zeilen. Dieses Feature sollte somit mit Vorsicht genutzt
+			// werden, solange es keine bessere Lösung gibt. Es sollten wirklich nur
+			// kurze Statusupdates hinzugefügt werden, für die es Platzhalter gibt.
+			ffBody.setMessage(FNX.formatLangString(lang, "fastFollowModeExtendedBody", time));
+		}
+	}
+
 	public static void fastFollowUnblock()
 	{
+		// EDT prüfen
+		// ...
+
 		if(startedFFM == 0)
 		{
 			FNX.dbg("not started?!");
@@ -1990,9 +2093,6 @@ public class HTGT
 		ffDialog.setVisible(false);
 		startedFFM = 0;
 	}
-
-	// todo: update text at ffDialog?
-	// ...
 
 	private static Profiles getProfileHandle(String nick)
 	{
@@ -5054,7 +5154,7 @@ public class HTGT
 
 				if(warnSRC && values[0] == null)
 				{
-					errorMessage(title, message + FNX.formatLangString(lang, "noSpecialProfileAvailable"));
+					errorMessage(title, FNX.formatLangString(lang, "noSpecialProfileAvailable"));
 					return;
 				}
 
@@ -5171,31 +5271,31 @@ class HTGT_JTable extends JTable
 
 		InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,      HTGT.NONE             ), "selectPreviousRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,   HTGT.NONE             ), "selectPreviousRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,      HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,   HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP,   HTGT.NONE             ), "scrollUpChangeSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, HTGT.NONE             ), "scrollDownChangeSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,    HTGT.NONE             ), "selectNextRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN, HTGT.NONE             ), "selectNextRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,    HTGT.SHIFT            ), "selectNextRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN, HTGT.SHIFT            ), "selectNextRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,        HTGT.NONE             ), "selectPreviousRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,     HTGT.NONE             ), "selectPreviousRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,        HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,     HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.NONE             ), "selectFirstRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.CTRL             ), "selectFirstRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.SHIFT            ), "selectFirstRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,    HTGT.SHIFT + HTGT.CTRL), "selectFirstRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,      HTGT.NONE             ), "selectNextRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,   HTGT.NONE             ), "selectNextRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,      HTGT.SHIFT            ), "selectNextRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,   HTGT.SHIFT            ), "selectNextRowExtendSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.NONE             ), "selectLastRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.CTRL             ), "selectLastRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.SHIFT            ), "selectLastRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,     HTGT.SHIFT + HTGT.CTRL), "selectLastRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.NONE             ), "selectFirstRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.CTRL             ), "selectFirstRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.SHIFT            ), "selectFirstRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,      HTGT.SHIFT + HTGT.CTRL), "selectFirstRowExtendSelection");
 
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,  HTGT.NONE             ), "clearSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A,       HTGT.CTRL             ), "selectAll");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.NONE             ), "selectLastRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.CTRL             ), "selectLastRow");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.SHIFT            ), "selectLastRowExtendSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,       HTGT.SHIFT + HTGT.CTRL), "selectLastRowExtendSelection");
 
-		//VK_PAGE_UP
-		//VK_PAGE_DOWN
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,    HTGT.NONE             ), "clearSelection");
+		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A,         HTGT.CTRL             ), "selectAll");
 
 		//getColumnModel().addColumnModelListener(this);
 		getModel().addTableModelListener(this);
@@ -5225,14 +5325,19 @@ class HTGT_JTable extends JTable
 	}
 }
 
-class HTGT_WindowAdapter extends java.awt.event.WindowAdapter
+class HTGT_WindowAdapter extends WindowAdapter
 {
 	@Override
-	public void windowClosing(java.awt.event.WindowEvent windowEvent)
+	public void windowClosing(WindowEvent windowEvent)
 	{
 		HTGT.quit();
 	}
 }
+
+// TODO: Der FFM gehört da unbedingt wieder raus raus!
+// Soll der Updatecheck dann nicht auch gleich umgestellt werden?
+// Oder wenigstens als Task im Bugtracker aufgenommen werden?
+// ...
 
 class HTGT_Background implements Runnable
 {
@@ -5267,11 +5372,11 @@ class HTGT_Background implements Runnable
 	}
 }
 
-class HTGT_SelectionHandler implements javax.swing.event.ListSelectionListener
+class HTGT_SelectionHandler implements ListSelectionListener
 {
 	public void valueChanged(ListSelectionEvent e)
 	{
-		javax.swing.ListSelectionModel lsm = (ListSelectionModel) e.getSource();
+		ListSelectionModel lsm = (ListSelectionModel) e.getSource();
 
 		if(!e.getValueIsAdjusting())
 		{
@@ -5289,7 +5394,7 @@ class HTGT_SelectionHandler implements javax.swing.event.ListSelectionListener
 	}
 }
 
-class HTGT_FFM_Observer extends HTGT_FastFollowMode
+class HTGT_FFM_Observer extends HTGT_FFM
 {
 	private File fileHandle;
 	private int checkInterval;
@@ -5314,14 +5419,24 @@ class HTGT_FFM_Observer extends HTGT_FastFollowMode
 
 	protected Integer doInBackground() throws IOException, InterruptedException
 	{
-		FNX.dbg("FFM background thread started.");
-
 		if(fileHandle == null || checkInterval <= 0)
 		{
 			throw new IllegalStateException("FFM not initialized");
 		}
 
+		// Ein schmutziger Hack, damit auf jeden Fall die GUI bereits
+		// blockiert ist. Andernfalls könnte das zu unschönen Race-
+		// Conditions führen, die noch nicht abgefangen werden.
+		Thread.sleep(checkInterval);
+
+		// Durch diesen kleinen Hack wird die Datei beim Start
+		// auf jeden Fall einmal neu eingelesen. Dadurch sollte
+		// es keine Probleme mehr geben, wenn User den FFM erst
+		// zu spät starten. Wenn es keine Änderungen gibt, macht
+		// das nichts, da das sowieso im Hintergrund passiert...
 		oldTime = Files.getLastModifiedTime(fileHandle.toPath());
+		FNX.dbgf("FFM background thread started: o=%d", oldTime.toMillis());
+		publish((int) (oldTime.toMillis() / 1000) * -1);
 
 		while(true)
 		{
@@ -5335,7 +5450,7 @@ class HTGT_FFM_Observer extends HTGT_FastFollowMode
 			}
 			else
 			{
-				FNX.dbgf("Nothing to do, sleeping: o=%d n=%d", oldTime.toMillis(), newTime.toMillis());
+				FNX.dbgf("Nothing to do! Sleeping...", oldTime.toMillis(), newTime.toMillis());
 				publish((int) (newTime.toMillis() / 1000));
 			}
 
@@ -5386,6 +5501,8 @@ class HTGT_FFM_Observer extends HTGT_FastFollowMode
 			}
 			else
 			{
+				HTGT.fastFollowStatus(modificationTime);
+
 				queueState = false;
 			}
 		}
@@ -5393,8 +5510,6 @@ class HTGT_FFM_Observer extends HTGT_FastFollowMode
 		{
 			FNX.dbg("Nothing to do, sleeping...");
 		}
-
-		//HTGT.updateFFMStatus(modificationTime);
 	}
 
 	protected void done()
@@ -5424,26 +5539,22 @@ class HTGT_FFM_Observer extends HTGT_FastFollowMode
 	}
 }
 
-class HTGT_FFM_Analyst extends HTGT_FastFollowMode
+class HTGT_FFM_Analyst extends HTGT_FFM
 {
 	public HTGT_FFM_Analyst()
 	{
 		super();
+
+		HTGT.fastFollowLock();
 	}
 
 	protected Integer doInBackground()
 	{
 		FNX.dbg("FFM evaluation thread started.");
 
-		try
-		{
-			// DEBUY ONLY !!!
-			Thread.sleep(10000);
-		}
-		catch(Exception e)
-		{
-
-		}
+		// TODO: Exceptions der API müssen hier abgefangen werden.
+		// Diese müssen irgendwie beim Hauptthread (EDT) landen!
+		// ...
 
 		return HTGT.fastFollowEvaluation();
 	}
@@ -5453,13 +5564,19 @@ class HTGT_FFM_Analyst extends HTGT_FastFollowMode
 		// get()
 		// ...
 
+		HTGT.fastFollowUnlock();
+
 		FNX.dbg("FFM evaluation thread stopped.");
 	}
 }
 
-class HTGT_FastFollowMode extends SwingWorker<Integer,Integer>
+// TODO: Braucht diese Klasse wirklich jemand?
+// Die tut nichts und hat keine Gemeinsamkeiten!
+// ...
+
+class HTGT_FFM extends SwingWorker<Integer,Integer>
 {
-	public HTGT_FastFollowMode()
+	public HTGT_FFM()
 	{
 		super();
 	}
@@ -5469,3 +5586,47 @@ class HTGT_FastFollowMode extends SwingWorker<Integer,Integer>
 		return 0;
 	}
 }
+
+// Wird benötigt, damit der benutzerdefinierte Button eine Funktion hat.
+class HTGT_FFM_ActionListener implements ActionListener
+{
+	public void actionPerformed(ActionEvent e)
+	{
+		FNX.dbg("Button clicked");
+		HTGT.fastFollowUnblock();
+	}
+}
+
+// Wird benötigt, damit wirklich jeder Ausstieg deaktiviert werden kann.
+class HTGT_FFM_KeyListener extends KeyAdapter /*implements KeyListener*/
+{
+	private boolean disable;
+
+	public void enable()
+	{
+		disable = false;
+	}
+
+	public void disable()
+	{
+		disable = true;
+	}
+
+	public void keyPressed(KeyEvent e)
+	{
+		if(disable && e.getKeyCode() == KeyEvent.VK_ESCAPE)
+		{
+			FNX.dbg("Ignoring VK_ESCAPE event");
+
+			e.consume();
+		}
+	}
+}
+
+// TODO: Echte Sortierung der Tabelle ermöglichen? Dafür bräuchten wir
+// aber die einzelnen Geister irgendwo versteckt in der Tabelle, oder?
+// https://docs.oracle.com/javase/tutorial/uiswing/components/table.html#sorting
+// ...
+
+// TODO: Profil wechseln mit links/rechts Tasten?
+// ...
