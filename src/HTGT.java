@@ -5796,3 +5796,6 @@ class HTGT_ActionListener extends AbstractAction
 // aber die einzelnen Geister irgendwo versteckt in der Tabelle, oder?
 // https://docs.oracle.com/javase/tutorial/uiswing/components/table.html#sorting
 // ...
+
+// TODO: Implement IGNORE button at GHOST_DOPING?
+// ...
