@@ -585,8 +585,8 @@ public class HTGT
 		new Thread(new HTGT_Background(HTGT_Background.EXEC_UPDATECHECK)).start();
 
 		// DEBUG ONLY !!!
-		openDefaultFile();
-		fastFollowTest();
+		//openDefaultFile();
+		//fastFollowTest();
 	}
 
 	private static JMenuBar getMenubar()
@@ -1947,7 +1947,7 @@ public class HTGT
 				return;
 			}
 
-			startedFFM = 1;
+			//startedFFM = 1;
 
 			//eFFM = new HTGT_FFM_EDT();
 			//eFFM.execute();
@@ -2042,56 +2042,74 @@ public class HTGT
 		return true;
 	}
 
-	private static int startedFFM = 0;
+	// Die nachfolgende Variable wird durch fastFollowBlock() erstmals auf 1 gesetzt.
+	// Durch fastFollowStop() wird sie auf -1 gesetzt, wodurch die Schleife weiterläuft.
+	// In anderen allen Fällen (z.B. bei 1) wird die Schleife nach dem JDialog beendet!
+	private static int startedFFM;
 	public static void fastFollowBlock()
 	{
 		// EDT prüfen
 		// ...
 
-		if(startedFFM < 1)
+		if(startedFFM != 0)
 		{
-			FNX.dbg("startedFFM < 1");
+			FNX.dbg("startedFFM != 0");
 			return;
 		}
 		else
 		{
-			FNX.dbg("startedFFM = 1");
-			startedFFM = -1;
+			FNX.dbg("startedFFM > 0");
+			startedFFM = 1;
 		}
 
-		FNX.dbg("Opening new dialog...");
-
-		if(ffBody == null)
+		while(true)
 		{
-			if(ffButton == null)
+			FNX.dbg("Opening new dialog...");
+
+			if(ffBody == null)
 			{
-				ffButton = new JButton(FNX.getLangString(lang, "fastFollowStop"));
-				ffButton.addActionListener(new HTGT_FFM_ActionListener());
+				if(ffButton == null)
+				{
+					ffButton = new JButton(FNX.getLangString(lang, "fastFollowStop"));
+					ffButton.addActionListener(new HTGT_FFM_ActionListener());
+				}
+
+				ffBody = new JOptionPane(null, JOptionPane.PLAIN_MESSAGE);
+				ffBody.setOptions(new Object[]{ffButton});
 			}
 
-			ffBody = new JOptionPane(null, JOptionPane.PLAIN_MESSAGE);
-			ffBody.setOptions(new Object[]{ffButton});
-		}
+			ffBody.setMessage(FNX.formatLangString(lang, "fastFollowModeExtendedBody", 0));
 
-		ffBody.setMessage(FNX.formatLangString(lang, "fastFollowModeExtendedBody", 0));
-
-		if(ffDialog == null)
-		{
-			if(ffListener == null)
+			if(ffDialog == null)
 			{
-				ffListener = new HTGT_FFM_KeyListener();
+				if(ffListener == null)
+				{
+					ffListener = new HTGT_FFM_KeyListener();
+				}
+
+				ffDialog = ffBody.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
+				ffDialog.addKeyListener(ffListener);
+				ffDialog.setFocusable(true); // <-- wirklich notwendig?
 			}
 
-			ffDialog = ffBody.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
-			ffDialog.addKeyListener(ffListener);
-			ffDialog.setFocusable(true); // <-- wirklich notwendig?
+			fastFollowUnlock();
+			ffDialog.setVisible(true);
+
+			HTGT.fastFollowUnblock();
+
+			if(startedFFM < 0)
+			{
+				FNX.dbg("Dialog closed!");
+				break;
+			}
+			else
+			{
+				FNX.dbg("Hiding dialog...");
+				continue;
+			}
 		}
 
-		fastFollowUnlock();
-		ffDialog.setVisible(true);
-
-		FNX.dbg("Dialog closed?");
-		HTGT.fastFollowUnblock();
+		startedFFM = 0;
 	}
 
 	public static void fastFollowLock()
@@ -2130,6 +2148,11 @@ public class HTGT
 
 		if(ffBody != null)
 		{
+			// TODO: Die time sollte unbedingt in einer Klassenvariable landen!
+			// Wenn der Dialog zwischenzeitlich ausgeblendet und neu gestartet wird, haben wir ansonsten keine Zeit.
+			// Aber nicht vergessen,d ass die Variable beim Start des FFM zurückgesetzt werden muss!
+			// ...
+
 			// ACHTUNG: Wir können an dieser Stelle zwar den Text aktualisieren,
 			// aber die Größe des Dialogs passt sich dadurch nicht automatisch an!
 			// Das betrifft vor allem die Höhe (Anzahl der Zeilenumbrüche) sowie die
@@ -2138,6 +2161,12 @@ public class HTGT
 			// kurze Statusupdates hinzugefügt werden, für die es Platzhalter gibt.
 			ffBody.setMessage(FNX.formatLangString(lang, "fastFollowModeExtendedBody", time));
 		}
+	}
+
+	public static void fastFollowStop()
+	{
+		startedFFM = -1;
+		HTGT.fastFollowUnblock();
 	}
 
 	public static void fastFollowUnblock()
@@ -2160,7 +2189,7 @@ public class HTGT
 		aFFM.cancel(true);
 
 		ffDialog.setVisible(false);
-		startedFFM = 0;
+		//startedFFM = 0;
 	}
 
 	private static Profiles getProfileHandle(String nick)
@@ -3234,7 +3263,7 @@ public class HTGT
  *                             API ACTIONS                             *
  ***********************************************************************/
 
-	private static void APIError(eSportsAPIException e)
+	public static void APIError(eSportsAPIException e)
 	{
 		APIError(e, null);
 	}
@@ -5685,6 +5714,8 @@ class HTGT_FFM_Observer extends HTGT_FFM
 
 class HTGT_FFM_Analyst extends HTGT_FFM
 {
+	private eSportsAPIException backgroundException;
+
 	public HTGT_FFM_Analyst()
 	{
 		super();
@@ -5700,6 +5731,20 @@ class HTGT_FFM_Analyst extends HTGT_FFM
 		// Diese müssen irgendwie beim Hauptthread (EDT) landen!
 		// ...
 
+		try
+		{
+			if(true)
+			{
+				throw new eSportsAPIException("GHOST_DUPLICATE");
+			}
+		}
+		catch(eSportsAPIException e)
+		{
+			backgroundException = e;
+
+			return 0;
+		}
+
 		return HTGT.fastFollowEvaluation();
 	}
 
@@ -5707,6 +5752,14 @@ class HTGT_FFM_Analyst extends HTGT_FFM
 	{
 		// get()
 		// ...
+
+		if(backgroundException != null)
+		{
+			HTGT.fastFollowUnblock();
+			HTGT.APIError(backgroundException);
+			backgroundException = null;
+			return;
+		}
 
 		HTGT.fastFollowUnlock();
 
@@ -5737,7 +5790,13 @@ class HTGT_FFM_ActionListener implements ActionListener
 	public void actionPerformed(ActionEvent e)
 	{
 		FNX.dbg("Button clicked");
-		HTGT.fastFollowUnblock();
+		HTGT.fastFollowStop();
+
+		// TODO: Speichern, dass der Button gedrückt wurde!
+		// Das bedeutet nämlich, dass die Schleife wieder starten darf.
+		// Am Besten über ein Flag, das bei Unblock/Block gesetzt wird?
+		// Aber Achtung: Unblock wird manchmal mehrfach aufgerufen!
+		// ...
 	}
 }
 
@@ -5758,11 +5817,18 @@ class HTGT_FFM_KeyListener extends KeyAdapter /*implements KeyListener*/
 
 	public void keyPressed(KeyEvent e)
 	{
-		if(disable && e.getKeyCode() == KeyEvent.VK_ESCAPE)
+		if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
 		{
-			FNX.dbg("Ignoring VK_ESCAPE event");
-
-			e.consume();
+			if(disable)
+			{
+				FNX.dbg("Ignoring VK_ESCAPE event");
+				e.consume();
+			}
+			else
+			{
+				FNX.dbg("VK_ESCAPE event triggered");
+				HTGT.fastFollowStop();
+			}
 		}
 	}
 }
@@ -5798,4 +5864,7 @@ class HTGT_ActionListener extends AbstractAction
 // ...
 
 // TODO: Implement IGNORE button at GHOST_DOPING?
+// ...
+
+// TODO: Interval über CFG konfigurierbar machen?
 // ...
