@@ -5374,12 +5374,10 @@ class HTGT_JTable extends JTable
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT ,       HTGT.NONE             ), "selectPreviousGameProfile");
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_LEFT,         HTGT.NONE             ), "selectPreviousGameProfile");
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS,           HTGT.NONE             ), "selectPreviousGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB,             HTGT.NONE             ), "selectNextGameProfile");
 
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ADD,             HTGT.NONE             ), "selectNextGameProfile");
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_RIGHT,        HTGT.NONE             ), "selectNextGameProfile");
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PLUS,            HTGT.NONE             ), "selectNextGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB,             HTGT.SHIFT            ), "selectNextGameProfile");
 
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA,           HTGT.NONE             ), "selectSpecialGameProfile");
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD,          HTGT.NONE             ), "selectSpecialGameProfile");
@@ -5389,7 +5387,6 @@ class HTGT_JTable extends JTable
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DEAD_CIRCUMFLEX, HTGT.NONE             ), "selectSpecialGameProfile");
 
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMBER_SIGN,     HTGT.NONE             ), "selectDefaultGameProfile");
-
 		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,           HTGT.NONE             ), "selectRegularGameProfile");
 
 		action = new HTGT_ActionListener();
@@ -5438,13 +5435,6 @@ class HTGT_JTable extends JTable
 				e.printStackTrace();
 			}
 		}
-
-
-
-
-
-		// TODO: Irgendwelche Tasten auf das SpecialProfile mappen?
-		// ...
 
 		//getColumnModel().addColumnModelListener(this);
 		getModel().addTableModelListener(this);
