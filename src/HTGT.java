@@ -1958,7 +1958,7 @@ public class HTGT
 
 
 
-			fastFollowBlock();
+			fastFollowStart();
 		}
 		/*
 		catch(eSportsAPIException e)
@@ -2007,7 +2007,7 @@ public class HTGT
 		try
 		{
 			// DEBUY ONLY !!!
-			Thread.sleep(10000);
+			//Thread.sleep(10000);
 		}
 		catch(Exception e)
 		{
@@ -2047,7 +2047,7 @@ public class HTGT
 	// Durch fastFollowStop() wird sie auf -1 gesetzt, wodurch die Schleife weiterläuft.
 	// In anderen allen Fällen (z.B. bei 1) wird die Schleife nach dem JDialog beendet!
 	private static int startedFFM;
-	public static void fastFollowBlock()
+	public static void fastFollowStart()
 	{
 		if(!FNX.requireEDT())
 		{
@@ -2099,7 +2099,7 @@ public class HTGT
 				ffBody.setOptions(new Object[]{ffButton});
 			}
 
-			ffBody.setMessage(FNX.formatLangString(lang, "fastFollowModeExtendedBody", 0));
+			fastFollowStatus();
 
 			if(ffDialog == null)
 			{
@@ -2116,7 +2116,7 @@ public class HTGT
 			fastFollowUnlock();
 			ffDialog.setVisible(true);
 
-			HTGT.fastFollowUnblock();
+			HTGT.fastFollowStop();
 
 			if(startedFFM < 0)
 			{
@@ -2132,11 +2132,6 @@ public class HTGT
 
 		startedFFM = 0;
 	}
-
-	// TODO: Umbenennen der Methodennamen!
-	// Unblock() sollte zu Stop() werden, aber mit Parameter für den Button.
-	// Block() sollte zu Start() werden.
-	// ...
 
 	public static void fastFollowLock()
 	{
@@ -2179,6 +2174,11 @@ public class HTGT
 		ffListener.enable();
 	}
 
+	public static void fastFollowStatus()
+	{
+		fastFollowStatus(0);
+	}
+
 	public static void fastFollowStatus(int time)
 	{
 		if(!FNX.requireEDT())
@@ -2193,23 +2193,49 @@ public class HTGT
 			// Aber nicht vergessen,d ass die Variable beim Start des FFM zurückgesetzt werden muss!
 			// ...
 
-			// ACHTUNG: Wir können an dieser Stelle zwar den Text aktualisieren,
-			// aber die Größe des Dialogs passt sich dadurch nicht automatisch an!
-			// Das betrifft vor allem die Höhe (Anzahl der Zeilenumbrüche) sowie die
-			// Breite der Zeilen. Dieses Feature sollte somit mit Vorsicht genutzt
-			// werden, solange es keine bessere Lösung gibt. Es sollten wirklich nur
-			// kurze Statusupdates hinzugefügt werden, für die es Platzhalter gibt.
-			ffBody.setMessage(FNX.formatLangString(lang, "fastFollowModeExtendedBody", time));
+			try
+			{
+				//Date date = new Date();
+				//DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.FULL);
+
+				//java.time.format.DateTimeFormatter date = java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT);
+
+				//SimpleDateFormat sdf = new SimpleDateFormat();
+
+				java.time.LocalDateTime dateTime = java.time.LocalDateTime.ofEpochSecond(time, 0, java.time.OffsetDateTime.now().getOffset());
+				java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT);
+				String formattedDate = dateTime.format(formatter);
+
+				// ACHTUNG: Wir können an dieser Stelle zwar den Text aktualisieren,
+				// aber die Größe des Dialogs passt sich dadurch nicht automatisch an!
+				// Das betrifft vor allem die Höhe (Anzahl der Zeilenumbrüche) sowie die
+				// Breite der Zeilen. Dieses Feature sollte somit mit Vorsicht genutzt
+				// werden, solange es keine bessere Lösung gibt. Es sollten wirklich nur
+				// kurze Statusupdates hinzugefügt werden, für die es Platzhalter gibt.
+				ffBody.setMessage(
+					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
+					FNX.formatLangString(lang, "fastFollowMode" + ((time > 0) ? "Extended" : "Empty"),
+						//date.format(java.time.Instant.ofEpochSecond(time * 1000)),
+						//sdf.format(new Date(time * 1000)),
+						formattedDate,
+						4,
+						2
+					)
+				);
+			}
+			catch(ProfileException e)
+			{
+				e.printStackTrace();
+			}
 		}
 	}
 
 	public static void fastFollowStop()
 	{
-		startedFFM = -1;
-		HTGT.fastFollowUnblock();
+		HTGT.fastFollowStop(true);
 	}
 
-	public static void fastFollowUnblock()
+	public static void fastFollowStop(boolean suspend)
 	{
 		if(!FNX.requireEDT())
 		{
@@ -2220,6 +2246,10 @@ public class HTGT
 			FNX.dbg("FFM not started! Unable to unblock...");
 
 			return;
+		}
+		else if(!suspend)
+		{
+			startedFFM = -1;
 		}
 
 		FNX.dbg("stopping FFM now!");
@@ -5773,7 +5803,7 @@ class HTGT_FFM_Observer extends HTGT_FFM
 			HTGT.exceptionHandler(e);
 		}
 
-		HTGT.fastFollowUnblock();
+		HTGT.fastFollowStop();
 		FNX.dbg("done() finished");
 	}
 }
@@ -5799,7 +5829,7 @@ class HTGT_FFM_Analyst extends HTGT_FFM
 
 		try
 		{
-			if(true)
+			if(false)
 			{
 				throw new eSportsAPIException("GHOST_DUPLICATE");
 			}
@@ -5821,7 +5851,7 @@ class HTGT_FFM_Analyst extends HTGT_FFM
 
 		if(backgroundException != null)
 		{
-			HTGT.fastFollowUnblock();
+			HTGT.fastFollowStop();
 			HTGT.APIError(backgroundException);
 			backgroundException = null;
 			return;
@@ -5856,7 +5886,7 @@ class HTGT_FFM_ActionListener implements ActionListener
 	public void actionPerformed(ActionEvent e)
 	{
 		FNX.dbg("Button clicked");
-		HTGT.fastFollowStop();
+		HTGT.fastFollowStop(false);
 
 		// TODO: Speichern, dass der Button gedrückt wurde!
 		// Das bedeutet nämlich, dass die Schleife wieder starten darf.
@@ -5893,7 +5923,7 @@ class HTGT_FFM_KeyListener extends KeyAdapter /*implements KeyListener*/
 			else
 			{
 				FNX.dbg("VK_ESCAPE event triggered");
-				HTGT.fastFollowStop();
+				HTGT.fastFollowStop(false);
 			}
 		}
 	}
