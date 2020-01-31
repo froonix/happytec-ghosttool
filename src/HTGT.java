@@ -2205,9 +2205,10 @@ public class HTGT
 
 		if(ffBody != null)
 		{
-			// TODO: Die time sollte unbedingt in einer Klassenvariable landen!
+			// TODO: Die time sollte unbedingt in einer Klassenvariable landen, genauso die beiden Zähler!
 			// Wenn der Dialog zwischenzeitlich ausgeblendet und neu gestartet wird, haben wir ansonsten keine Zeit.
-			// Aber nicht vergessen,d ass die Variable beim Start des FFM zurückgesetzt werden muss!
+			// Aber nicht vergessen, dass die Variable beim Start des FFM zurückgesetzt werden muss!
+			// Und, dass time/counter bei "-1" nicht überschrieben werden dürfen.
 			// ...
 
 			try
