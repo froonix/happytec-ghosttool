@@ -40,6 +40,12 @@ import java.lang.IndexOutOfBoundsException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -2135,6 +2141,7 @@ public class HTGT
 			}
 			catch(eSportsAPIException e)
 			{
+				HTGT.fastFollowStop();
 				APIError(e);
 				break;
 			}
@@ -2205,16 +2212,8 @@ public class HTGT
 
 			try
 			{
-				//Date date = new Date();
-				//DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.FULL);
-
-				//java.time.format.DateTimeFormatter date = java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT);
-
-				//SimpleDateFormat sdf = new SimpleDateFormat();
-
-				java.time.LocalDateTime dateTime = java.time.LocalDateTime.ofEpochSecond(time, 0, java.time.OffsetDateTime.now().getOffset());
-				java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT);
-				String formattedDate = dateTime.format(formatter);
+				LocalDateTime ldt = LocalDateTime.ofEpochSecond(time, 0, OffsetDateTime.now().getOffset());
+				DateTimeFormatter dtf = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
 
 				// ACHTUNG: Wir können an dieser Stelle zwar den Text aktualisieren,
 				// aber die Größe des Dialogs passt sich dadurch nicht automatisch an!
@@ -2225,11 +2224,9 @@ public class HTGT
 				ffBody.setMessage(
 					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
 					FNX.formatLangString(lang, "fastFollowMode" + ((time > 0) ? "Extended" : "Empty"),
-						//date.format(java.time.Instant.ofEpochSecond(time * 1000)),
-						//sdf.format(new Date(time * 1000)),
-						formattedDate,
-						4,
-						2
+						ldt.format(dtf),
+						0, // <!-- TODO!
+						0  // <!-- TODO!
 					)
 				);
 			}
