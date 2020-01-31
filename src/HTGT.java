@@ -2047,9 +2047,9 @@ public class HTGT
 	// Durch fastFollowStop() wird sie auf -1 gesetzt, wodurch die Schleife weiterläuft.
 	// In anderen allen Fällen (z.B. bei 1) wird die Schleife nach dem JDialog beendet!
 	private static int startedFFM;
-	public static void fastFollowStart()
+	private static void fastFollowStart()
 	{
-		if(!FNX.requireEDT())
+		if(!FNX.requireEDT() || OfflineProfiles == null || checkProfile(true) || unsavedChanges() || !prepareAPI())
 		{
 			return;
 		}
@@ -2068,65 +2068,75 @@ public class HTGT
 
 		while(true)
 		{
-			oFFM = new HTGT_FFM_Observer();
-			oFFM.setInterval(FF_CHECK_INTERVAL);
-			oFFM.setFile(file);
-
-			if(firstRun)
+			try
 			{
-				// TODO: Hier wäre die geeignete Stelle, um die erste API-Anfrage abzusetzen!
-				// ...
+				oFFM = new HTGT_FFM_Observer();
+				oFFM.setInterval(FF_CHECK_INTERVAL);
+				oFFM.setFile(file);
 
-				firstRun = false;
-				oFFM.firstRun();
-			}
-			else
-			{
-				oFFM.secondRun();
-			}
-
-			FNX.dbg("Opening new dialog...");
-
-			if(ffBody == null)
-			{
-				if(ffButton == null)
+				if(firstRun)
 				{
-					ffButton = new JButton(FNX.getLangString(lang, "fastFollowStop"));
-					ffButton.addActionListener(new HTGT_FFM_ActionListener());
+					// Diese API-Anfrage ist hier noch nicht notwendig.
+					// Dadurch wird aber schon hier geprüft, ob der Token
+					// gültig ist und ob aktive Strecken verfügbar sind.
+					int[][][][] results = api.getAllResults();
+
+					firstRun = false;
+					oFFM.firstRun();
+				}
+				else
+				{
+					oFFM.secondRun();
 				}
 
-				ffBody = new JOptionPane(null, JOptionPane.PLAIN_MESSAGE);
-				ffBody.setOptions(new Object[]{ffButton});
-			}
+				FNX.dbg("Opening new dialog...");
 
-			fastFollowStatus();
-
-			if(ffDialog == null)
-			{
-				if(ffListener == null)
+				if(ffBody == null)
 				{
-					ffListener = new HTGT_FFM_KeyListener();
+					if(ffButton == null)
+					{
+						ffButton = new JButton(FNX.getLangString(lang, "fastFollowStop"));
+						ffButton.addActionListener(new HTGT_FFM_ActionListener());
+					}
+
+					ffBody = new JOptionPane(null, JOptionPane.PLAIN_MESSAGE);
+					ffBody.setOptions(new Object[]{ffButton});
 				}
 
-				ffDialog = ffBody.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
-				ffDialog.addKeyListener(ffListener);
-				ffDialog.setFocusable(true);
+				fastFollowStatus();
+
+				if(ffDialog == null)
+				{
+					if(ffListener == null)
+					{
+						ffListener = new HTGT_FFM_KeyListener();
+					}
+
+					ffDialog = ffBody.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
+					ffDialog.addKeyListener(ffListener);
+					ffDialog.setFocusable(true);
+				}
+
+				fastFollowUnlock();
+				ffDialog.setVisible(true);
+
+				HTGT.fastFollowStop();
+
+				if(startedFFM < 0)
+				{
+					FNX.dbg("Dialog closed!");
+					break;
+				}
+				else
+				{
+					FNX.dbg("Hiding dialog...");
+					continue;
+				}
 			}
-
-			fastFollowUnlock();
-			ffDialog.setVisible(true);
-
-			HTGT.fastFollowStop();
-
-			if(startedFFM < 0)
+			catch(eSportsAPIException e)
 			{
-				FNX.dbg("Dialog closed!");
+				APIError(e);
 				break;
-			}
-			else
-			{
-				FNX.dbg("Hiding dialog...");
-				continue;
 			}
 		}
 
