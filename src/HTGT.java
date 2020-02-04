@@ -40,6 +40,7 @@ import java.lang.IndexOutOfBoundsException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
@@ -129,30 +130,31 @@ import javax.swing.table.TableModel;
 public class HTGT
 {
 	// Diverse fixe Konstanten für die Anwendung
-	final private static String    APPLICATION_VERSION = "git-master";
-	final private static String    APPLICATION_NAME    = "HTGT"; // cfg, updates, …
-	final private static String    APPLICATION_TITLE   = "HTGT.app";
-	final private static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
-	final private static String    APPLICATION_IDENT   = "HTGT %s <https://github.com/froonix/happytec-ghosttool>";
-	final private static Dimension WINDOW_SIZE_START   = new Dimension(900, 600);
-	final private static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
-	final private static long      UPDATE_INTERVAL     = 86400000L; // daily
-	final private static long      WEATHER_INTERVAL    = 3600000L; // hourly
-	final private static int       FF_CHECK_INTERVAL   = 1000; // 1 second
-	final private static String    SPECIAL_PROFILE     = "SpecialProfile";
-	final private static String    DEFAULT_PROFILE     = "DefaultUser";
-	final private static String    VERSION_FILE        = "htgt-version.txt";
-	final private static int       NICKNAME_MINLEN     = 3;
-	final private static int       NICKNAME_MAXLEN     = 13;
-	final private static String    NICKNAME_REGEX      = "^(?i:[A-Z0-9_]{" + NICKNAME_MINLEN + "," + NICKNAME_MAXLEN + "})$";
-	final private static String    NICKNAME_REGEX_NOT  = "^[0-9]+$";
-	final private static boolean   ENABLE_AUTOSAVE     = true;
-	final private static boolean   ENABLE_RACE         = true;
-	final private static boolean   ENABLE_XTC          = true;
-	final private static boolean   ENABLE_SUC          = true;
-	final private static int       FONTSIZE            = 13;
-	final private static double    FONTSMALL           = 0.75;
-	final private static int       HISTORY_SIZE        = 10;
+	final public static String    APPLICATION_VERSION = "git-master";
+	final public static String    APPLICATION_NAME    = "HTGT"; // cfg, updates, …
+	final public static String    APPLICATION_TITLE   = "HTGT.app";
+	final public static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
+	final public static String    APPLICATION_IDENT   = "HTGT %s <https://github.com/froonix/happytec-ghosttool>";
+	final public static Dimension WINDOW_SIZE_START   = new Dimension(900, 600);
+	final public static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
+	final public static long      UPDATE_INTERVAL     = 86400000L; // daily
+	final public static long      WEATHER_INTERVAL    = 3600000L; // hourly
+	final public static int       FF_CHECK_INTERVAL   = 2000; // 2 seconds
+	final public static long      FF_OBSERVER_DELAY   = 1000; // 1 second
+	final public static String    SPECIAL_PROFILE     = "SpecialProfile";
+	final public static String    DEFAULT_PROFILE     = "DefaultUser";
+	final public static String    VERSION_FILE        = "htgt-version.txt";
+	final public static int       NICKNAME_MINLEN     = 3;
+	final public static int       NICKNAME_MAXLEN     = 13;
+	final public static String    NICKNAME_REGEX      = "^(?i:[A-Z0-9_]{" + NICKNAME_MINLEN + "," + NICKNAME_MAXLEN + "})$";
+	final public static String    NICKNAME_REGEX_NOT  = "^[0-9]+$";
+	final public static boolean   ENABLE_AUTOSAVE     = true;
+	final public static boolean   ENABLE_RACE         = true;
+	final public static boolean   ENABLE_XTC          = true;
+	final public static boolean   ENABLE_SUC          = true;
+	final public static int       FONTSIZE            = 13;
+	final public static double    FONTSMALL           = 0.75;
+	final public static int       HISTORY_SIZE        = 10;
 
 	final public static int        NONE  = 0;
 	final public static int        CTRL  = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
@@ -160,73 +162,73 @@ public class HTGT
 	final public static int        ALT   = ActionEvent.ALT_MASK;
 
 	// Diverse Links ohne https:// davor, da sie als Ziel direkt angezeigt werden sollen!
-	private final static String    URL_WWW  = "github.com/froonix/happytec-ghosttool";
-	private final static String    URL_API  = "www.esports.happytec.at";
+	final public static String    URL_WWW  = "github.com/froonix/happytec-ghosttool";
+	final public static String    URL_API  = "www.esports.happytec.at";
 
 	// Redirect-Service für diverse andere Links oder Aktionen. (Leitet derzeit alles nur zum Forenthread...)
-	private final static String    URL_REDIRECT = "https://www.esports.happytec.at/redirect/desktop/HTGT.php?dst=%s";
+	final public static String    URL_REDIRECT = "https://www.esports.happytec.at/redirect/desktop/HTGT.php?dst=%s";
 
 	// Bei jeder neuen verfügbaren Sprache muss dieser Wert erhöht werden.
 	// Dadurch wird der Dialog für die Sprachauswahl erneut angezeigt werden.
 	// Es sollte nicht dazu verwendet werden, um die Sprachen zu zählen!
-	private final static int TRANSLATION_VERSION = 3;
+	final public static int TRANSLATION_VERSION = 3;
 
 	// Alle verfügbaren Sprachen als Locale-String.
 	// In dieser Reihenfolge werden sie auch angezeigt!
-	private final static String[] LOCALES = new String[]{ "de_DE", "en_UK", "it_IT", "sk_SK" };
+	final public static String[] LOCALES = new String[]{ "de_DE", "en_UK", "it_IT", "sk_SK" };
 
 	// Konfigurationsnamen für java.util.prefs
-	final private static String CFG_LOCALE      = "locale";
-	final private static String CFG_TRANSLATION = "translation";
-	final private static String CFG_API         = "api-host";
-	final private static String CFG_DC          = "dll-check";
-	final private static String CFG_UC          = "update-check";
-	final private static String CFG_DEFAULT     = "default-file";
-	final private static String CFG_TOKEN       = "esports-token";
-	final private static String CFG_CWD         = "last-directory";
-	final private static String CFG_CWDPORT     = "last-port-directory";
-	final private static String CFG_RPROFILE    = "last-regular-profile";
-	final private static String CFG_PROFILE     = "last-profile";
-	final private static String CFG_MODE        = "last-gamemode";
-	final private static String CFG_WEATHER     = "last-weather";
-	final private static String CFG_TRACK       = "last-track";
-	final private static String CFG_NDG         = "never-download";
-	final private static String CFG_ARG         = "always-replace";
-	final private static String CFG_AAR         = "always-apply";
-	final private static String CFG_WC          = "weather-check";
-	final private static String CFG_TRACKS      = "track-order";
-	final private static String CFG_RACE        = "race.%s.%s";
+	final public static String CFG_LOCALE      = "locale";
+	final public static String CFG_TRANSLATION = "translation";
+	final public static String CFG_API         = "api-host";
+	final public static String CFG_DC          = "dll-check";
+	final public static String CFG_UC          = "update-check";
+	final public static String CFG_DEFAULT     = "default-file";
+	final public static String CFG_TOKEN       = "esports-token";
+	final public static String CFG_CWD         = "last-directory";
+	final public static String CFG_CWDPORT     = "last-port-directory";
+	final public static String CFG_RPROFILE    = "last-regular-profile";
+	final public static String CFG_PROFILE     = "last-profile";
+	final public static String CFG_MODE        = "last-gamemode";
+	final public static String CFG_WEATHER     = "last-weather";
+	final public static String CFG_TRACK       = "last-track";
+	final public static String CFG_NDG         = "never-download";
+	final public static String CFG_ARG         = "always-replace";
+	final public static String CFG_AAR         = "always-apply";
+	final public static String CFG_WC          = "weather-check";
+	final public static String CFG_TRACKS      = "track-order";
+	final public static String CFG_RACE        = "race.%s.%s";
 
 	// ALWAYS THE INDEX NUMBER! WITHOUT THE EXTRA COUNT.
-	final private static int OFFSET_RACE   =  0;
-	final private static int OFFSET_TICKET =  1;
-	final private static int OFFSET_SUC    =  2;
+	final public static int OFFSET_RACE   =  0;
+	final public static int OFFSET_TICKET =  1;
+	final public static int OFFSET_SUC    =  2;
 
-	final private static int PROFILE_NONE    =  0;
-	final private static int PROFILE_DEFAULT = -1;
-	final private static int PROFILE_SPECIAL = -2;
+	final public static int PROFILE_NONE    =  0;
+	final public static int PROFILE_DEFAULT = -1;
+	final public static int PROFILE_SPECIAL = -2;
 
-	final private static int BUTTON_ALWAYS =  2;
-	final private static int BUTTON_YES    =  1;
-	final private static int BUTTON_CLOSED =  0;
-	final private static int BUTTON_NO     = -1;
-	final private static int BUTTON_NEVER  = -2;
+	final public static int BUTTON_ALWAYS =  2;
+	final public static int BUTTON_YES    =  1;
+	final public static int BUTTON_CLOSED =  0;
+	final public static int BUTTON_NO     = -1;
+	final public static int BUTTON_NEVER  = -2;
 
 	// DON'T USE VALUES GREATER THAN ZERO HERE...
 	// AND DON'T FORGET: CLOSED_OPTION IS -1 TOO!
-	final private static int BUTTON_CANCEL = -1;
-	final private static int BUTTON_PREV   = -2;
-	final private static int BUTTON_NEXT   = -3;
+	final public static int BUTTON_CANCEL = -1;
+	final public static int BUTTON_PREV   = -2;
+	final public static int BUTTON_NEXT   = -3;
 
-	final private static String MENU_STATIC  = "static";                // Immer aktiv, unabhängig vom Kontext/Status.
-	final private static String MENU_DEFAULT = "default";               // Aktiv, sobald eine XML-Datei geladen wurde.
-	final private static String MENU_UNDO    = "undo";                  // Aktiv, sobald der Verlauf ältere Strings enthält.
-	final private static String MENU_REDO    = "redo";                  // Aktiv, sobald der Verlauf neuere Strings enthält.
-	final private static String MENU_TOKEN   = "token";                 // Aktiv, sobald ein API-Token existiert – unabhängig vom Kontext/Status.
-	final private static String MENU_FTOKEN  = "ftoken";                // Aktiv, sobald ein API-Token existiert und eine XML-Datei geladen wurde.
-	final private static String MENU_STOKEN  = "stoken";                // Aktiv, sobald ein API-Token existiert und Geister markiert wurden.
-	final private static String MENU_PTOKEN  = "ptoken";                // Aktiv, sobald ein API-Token im geladenen XML-Profil existiert.
-	final private static String MENU_SELECT  = "select";                // Aktiv, sobald Geister markiert wurden.
+	final public static String MENU_STATIC  = "static";                // Immer aktiv, unabhängig vom Kontext/Status.
+	final public static String MENU_DEFAULT = "default";               // Aktiv, sobald eine XML-Datei geladen wurde.
+	final public static String MENU_UNDO    = "undo";                  // Aktiv, sobald der Verlauf ältere Strings enthält.
+	final public static String MENU_REDO    = "redo";                  // Aktiv, sobald der Verlauf neuere Strings enthält.
+	final public static String MENU_TOKEN   = "token";                 // Aktiv, sobald ein API-Token existiert – unabhängig vom Kontext/Status.
+	final public static String MENU_FTOKEN  = "ftoken";                // Aktiv, sobald ein API-Token existiert und eine XML-Datei geladen wurde.
+	final public static String MENU_STOKEN  = "stoken";                // Aktiv, sobald ein API-Token existiert und Geister markiert wurden.
+	final public static String MENU_PTOKEN  = "ptoken";                // Aktiv, sobald ein API-Token im geladenen XML-Profil existiert.
+	final public static String MENU_SELECT  = "select";                // Aktiv, sobald Geister markiert wurden.
 
 	private static ResourceBundle             lang;
 
@@ -263,6 +265,7 @@ public class HTGT
 	private static          JOptionPane          ffBody;
 	private static          HTGT_FFM_KeyListener ffListener;
 	private static volatile boolean              ffChanged;
+	private static          boolean              ffForce;
 
 
 	private static JFrame                     mainWindow;
@@ -694,10 +697,6 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_STOKEN,   langKey + ".uploadGhosts",              "ghostUpload",            KeyStroke.getKeyStroke(KeyEvent.VK_F3,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".downloadGhost",             "ghostSelect",            KeyStroke.getKeyStroke(KeyEvent.VK_F4,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".downloadGhostsByIDs",       "ghostDownload",          KeyStroke.getKeyStroke(KeyEvent.VK_F4,     SHIFT)));
-				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowMode",            "fastFollowTest"));
-				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowMode",            "fastFollow",             KeyStroke.getKeyStroke(KeyEvent.VK_F7,     NONE)));
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".fastFollowModeForce",       "fastFollowForce",        KeyStroke.getKeyStroke(KeyEvent.VK_F8,     NONE)));
@@ -1546,7 +1545,7 @@ public class HTGT
 		fastFollow(false);
 	}
 
-	public static void fastFollow(boolean force)
+	public static void fastFollowLegacy(boolean force)
 	{
 		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
 		{
@@ -1943,7 +1942,7 @@ public class HTGT
 
 	private static HTGT_FFM_Analyst  aFFM;
 	private static HTGT_FFM_Observer oFFM;
-	public static void fastFollowTest()
+	public static void fastFollow(boolean force)
 	{
 		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
 		{
@@ -1957,14 +1956,7 @@ public class HTGT
 				return;
 			}
 
-			//startedFFM = 1;
-
-			//eFFM = new HTGT_FFM_EDT();
-			//eFFM.execute();
-
-
-
-			fastFollowStart();
+			fastFollowStart(force);
 		}
 		/*
 		catch(eSportsAPIException e)
@@ -2000,9 +1992,6 @@ public class HTGT
 
 	public static int fastFollowEvaluation()
 	{
-		// do not forget to take an extra nap before loading xml file!
-		// ...
-
 		// hier wird alles gemacht, was der fastfollowmodus bisher macht.
 		// allerdings in einem dry-mode! es darf hierbei zu keinen rückfragen kommen.
 		// ich nehme mal an, dabei soll noch kein upload von geistern stattfinden?
@@ -2053,7 +2042,7 @@ public class HTGT
 	// Durch fastFollowStop() wird sie auf -1 gesetzt, wodurch die Schleife weiterläuft.
 	// In anderen allen Fällen (z.B. bei 1) wird die Schleife nach dem JDialog beendet!
 	private static int startedFFM;
-	private static void fastFollowStart()
+	private static void fastFollowStart(boolean force)
 	{
 		if(!FNX.requireEDT() || OfflineProfiles == null || checkProfile(true) || unsavedChanges() || !prepareAPI())
 		{
@@ -2070,6 +2059,7 @@ public class HTGT
 			startedFFM = 1;
 		}
 
+		ffForce = force;
 		boolean firstRun = true;
 
 		while(true)
@@ -2077,7 +2067,6 @@ public class HTGT
 			try
 			{
 				oFFM = new HTGT_FFM_Observer();
-				oFFM.setInterval(FF_CHECK_INTERVAL);
 				oFFM.setFile(file);
 
 				if(firstRun)
@@ -2118,15 +2107,20 @@ public class HTGT
 						ffListener = new HTGT_FFM_KeyListener();
 					}
 
-					ffDialog = ffBody.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode"));
+					ffDialog = ffBody.createDialog(mainWindow, null);
 					ffDialog.addKeyListener(ffListener);
 					ffDialog.setFocusable(true);
 				}
 
 				fastFollowUnlock();
+
+				ffDialog.setTitle(FNX.getLangString(lang, "fastFollowMode" + (ffForce ? "Force" : "")));
 				ffDialog.setVisible(true);
 
 				HTGT.fastFollowStop();
+
+				// TODO: Müssen wir etwas im Vordergrund machen?
+				// ...
 
 				if(startedFFM < 0)
 				{
@@ -2144,6 +2138,18 @@ public class HTGT
 				HTGT.fastFollowStop();
 				APIError(e);
 				break;
+			}
+			finally
+			{
+				// Dieser Teil ist unbedingt notwendig!
+				// Andernfalls würden die Threads bei
+				// Exceptions einfach weiterlaufen.
+				fastFollowStop();
+
+				// TODO: Irgendwas stimmt da trotzdem noch nicht.
+				// Der FFM kann danach nicht mehr gestartet werden,
+				// weil startedFFM nicht auf 0 gesetzt wurde. WTF?!
+				// ...
 			}
 		}
 
@@ -5646,28 +5652,17 @@ class HTGT_SelectionHandler implements ListSelectionListener
 	}
 }
 
-class HTGT_FFM_Observer extends HTGT_FFM
+class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 {
 	private File fileHandle;
-	private int checkInterval;
 	private boolean queueState;
 	private boolean firstRun;
 	private FileTime oldTime;
 	private FileTime newTime;
 
-	public HTGT_FFM_Observer()
-	{
-		super();
-	}
-
 	public void setFile(File f)
 	{
 		fileHandle = f;
-	}
-
-	public void setInterval(int i)
-	{
-		checkInterval = i;
 	}
 
 	public void firstRun()
@@ -5684,7 +5679,7 @@ class HTGT_FFM_Observer extends HTGT_FFM
 
 	protected Integer doInBackground() throws IOException, InterruptedException
 	{
-		if(fileHandle == null || checkInterval <= 0)
+		if(fileHandle == null)
 		{
 			throw new IllegalStateException("FFM not initialized");
 		}
@@ -5692,7 +5687,7 @@ class HTGT_FFM_Observer extends HTGT_FFM
 		// Ein schmutziger Hack, damit auf jeden Fall die GUI bereits
 		// blockiert ist. Andernfalls könnte das zu unschönen Race-
 		// Conditions führen, die noch nicht abgefangen werden.
-		Thread.sleep(checkInterval);
+		Thread.sleep(HTGT.FF_CHECK_INTERVAL);
 
 		// Durch diesen kleinen Hack wird die Datei beim Start
 		// auf jeden Fall einmal neu eingelesen. Dadurch sollte
@@ -5715,23 +5710,36 @@ class HTGT_FFM_Observer extends HTGT_FFM
 			publish((int) (oldTime.toMillis() / 1000));
 		}
 
+		int m;
 		while(true)
 		{
 			newTime = Files.getLastModifiedTime(fileHandle.toPath());
+			m = 1;
 
 			if(newTime.compareTo(oldTime) > 0)
 			{
-				FNX.dbgf("File modification time changed: o=%d n=%d", oldTime.toMillis(), newTime.toMillis());
-				publish((int) (newTime.toMillis() / 1000) * -1);
-				oldTime = newTime;
+				// Durch diesen Teil sparen wir uns die Wartezeit vor dem Laden der XML-Datei.
+				// Dadurch soll sichergestell werden, dass das Spiel mit dem Speichern fertig ist.
+				// Klar, das ist auch kein 100% Schutz und es gibt zig andere problematische Stellen.
+				// Aber es ist ein grundlegender Schutz, dass wir keine halbfertigen Dateien einlesen.
+				if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
+				{
+					FNX.dbgf("File modification time changed, but it's too early: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
+				}
+				else
+				{
+					FNX.dbgf("File modification time changed: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
+					oldTime = newTime;
+					m = -1;
+				}
 			}
 			else
 			{
-				FNX.dbgf("Nothing to do! Sleeping...", oldTime.toMillis(), newTime.toMillis());
-				publish((int) (newTime.toMillis() / 1000));
+				FNX.dbg("Nothing to do! Sleeping...");
 			}
 
-			Thread.sleep(checkInterval);
+			publish((int) (newTime.toMillis() / 1000) * m);
+			Thread.sleep(HTGT.FF_CHECK_INTERVAL);
 		}
 	}
 
@@ -5816,14 +5824,12 @@ class HTGT_FFM_Observer extends HTGT_FFM
 	}
 }
 
-class HTGT_FFM_Analyst extends HTGT_FFM
+class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 {
 	private eSportsAPIException backgroundException;
 
 	public HTGT_FFM_Analyst()
 	{
-		super();
-
 		HTGT.fastFollowLock();
 	}
 
@@ -5868,23 +5874,6 @@ class HTGT_FFM_Analyst extends HTGT_FFM
 		HTGT.fastFollowUnlock();
 
 		FNX.dbg("FFM evaluation thread stopped.");
-	}
-}
-
-// TODO: Braucht diese Klasse wirklich jemand?
-// Die tut nichts und hat keine Gemeinsamkeiten!
-// ...
-
-class HTGT_FFM extends SwingWorker<Integer,Integer>
-{
-	public HTGT_FFM()
-	{
-		super();
-	}
-
-	protected Integer doInBackground() throws Exception
-	{
-		return 0;
 	}
 }
 
@@ -5971,4 +5960,7 @@ class HTGT_ActionListener extends AbstractAction
 // ...
 
 // TODO: Interval über CFG konfigurierbar machen?
+// ...
+
+// TODO: Menüfunktion (Hilfe), um den Pfad der aktuellen Datei in die Zwischenablage zu kopieren?
 // ...
