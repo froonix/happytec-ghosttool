@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 import java.util.concurrent.CancellationException;
@@ -3159,15 +3160,33 @@ public class HTGT
 
 			if(localeParts != null)
 			{
-				if(Locale.getDefault().getLanguage().equals(localeParts[0]))
+				Locale current = Locale.getDefault();
+				Locale guess = new Locale(localeParts[0], current.getCountry());
+
+				if(!Locale.getDefault().getLanguage().equals(localeParts[0]))
 				{
-					FNX.dbgf("Default locale (%s) is nearly identical to %s_%s! Not changing locale...", Locale.getDefault(), localeParts[0], localeParts[1]);
+					FNX.dbgf("Old default locale: %s", Locale.getDefault());
+
+					try
+					{
+						FNX.dbgf("getISO3Language = %s", guess.getISO3Language());
+						FNX.dbgf("getISO3Country = %s", guess.getISO3Country());
+
+						// COUNTRY-Code beibehalten!
+						// Aus af_ZA wird z.B. en_ZA.
+						Locale.setDefault(guess);
+					}
+					catch(MissingResourceException e)
+					{
+						// Die gewünschte Sprache gibt es für dieses Land leider nicht.
+						Locale.setDefault(new Locale(localeParts[0], localeParts[1]));
+					}
+
+					FNX.dbgf("New default locale: %s", Locale.getDefault());
 				}
 				else
 				{
-					FNX.dbgf("Old default locale: %s", Locale.getDefault());
-					Locale.setDefault(new Locale(localeParts[0], localeParts[1]));
-					FNX.dbgf("New default locale: %s", Locale.getDefault());
+					FNX.dbgf("Default locale (%s) is nearly identical to %s_%s! Not changing locale...", Locale.getDefault(), localeParts[0], localeParts[1]);
 				}
 			}
 		}
@@ -5899,4 +5918,7 @@ class HTGT_ActionListener extends AbstractAction
 // ...
 
 // TODO: Menüfunktion (Hilfe), um den Pfad der aktuellen Datei in die Zwischenablage zu kopieren?
+// ...
+
+// Note: FNX_ContextMenu.java uses or overrides a deprecated API.
 // ...
