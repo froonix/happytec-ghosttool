@@ -38,6 +38,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
@@ -569,5 +570,20 @@ public abstract class FNX
 		}
 
 		return true;
+	}
+
+	// Das ist die einzige Lösung, die wirklich funktioniert!
+	// Quelle: https://stackoverflow.com/a/3684815/3747688
+	public static boolean isValidLocale(String value)
+	{
+		for(Locale locale : Locale.getAvailableLocales())
+		{
+			if(value.equals(locale.toString()))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

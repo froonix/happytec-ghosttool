@@ -231,6 +231,7 @@ public class HTGT
 	final public static String MENU_PTOKEN  = "ptoken";                // Aktiv, sobald ein API-Token im geladenen XML-Profil existiert.
 	final public static String MENU_SELECT  = "select";                // Aktiv, sobald Geister markiert wurden.
 
+	private static Locale                     defaultLocaleAtStartUp;
 	private static ResourceBundle             lang;
 
 	private static Preferences                cfg;
@@ -3119,6 +3120,10 @@ public class HTGT
 		String[] values = new String[LOCALES.length];
 		String selection = null;
 
+		Locale oldLocale = Locale.getDefault();
+		FNX.dbgf("Changing locale: %s", defaultLocaleAtStartUp);
+		Locale.setDefault(defaultLocaleAtStartUp);
+
 		for(int i = 0; i < LOCALES.length; i++)
 		{
 			localeParts = splitLocaleString(LOCALES[i]);
@@ -3131,6 +3136,9 @@ public class HTGT
 				selection = values[i];
 			}
 		}
+
+		FNX.dbgf("Resetting locale: %s", oldLocale);
+		Locale.setDefault(oldLocale);
 
 		Integer selected = (Integer) inputDialog(FNX.getLangString(lang, "languageSelectionTitle"), String.format((updates ? FNX.getLangString(lang, "languageSelectionExtended") + "%n%n" : "") + FNX.getLangString(lang, "languageSelectionBody")), values, selection);
 
@@ -3161,32 +3169,16 @@ public class HTGT
 			if(localeParts != null)
 			{
 				Locale current = Locale.getDefault();
-				Locale guess = new Locale(localeParts[0], current.getCountry());
 
 				if(!Locale.getDefault().getLanguage().equals(localeParts[0]))
 				{
 					FNX.dbgf("Old default locale: %s", Locale.getDefault());
-
-					try
-					{
-						FNX.dbgf("getISO3Language = %s", guess.getISO3Language());
-						FNX.dbgf("getISO3Country = %s", guess.getISO3Country());
-
-						// COUNTRY-Code beibehalten!
-						// Aus af_ZA wird z.B. en_ZA.
-						Locale.setDefault(guess);
-					}
-					catch(MissingResourceException e)
-					{
-						// Die gewünschte Sprache gibt es für dieses Land leider nicht.
-						Locale.setDefault(new Locale(localeParts[0], localeParts[1]));
-					}
-
+					Locale.setDefault(new Locale(localeParts[0], FNX.isValidLocale(localeParts[0] + "_" + current.getCountry()) ? current.getCountry() : localeParts[1]));
 					FNX.dbgf("New default locale: %s", Locale.getDefault());
 				}
 				else
 				{
-					FNX.dbgf("Default locale (%s) is nearly identical to %s_%s! Not changing locale...", Locale.getDefault(), localeParts[0], localeParts[1]);
+					FNX.dbgf("Default locale %s is (nearly) identical to %s_%s! Not changing locale...", Locale.getDefault(), localeParts[0], localeParts[1]);
 				}
 			}
 		}
@@ -3199,6 +3191,11 @@ public class HTGT
 
 	private static void setupLocale()
 	{
+		if(defaultLocaleAtStartUp == null)
+		{
+			defaultLocaleAtStartUp = Locale.getDefault();
+		}
+
 		updateDefaultLocale();
 		lang = FNX.getLangBundle("HTGT");
 	}
