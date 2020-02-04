@@ -3159,9 +3159,16 @@ public class HTGT
 
 			if(localeParts != null)
 			{
-				FNX.dbgf("Old default locale: %s", Locale.getDefault());
-				Locale.setDefault(new Locale(localeParts[0], localeParts[1]));
-				FNX.dbgf("New default locale: %s", Locale.getDefault());
+				if(Locale.getDefault().getLanguage().equals(localeParts[0]))
+				{
+					FNX.dbgf("Default locale (%s) is nearly identical to %s_%s! Not changing locale...", Locale.getDefault(), localeParts[0], localeParts[1]);
+				}
+				else
+				{
+					FNX.dbgf("Old default locale: %s", Locale.getDefault());
+					Locale.setDefault(new Locale(localeParts[0], localeParts[1]));
+					FNX.dbgf("New default locale: %s", Locale.getDefault());
+				}
 			}
 		}
 		else
