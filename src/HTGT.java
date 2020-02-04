@@ -1881,65 +1881,6 @@ public class HTGT
 		}
 	}
 
-	protected static void fastFollowWorker()
-	{
-		FileTime oldTime;
-		FileTime newTime;
-
-		ffChanged = false;
-
-		if(OfflineProfiles == null)
-		{
-			return;
-		}
-
-		try
-		{
-			oldTime = Files.getLastModifiedTime(file.toPath());
-
-			while(true)
-			{
-				if(!ffState)
-				{
-					FNX.dbg("Killed via external state variable.");
-					return;
-				}
-
-				newTime = Files.getLastModifiedTime(file.toPath());
-
-				if(newTime.compareTo(oldTime) > 0)
-				{
-					FNX.dbg("File modification time changed!");
-					Thread.sleep(1000);
-					oldTime = newTime;
-					ffChanged = true;
-					return;
-				}
-				else
-				{
-					FNX.dbg("Nothing to do. Sleeping...");
-				}
-
-				Thread.sleep(FF_CHECK_INTERVAL);
-			}
-		}
-		catch(IOException e)
-		{
-			exceptionHandler(e);
-			return;
-		}
-		catch(InterruptedException e)
-		{
-			e.printStackTrace();
-		}
-		finally
-		{
-			ffState = false;
-			ffDialog.setVisible(false);
-			FNX.dbg("Cleanup. Goodbye...");
-		}
-	}
-
 	private static HTGT_FFM_Analyst  aFFM;
 	private static HTGT_FFM_Observer oFFM;
 	public static void fastFollow(boolean force)
@@ -5592,9 +5533,7 @@ class HTGT_WindowAdapter extends WindowAdapter
 	}
 }
 
-// TODO: Der FFM gehört da unbedingt wieder raus raus!
-// Soll der Updatecheck dann nicht auch gleich umgestellt werden?
-// Oder wenigstens als Task im Bugtracker aufgenommen werden?
+// TODO: EXEC_FASTFOLLOW entfernen!
 // ...
 
 class HTGT_Background implements Runnable
@@ -5617,10 +5556,6 @@ class HTGT_Background implements Runnable
 		{
 			case EXEC_UPDATECHECK:
 				HTGT.updateCheck(false, true);
-				break;
-
-			case EXEC_FASTFOLLOW:
-				HTGT.fastFollowWorker();
 				break;
 
 			case EXEC_DLLCHECK:
@@ -5687,7 +5622,7 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 		// Ein schmutziger Hack, damit auf jeden Fall die GUI bereits
 		// blockiert ist. Andernfalls könnte das zu unschönen Race-
 		// Conditions führen, die noch nicht abgefangen werden.
-		Thread.sleep(HTGT.FF_CHECK_INTERVAL);
+		Thread.sleep(HTGT.FF_OBSERVER_DELAY);
 
 		// Durch diesen kleinen Hack wird die Datei beim Start
 		// auf jeden Fall einmal neu eingelesen. Dadurch sollte
@@ -5884,12 +5819,6 @@ class HTGT_FFM_ActionListener implements ActionListener
 	{
 		FNX.dbg("Button clicked");
 		HTGT.fastFollowStop(false);
-
-		// TODO: Speichern, dass der Button gedrückt wurde!
-		// Das bedeutet nämlich, dass die Schleife wieder starten darf.
-		// Am Besten über ein Flag, das bei Unblock/Block gesetzt wird?
-		// Aber Achtung: Unblock wird manchmal mehrfach aufgerufen!
-		// ...
 	}
 }
 
