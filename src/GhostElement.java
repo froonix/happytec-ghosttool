@@ -210,7 +210,7 @@ public class GhostElement
 				};
 			}
 
-			if(this.Nickname == null || !this.Nickname.matches("^(?i)[A-Z0-9_]{1,20}$"))
+			if(this.Nickname == null /*|| !this.Nickname.matches("^(?i)[A-Z0-9_]{1,20}$")*/)
 			{
 				throw new GhostException("GhostData: Missing or invalid nickname");
 			}

@@ -249,7 +249,8 @@ public class HTGT
 
 	private static int                        lastFilterOption;
 	private static boolean                    lastApplicationStatus;
-	private static int                        lastApplicationPosition;
+	private static volatile int               lastApplicationPosition;
+	private static volatile GhostElement      lastApplicationGhost;
 
 	private static OfflineProfiles            OfflineProfiles;
 
@@ -257,7 +258,14 @@ public class HTGT
 	private static JButton                    ffButton;
 	private static JOptionPane                ffBody;
 	private static HTGT_FFM_KeyListener       ffListener;
+	private static int                        ffModification;
+	private static int                        ffStarted;
 	private static boolean                    ffForce;
+	private static HTGT_FFM_Analyst           aFFM;
+	private static HTGT_FFM_Observer          oFFM;
+
+	private static volatile int               uploadedCount;
+	private static volatile int               appliedCount;
 
 	private static JFrame                     mainWindow;
 	private static JTable                     maintable;
@@ -1955,8 +1963,6 @@ public class HTGT
 		return true;
 	}
 
-	private static HTGT_FFM_Analyst  aFFM;
-	private static HTGT_FFM_Observer oFFM;
 	public static void fastFollow(boolean force)
 	{
 		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
@@ -2057,25 +2063,30 @@ public class HTGT
 	// Die nachfolgende Variable wird durch fastFollowBlock() erstmals auf 1 gesetzt.
 	// Durch fastFollowStop() wird sie auf -1 gesetzt, wodurch die Schleife weiterläuft.
 	// In anderen allen Fällen (z.B. bei 1) wird die Schleife nach dem JDialog beendet!
-	private static int startedFFM;
 	private static void fastFollowStart(boolean force)
 	{
 		if(!FNX.requireEDT() || OfflineProfiles == null || checkProfile(true) || unsavedChanges() || !prepareAPI())
 		{
 			return;
 		}
-		else if(startedFFM != 0)
+		else if(ffStarted != 0)
 		{
-			FNX.dbg("startedFFM != 0");
+			FNX.dbg("ffStarted != 0");
 			return;
 		}
 		else
 		{
-			FNX.dbg("startedFFM > 0");
-			startedFFM = 1;
+			FNX.dbg("ffStarted > 0");
+			ffStarted = 1;
 		}
 
 		ffForce = force;
+		appliedCount = 0;
+		uploadedCount = 0;
+		ffModification = -1;
+		lastApplicationPosition = 0;
+		lastApplicationGhost = null;
+
 		boolean firstRun = true;
 
 		while(true)
@@ -2147,7 +2158,7 @@ public class HTGT
 				// TODO: Müssen wir etwas im Vordergrund machen?
 				// ...
 
-				if(startedFFM < 0)
+				if(ffStarted < 0)
 				{
 					FNX.dbg("Dialog closed!");
 					break;
@@ -2185,7 +2196,7 @@ public class HTGT
 
 				// TODO: Irgendwas stimmt da trotzdem noch nicht.
 				// Der FFM kann danach nicht mehr gestartet werden,
-				// weil startedFFM nicht auf 0 gesetzt wurde. WTF?!
+				// weil ffStarted nicht auf 0 gesetzt wurde. WTF?!
 				// ...
 
 				try
@@ -2200,7 +2211,7 @@ public class HTGT
 			}
 		}
 
-		startedFFM = 0;
+		ffStarted = 0;
 	}
 
 	public static void fastFollowLock()
@@ -2246,7 +2257,7 @@ public class HTGT
 
 	public static void fastFollowStatus()
 	{
-		fastFollowStatus(0);
+		fastFollowStatus(-1);
 	}
 
 	public static void fastFollowStatus(int time)
@@ -2255,6 +2266,14 @@ public class HTGT
 		{
 			return;
 		}
+		else if(time > -1)
+		{
+			ffModification = time;
+		}
+
+		LocalDateTime ldt;
+		DateTimeFormatter dtf;
+		String stateLine = " ";
 
 		if(ffBody != null)
 		{
@@ -2266,8 +2285,21 @@ public class HTGT
 
 			try
 			{
-				LocalDateTime ldt = LocalDateTime.ofEpochSecond(time, 0, OffsetDateTime.now().getOffset());
-				DateTimeFormatter dtf = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
+				FNX.dbg("Updating status message...");
+
+				ldt = LocalDateTime.ofEpochSecond(ffModification, 0, OffsetDateTime.now().getOffset());
+				dtf = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
+
+				if(lastApplicationPosition > 0 && lastApplicationGhost != null)
+				{
+					stateLine = FNX.formatLangString(lang, "fastFollowModeState",
+						lastApplicationPosition,
+						lastApplicationGhost.getGameModeName(),
+						lastApplicationGhost.getTrackName(),
+						lastApplicationGhost.getWeatherName(),
+						lastApplicationGhost.getResult()
+					);
+				}
 
 				// ACHTUNG: Wir können an dieser Stelle zwar den Text aktualisieren,
 				// aber die Größe des Dialogs passt sich dadurch nicht automatisch an!
@@ -2277,11 +2309,11 @@ public class HTGT
 				// kurze Statusupdates hinzugefügt werden, für die es Platzhalter gibt.
 				ffBody.setMessage(
 					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
-					FNX.formatLangString(lang, "fastFollowMode" + ((time > 0) ? "Extended" : "Empty"),
+					FNX.formatLangString(lang, "fastFollowMode" + ((ffModification > 0) ? "Extended" : "Empty"),
 						ldt.format(dtf),
-						0, // <-- TODO!
-						0,  // <-- TODO!
-						"last rank: #12 (time trial, bormio, sun)" // <-- TODO!
+						uploadedCount,
+						appliedCount,
+						stateLine
 					)
 				);
 
@@ -2309,7 +2341,7 @@ public class HTGT
 		{
 			return;
 		}
-		else if(startedFFM == 0)
+		else if(ffStarted == 0)
 		{
 			FNX.dbg("FFM not started! Unable to unblock...");
 
@@ -2317,7 +2349,7 @@ public class HTGT
 		}
 		else if(!suspend)
 		{
-			startedFFM = -1;
+			ffStarted = -1;
 		}
 
 		if(oFFM != null || aFFM != null)
@@ -3811,10 +3843,13 @@ public class HTGT
 		try
 		{
 			result = api.getExtendedGhostIDs(ghosts);
+			uploadedCount += result.size();
+
 			if(result.size() != ghosts.length)
 			{
 				FNX.dbgf("ghosts(%d) != selection(%d)", result.size(), ghosts.length);
 				exceptionHandler(new eSportsAPIException("SERVER_DUMB"));
+
 				return -1;
 			}
 		}
@@ -3899,7 +3934,7 @@ public class HTGT
 						boolean status = false;
 						int position = -1;
 
-						if(silent)
+						if(silent && FNX.isEDT() && ffStarted == 0)
 						{
 							status = api.applyResultByGhostID(ghostID);
 						}
@@ -3912,6 +3947,9 @@ public class HTGT
 						if(status)
 						{
 							FNX.dbgf("Successfully applied result from ghost with ID %d. (expected rank %d)", ghostID, position);
+
+							lastApplicationGhost = ghost;
+							appliedCount++;
 
 							if(!silent)
 							{
@@ -5919,6 +5957,7 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 		{
 			FNX.dbg("Updating status message...");
 			HTGT.fastFollowStatus(modificationTime);
+			initState = true;
 		}
 		else
 		{
@@ -5978,6 +6017,10 @@ class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 			if(result < 1)
 			{
 				HTGT.fastFollowStop();
+			}
+			else
+			{
+				HTGT.fastFollowStatus();
 			}
 		}
 		catch(CancellationException e)
