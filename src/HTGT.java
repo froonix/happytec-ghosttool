@@ -253,22 +253,11 @@ public class HTGT
 
 	private static OfflineProfiles            OfflineProfiles;
 
-	// TODO: Das volatile-Flag kann weg,
-	// sobald der FFM vollständig auf
-	// SwingWorker umgestellt wurde!
-	// ...
-
-	// TODO: Manche Variablen können ganz weg.
-	// ...
-
-	private static volatile boolean              ffState;
-	private static volatile JDialog              ffDialog;
-	private static          JButton              ffButton;
-	private static          JOptionPane          ffBody;
-	private static          HTGT_FFM_KeyListener ffListener;
-	private static volatile boolean              ffChanged;
-	private static          boolean              ffForce;
-
+	private static JDialog                    ffDialog;
+	private static JButton                    ffButton;
+	private static JOptionPane                ffBody;
+	private static HTGT_FFM_KeyListener       ffListener;
+	private static boolean                    ffForce;
 
 	private static JFrame                     mainWindow;
 	private static JTable                     maintable;
@@ -707,7 +696,7 @@ public class HTGT
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_FTOKEN,   langKey + ".copyTokenToProfile",        "copyTokenToProfile",     KeyStroke.getKeyStroke(KeyEvent.VK_T,      CTRL | SHIFT)));
 				menu.add(registerDynMenuItem(MENU_PTOKEN,   langKey + ".copyTokenFromProfile",      "copyTokenFromProfile",   KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
-				menu.add(registerDynMenuItem(MENU_PTOKEN,   langKey + ".removeTokenFromProfile",    "removeTokenFromProfile", KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_PTOKEN,   langKey + ".removeTokenFromProfile",    "removeTokenFromProfile"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".changeToken",               "setupToken",             KeyStroke.getKeyStroke(KeyEvent.VK_F2,     NONE)));
 				menu.add(registerDynMenuItem(MENU_TOKEN,    langKey + ".deleteToken",               "deleteToken",            KeyStroke.getKeyStroke(KeyEvent.VK_F2,     SHIFT)));
@@ -723,9 +712,11 @@ public class HTGT
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".changeDefaultPath",         "changeDefaultFile",      KeyStroke.getKeyStroke(KeyEvent.VK_D,      SHIFT)));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetDefaultPath",          "resetDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_R,      SHIFT)));
-				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".applyDefaultPath",          "applyDefaultFile",       KeyStroke.getKeyStroke(KeyEvent.VK_A,      SHIFT)));
+				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".applyDefaultPath",          "applyDefaultFile"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetQuestions",            "resetQuestions",         KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL | SHIFT)));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableQuestions",          "disableQuestions"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableQuestions",           "enableQuestions"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetConfiguration",        "clearConfigDialog",      KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL)));
 				break;
 
@@ -1559,26 +1550,23 @@ public class HTGT
 			return false;
 		}
 
+		FNX.dbg("Go...");
+
 		try
 		{
-			/*
-			if(!FNX.isEDT())
-			{
-				FNX.dbg("Background thread! Uaaaaaaaaaaaaaaaaaahhhhhhhhhhhwwwwwaaaaaahhhhhaaaaaagaaaaaaaaaaa...");
-				return false;
-			}
-			else if(true)
-			{
-				FNX.dbg("Back in the EDT. What's going on?");
-				throw new eSportsAPIException("ROFL");
-			}
-			*/
-
 			int[][][][] results;
 			GhostElement[][][] oldProfileGhosts = null;
 			GhostElement[][][] oldDefaultGhosts = null;
 			int oldProfileCount = OfflineProfiles.getProfileCount();
 			int oldDefaultProfile = OfflineProfiles.defaultProfile();
+
+			// DEBUY ONLY !!!
+			FNX.dbg("----- GHOSTS BEFORE RELOADING -----");
+			for(int i = 0; i < OfflineProfiles.getGhostCount(); i++)
+			{
+				FNX.dbgf("  #%02d: %s", i, OfflineProfiles.getGhost(i).getDebugDetails());
+			}
+			FNX.dbg("-----------------------------------");
 
 			oldProfileGhosts = OfflineProfiles.getAllGhosts();
 
@@ -1589,12 +1577,40 @@ public class HTGT
 				OfflineProfiles.selectProfile(profile);
 			}
 
-			reloadFile(true);
+			OfflineProfiles tmp;
+
+			if(!FNX.isEDT())
+			{
+				try
+				{
+					FNX.dbg("Cloning OfflineProfiles object...");
+					tmp = new OfflineProfiles(file);
+					tmp.selectProfile(profile);
+				}
+				catch(Exception e)
+				{
+					exceptionHandler(e);
+					return false;
+				}
+			}
+			else
+			{
+				tmp = OfflineProfiles;
+				reloadFile(true);
+			}
+
+			// DEBUY ONLY !!!
+			FNX.dbg("----- GHOSTS AFTER RELOADING -----");
+			for(int i = 0; i < tmp.getGhostCount(); i++)
+			{
+				FNX.dbgf("  #%02d: %s", i, tmp.getGhost(i).getDebugDetails());
+			}
+			FNX.dbg("----------------------------------");
 
 			GhostElement[][][] newProfileGhosts = null;
 			GhostElement[][][] newDefaultGhosts = null;
-			int newProfileCount = OfflineProfiles.getProfileCount();
-			int newDefaultProfile = OfflineProfiles.defaultProfile();
+			int newProfileCount = tmp.getProfileCount();
+			int newDefaultProfile = tmp.defaultProfile();
 
 			if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
 			{
@@ -1603,17 +1619,17 @@ public class HTGT
 				return false;
 			}
 
-			newProfileGhosts = OfflineProfiles.getAllGhosts();
+			newProfileGhosts = tmp.getAllGhosts();
 
 			if(newDefaultProfile > -1)
 			{
 				FNX.dbgf("Switching to profile %d...", newDefaultProfile);
-				OfflineProfiles.selectProfile(newDefaultProfile);
+				tmp.selectProfile(newDefaultProfile);
 
-				newDefaultGhosts = OfflineProfiles.getAllGhosts();
+				newDefaultGhosts = tmp.getAllGhosts();
 
 				FNX.dbgf("Using old profile %d...", profile);
-				OfflineProfiles.selectProfile(profile);
+				tmp.selectProfile(profile);
 			}
 
 			int[] modes = gmHelper.getGameModeIDs();
@@ -1635,6 +1651,8 @@ public class HTGT
 				{
 					for(int w = 0; w < weathers.length; w++)
 					{
+						//FNX.dbgf("[%02d][%02d][%02d]: %s - %s", m, t, w, (oldProfileGhosts[m][t][w] == null ? "null" : "data"), (newProfileGhosts[m][t][w] == null ? "null" : "data"));
+
 						if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
 						{
 							FNX.dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
@@ -1694,6 +1712,16 @@ public class HTGT
 
 			if(ghosts.size() > 0)
 			{
+				FNX.dbgf("ghosts.size() = %d", ghosts.size());
+
+				// Worker thread: No auto-apply or ghost download requested? Unable to handle in non-EDT!
+				if(!FNX.isEDT() && (cfg(CFG_AAR) == null || (!foreignGhostEnabled() && cfg(CFG_NDG) == null)))
+				{
+					FNX.dbg("Unable to handle FFM in worker thread. Switching to EDT...");
+
+					return false;
+				}
+
 				// TODO: Wir brauchen einen Uploadcache in der API-Klasse!
 				// Andernfalls würden wir beim EDT alles nochmals hochladen.
 				// Nicht vergessen, dass dieser Cache immer geleert gehört.
@@ -1796,8 +1824,17 @@ public class HTGT
 					}
 				}
 			}
+			else
+			{
+				FNX.dbg("Nothing to upload...");
+			}
 
 			// lastApplicationPosition? (ExpectedPosition)
+			// ...
+
+			// TODO: Ein Problem bleibt!
+			// Wenn der Geist schlechter war, hebt sich der FFM-Dialog trotzdem in den Vordergrund.
+			// Wir müssten beim Upload zwei Durchläufe starten: Zuerst ohne Apply und danach nochmals mit Apply, wenn wir wissen, ob sie überhaupt anwendbar sind.
 			// ...
 
 			if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
@@ -1812,9 +1849,11 @@ public class HTGT
 
 				if(cfg(CFG_NDG) == null)
 				{
-					if(!FNX.isEDT())
+					if(!FNX.requireEDT())
 					{
-						return false;
+						FNX.dbg("CFG_NDG debug");
+
+						return true;
 					}
 
 					int realWeather;
@@ -1845,7 +1884,7 @@ public class HTGT
 
 						if(result != null && result == true)
 						{
-							if(OfflineProfiles.changed() && !saveFile(true))
+							if(tmp.changed() && !saveFile(true))
 							{
 								throw new Exception("Could not save file");
 							}
@@ -1857,7 +1896,10 @@ public class HTGT
 					FNX.dbg("Skipping ghost download because of previous choice...");
 				}
 			}
-		}/*
+
+			FNX.dbg("End of try block...");
+		}
+		/*
 		catch(InterruptedException e)
 		{
 			e.printStackTrace();
@@ -1876,24 +1918,39 @@ public class HTGT
 		*/
 		finally
 		{
+			FNX.dbg("Final block...");
+
 			if(FNX.isEDT())
 			{
 				try
 				{
+					FNX.dbg("Final try block...");
+
 					// Das ursprüngliche Profil aktivieren!
 					FNX.dbgf("Restoring profile %d...", profile);
 					OfflineProfiles.selectProfile(profile);
+
+					FNX.dbg("Final try block finished...");
 				}
 				catch(Exception e)
 				{
+					FNX.dbg("Final block: Exception!");
+
 					exceptionHandler(e);
 					syncGUI();
 				}
 			}
 		}
 
+		FNX.dbg("Bye...");
+
 		// TODO: Exceptions weiterreichen
 		// ...
+
+		if(!FNX.isEDT())
+		{
+			reloadFile(true);
+		}
 
 		return true;
 	}
@@ -1959,8 +2016,12 @@ public class HTGT
 
 		if(fastFollowMode())
 		{
+			FNX.dbg("FFM returned TRUE");
+
 			return 1;
 		}
+
+		FNX.dbg("FFM returned FALSE");
 
 		return 0;
 	}
@@ -1972,6 +2033,8 @@ public class HTGT
 		// Die Analyst-Threads werden jedoch immer sofort bei Bedarf angeworfen.
 		if(aFFM != null && !aFFM.isDone())
 		{
+			FNX.dbg("FFM evaluation thread already running! Skipping...");
+
 			// Wenn der Thread bereits läuft, wird er einfach beim nächsten
 			// Durchlauf von process() ausgeführt werden. Das ist unkritisch,
 			// weil das Interval niedrig genug ist. Sollten sich zwischenzeitlich
@@ -2221,6 +2284,12 @@ public class HTGT
 						"last rank: #12 (time trial, bormio, sun)" // <-- TODO!
 					)
 				);
+
+				// TODO?
+				// ...
+
+				// reloadFile(true)
+				// syncGUI()
 			}
 			catch(ProfileException e)
 			{
@@ -5229,13 +5298,22 @@ public class HTGT
 		}
 	}
 
-	// Alle Immer/Nie Fragen zurücksetzen.
+	// Alle Immer/Nie Fragen aktivieren.
 	// Braucht definitiv keine Bestätigung.
-	public static void resetQuestions()
+	public static void enableQuestions()
 	{
 		removeConfig(CFG_NDG);
 		removeConfig(CFG_ARG);
 		removeConfig(CFG_AAR);
+	}
+
+	// Alle Immer/Nie Fragen deaktivieren.
+	// Quasi ein sofortiger Silent-Modus.
+	public static void disableQuestions()
+	{
+		cfg(CFG_NDG, "true");
+		cfg(CFG_ARG, "true");
+		cfg(CFG_AAR, "true");
 	}
 
 /***********************************************************************
@@ -5699,6 +5777,7 @@ class HTGT_SelectionHandler implements ListSelectionListener
 class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 {
 	private File fileHandle;
+	private boolean initState;
 	private boolean queueState;
 	private boolean firstRun;
 	private FileTime oldTime;
@@ -5833,7 +5912,13 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 				HTGT.fastFollowStatus(modificationTime);
 
 				queueState = false;
+				initState = true;
 			}
+		}
+		else if(!initState)
+		{
+			FNX.dbg("Updating status message...");
+			HTGT.fastFollowStatus(modificationTime);
 		}
 		else
 		{
@@ -5878,30 +5963,6 @@ class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 	protected Integer doInBackground() throws Exception
 	{
 		FNX.dbg("FFM evaluation thread started.");
-
-		// TODO: Exceptions der API müssen hier abgefangen werden.
-		// Diese müssen irgendwie beim Hauptthread (EDT) landen!
-		// ...
-
-		if(false)
-		{
-			throw new eSportsAPIException("DAMN");
-		}
-
-		if(false)
-		{
-			String test = null;
-
-			if(test.equals("NULL"))
-			{
-				return 3;
-			}
-		}
-
-		if(false)
-		{
-			return 2;
-		}
 
 		return HTGT.fastFollowEvaluation();
 	}
