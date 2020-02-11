@@ -5761,13 +5761,9 @@ class HTGT_WindowAdapter extends WindowAdapter
 	}
 }
 
-// TODO: EXEC_FASTFOLLOW entfernen!
-// ...
-
 class HTGT_Background implements Runnable
 {
 	public static final int EXEC_UPDATECHECK = 1;
-	public static final int EXEC_FASTFOLLOW  = 2;
 	public static final int EXEC_DLLCHECK    = 3;
 
 	private int exec;
