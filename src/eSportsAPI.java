@@ -226,6 +226,9 @@ public class eSportsAPI
 
 	public List<Map<String,Object>> getExtendedGhostIDs(GhostElement[] ghosts) throws eSportsAPIException
 	{
+		// TODO: Cache implementieren?
+		// ...
+
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();

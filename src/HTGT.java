@@ -1547,340 +1547,348 @@ public class HTGT
 		fastFollow(false);
 	}
 
-	public static void fastFollowLegacy(boolean force)
+	private static boolean fastFollowMode() throws Exception
 	{
-		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
+		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges() || !prepareAPI())
 		{
-			return;
+			return false;
 		}
 
 		try
 		{
-			if(!prepareAPI())
+			if(!FNX.isEDT())
 			{
-				return;
+				FNX.dbg("Background thread! Uaaaaaaaaaaaaaaaaaahhhhhhhhhhhwwwwwaaaaaahhhhhaaaaaagaaaaaaaaaaa...");
+				return false;
+			}
+			else if(true)
+			{
+				FNX.dbg("Back in the EDT. What's going on?");
+				throw new eSportsAPIException("ROFL");
 			}
 
-			// Diese API-Anfrage ist hier noch nicht notwendig.
-			// Dadurch wird aber schon hier geprüft, ob der Token
-			// gültig ist und ob aktive Strecken verfügbar sind.
-			int[][][][] results = api.getAllResults();
+			int[][][][] results;
+			GhostElement[][][] oldProfileGhosts = null;
+			GhostElement[][][] oldDefaultGhosts = null;
+			int oldProfileCount = OfflineProfiles.getProfileCount();
+			int oldDefaultProfile = OfflineProfiles.defaultProfile();
 
-			while(true)
+			oldProfileGhosts = OfflineProfiles.getAllGhosts();
+
+			if(oldDefaultProfile > -1)
 			{
-				JOptionPane msg = new JOptionPane(FNX.formatLangString(lang, "fastFollowModeBody"), JOptionPane.PLAIN_MESSAGE);
-				msg.setOptions(new String[]{FNX.getLangString(lang, "cancel")});
-				ffDialog = msg.createDialog(mainWindow, FNX.getLangString(lang, "fastFollowMode" + (force ? "Force" : "")));
+				OfflineProfiles.selectProfile(oldDefaultProfile);
+				oldDefaultGhosts = OfflineProfiles.getAllGhosts();
+				OfflineProfiles.selectProfile(profile);
+			}
 
-				ffState = true;
-				FNX.dbg("Starting worker thread...");
-				new Thread(new HTGT_Background(HTGT_Background.EXEC_FASTFOLLOW)).start();
-				FNX.dbg("Opening blocking info dialog...");
-				ffDialog.setVisible(true);
-				ffState = false;
+			reloadFile(true);
 
-				if(ffChanged)
+			GhostElement[][][] newProfileGhosts = null;
+			GhostElement[][][] newDefaultGhosts = null;
+			int newProfileCount = OfflineProfiles.getProfileCount();
+			int newDefaultProfile = OfflineProfiles.defaultProfile();
+
+			if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
+			{
+				FNX.dbgf("Unsupported changes: %d != %d || %d != %d", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
+				errorMessage(FNX.getLangString(lang, "fastFollowMode"), "Unsupported changes detected!");
+				return false;
+			}
+
+			newProfileGhosts = OfflineProfiles.getAllGhosts();
+
+			if(newDefaultProfile > -1)
+			{
+				FNX.dbgf("Switching to profile %d...", newDefaultProfile);
+				OfflineProfiles.selectProfile(newDefaultProfile);
+
+				newDefaultGhosts = OfflineProfiles.getAllGhosts();
+
+				FNX.dbgf("Using old profile %d...", profile);
+				OfflineProfiles.selectProfile(profile);
+			}
+
+			int[] modes = gmHelper.getGameModeIDs();
+			String[] tracks = gmHelper.getTracks(true);
+			int[] weathers = gmHelper.getWeatherIDs();
+
+			String currentGhost = null;
+			int lastUploadedMode = -1;
+			int lastUploadedTrack = -1;
+			int lastUploadedWeather = -1;
+			boolean lastFromDefault = false;
+			boolean realUpload = false;
+
+			ArrayList<ArrayList> ghosts = new ArrayList<ArrayList>();
+
+			for(int m = 0; m < modes.length; m++)
+			{
+				for(int t = 0; t < tracks.length; t++)
 				{
-					FNX.dbg("We are back in the main thread!");
-
-					GhostElement[][][] oldProfileGhosts = null;
-					GhostElement[][][] oldDefaultGhosts = null;
-					int oldProfileCount = OfflineProfiles.getProfileCount();
-					int oldDefaultProfile = OfflineProfiles.defaultProfile();
-
-					oldProfileGhosts = OfflineProfiles.getAllGhosts();
-
-					if(oldDefaultProfile > -1)
+					for(int w = 0; w < weathers.length; w++)
 					{
-						OfflineProfiles.selectProfile(oldDefaultProfile);
-						oldDefaultGhosts = OfflineProfiles.getAllGhosts();
-						OfflineProfiles.selectProfile(profile);
-					}
-
-					reloadFile(true);
-
-					GhostElement[][][] newProfileGhosts = null;
-					GhostElement[][][] newDefaultGhosts = null;
-					int newProfileCount = OfflineProfiles.getProfileCount();
-					int newDefaultProfile = OfflineProfiles.defaultProfile();
-
-					if(oldProfileCount != newProfileCount || oldDefaultProfile != newDefaultProfile)
-					{
-						FNX.dbgf("Unsupported changes: %d != %d || %d != %d", oldProfileCount, newProfileCount, oldDefaultProfile, newDefaultProfile);
-						errorMessage(FNX.getLangString(lang, "fastFollowMode"), "Unsupported changes detected!");
-						return;
-					}
-
-					newProfileGhosts = OfflineProfiles.getAllGhosts();
-
-					if(newDefaultProfile > -1)
-					{
-						FNX.dbgf("Switching to profile %d...", newDefaultProfile);
-						OfflineProfiles.selectProfile(newDefaultProfile);
-
-						newDefaultGhosts = OfflineProfiles.getAllGhosts();
-
-						FNX.dbgf("Using old profile %d...", profile);
-						OfflineProfiles.selectProfile(profile);
-					}
-
-					int[] modes = gmHelper.getGameModeIDs();
-					String[] tracks = gmHelper.getTracks(true);
-					int[] weathers = gmHelper.getWeatherIDs();
-
-					String currentGhost = null;
-					int lastUploadedMode = -1;
-					int lastUploadedTrack = -1;
-					int lastUploadedWeather = -1;
-					boolean lastFromDefault = false;
-					boolean realUpload = false;
-
-					ArrayList<ArrayList> ghosts = new ArrayList<ArrayList>();
-
-					for(int m = 0; m < modes.length; m++)
-					{
-						for(int t = 0; t < tracks.length; t++)
+						if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
 						{
-							for(int w = 0; w < weathers.length; w++)
+							FNX.dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
+
+							ArrayList<Object> item = new ArrayList<Object>(4);
+							item.add(m); item.add(t); item.add(w);
+							item.add(newProfileGhosts[m][t][w]);
+							ghosts.add(item);
+
+							lastUploadedMode = m;
+							lastUploadedTrack = t;
+							lastUploadedWeather = w;
+
+							if(newProfileGhosts[m][t][w].hasTicket())
 							{
-								if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
-								{
-									FNX.dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
-
-									// ghostUpload(newProfileGhosts[t][w], true);
-
-									ArrayList<Object> item = new ArrayList<Object>(4);
-									item.add(m); item.add(t); item.add(w);
-									item.add(newProfileGhosts[m][t][w]);
-									ghosts.add(item);
-
-									lastUploadedMode = m;
-									lastUploadedTrack = t;
-									lastUploadedWeather = w;
-
-									if(newProfileGhosts[m][t][w].hasTicket())
-									{
-										lastUploadedWeather = gmHelper.WEATHER_TICKET;
-									}
-								}
+								lastUploadedWeather = gmHelper.WEATHER_TICKET;
 							}
 						}
 					}
+				}
+			}
 
-					if(newDefaultProfile > -1)
+			if(newDefaultProfile > -1)
+			{
+				for(int m = 0; m < modes.length; m++)
+				{
+					for(int t = 0; t < tracks.length; t++)
 					{
-						for(int m = 0; m < modes.length; m++)
+						for(int w = 0; w < weathers.length; w++)
 						{
-							for(int t = 0; t < tracks.length; t++)
+							if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
 							{
-								for(int w = 0; w < weathers.length; w++)
+								FNX.dbgf("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
+
+								ArrayList<Object> item = new ArrayList<Object>(4);
+								item.add(m); item.add(t); item.add(w);
+								item.add(newDefaultGhosts[m][t][w]);
+								ghosts.add(item);
+
+								lastUploadedMode = m;
+								lastUploadedTrack = t;
+								lastUploadedWeather = w;
+								lastFromDefault = true;
+
+								if(newDefaultGhosts[m][t][w].hasTicket())
 								{
-									if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
-									{
-										FNX.dbgf("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
-
-										// ghostUpload(newDefaultGhosts[t][w], true);
-
-										ArrayList<Object> item = new ArrayList<Object>(4);
-										item.add(m); item.add(t); item.add(w);
-										item.add(newDefaultGhosts[m][t][w]);
-										ghosts.add(item);
-
-										lastUploadedMode = m;
-										lastUploadedTrack = t;
-										lastUploadedWeather = w;
-										lastFromDefault = true;
-
-										if(newDefaultGhosts[m][t][w].hasTicket())
-										{
-											lastUploadedWeather = gmHelper.WEATHER_TICKET;
-										}
-
-										// gmHelper.WEATHER_SUC?
-										// ...
-									}
-								}
-							}
-						}
-					}
-
-					if(ghosts.size() > 0)
-					{
-						if(force)
-						{
-							for(int i = 0; i < ghosts.size(); i++)
-							{
-								ArrayList item = ghosts.get(i);
-								GhostElement ghost = (GhostElement) item.get(3);
-								int w = (int) item.get(2);
-
-								FNX.dbgf("Uploading ghost in FORCE mode: %s", ghost.getDebugDetails());
-								ghostUpload(ghost, true);
-
-								realUpload = lastApplicationStatus;
-
-								FNX.dbgf("Last FO from server reply: %d", lastFilterOption);
-
-								switch(lastFilterOption)
-								{
-									case eSportsAPI.FO_TICKET:
-										lastUploadedWeather = gmHelper.WEATHER_TICKET;
-										break;
-
-									case eSportsAPI.FO_SUC:
-										lastUploadedWeather = gmHelper.WEATHER_SUC;
-										break;
-
-									default: // eSportsAPI.FO_NONE
-										lastUploadedWeather = w;
-										break;
+									lastUploadedWeather = gmHelper.WEATHER_TICKET;
 								}
 
-								FNX.dbgf("Set lastUploadedWeather to: %d", lastUploadedWeather);
-							}
-						}
-						else
-						{
-							int[][] filter = new int[ghosts.size()][3];
-							for(int i = 0; i < ghosts.size(); i++)
-							{
-								filter[i][0] = modes[(int) ghosts.get(i).get(0)];
-								filter[i][1] = (int) ghosts.get(i).get(1);
-								filter[i][2] = weathers[(int) ghosts.get(i).get(2)];
-							}
-
-							results = api.getSelectiveResults(filter);
-
-							for(int i = 0; i < ghosts.size(); i++)
-							{
-								ArrayList item = ghosts.get(i);
-								GhostElement ghost = (GhostElement) item.get(3);
-								int w = (int) item.get(2);
-								int t = (int) item.get(1);
-								int m = (int) item.get(0);
-								int o = eSportsAPI.FO_NONE;
-
-								if(ghost.hasTicket())
-								{
-									o = eSportsAPI.FO_TICKET;
-								}
-
-								// eSportsAPI.FO_SUC?
+								// gmHelper.WEATHER_SUC?
 								// ...
-
-								if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
-								{
-									FNX.dbgf("Uploading ghost: %s", ghost.getDebugDetails());
-									ghostUpload(ghost, true);
-									realUpload = true;
-								}
-								else
-								{
-									FNX.dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
-
-									if(o == eSportsAPI.FO_TICKET)
-									{
-										FNX.dbg("Still uploading it because it's a TICKET ghost...");
-										ghostUpload(new GhostElement[]{ghost}, true, true);
-									}
-
-									// eSportsAPI.FO_SUC?
-									// ...
-								}
 							}
 						}
 					}
+				}
+			}
 
-					// lastApplicationPosition? (ExpectedPosition)
-					// ...
+			if(ghosts.size() > 0)
+			{
+				// TODO: Wir brauchen einen Uploadcache in der API-Klasse!
+				// Andernfalls würden wir beim EDT alles nochmals hochladen.
+				// Nicht vergessen, dass dieser Cache immer geleert gehört.
+				// ...
 
-					if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
+				if(ffForce)
+				{
+					for(int i = 0; i < ghosts.size(); i++)
 					{
-						if(/*lastFromDefault &&*/ lastUploadedWeather > -1 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
+						ArrayList item = ghosts.get(i);
+						GhostElement ghost = (GhostElement) item.get(3);
+						int w = (int) item.get(2);
+
+						FNX.dbgf("Uploading ghost in FORCE mode: %s", ghost.getDebugDetails());
+
+						if(ghostUploadExtended(new GhostElement[]{ghost}, true, false) < 1)
 						{
-							currentGhost = String.format("%s%n", FNX.formatLangString(lang, "fastFollowCurrentGhost", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult()));
+							return false;
 						}
 
-						if(cfg(CFG_NDG) == null)
+						realUpload = lastApplicationStatus;
+
+						FNX.dbgf("Last FO from server reply: %d", lastFilterOption);
+
+						switch(lastFilterOption)
 						{
-							int realWeather;
-							switch(lastUploadedWeather)
-							{
-								case gmHelper.WEATHER_SUC:
-								case gmHelper.WEATHER_TICKET:
-									realWeather = lastUploadedWeather;
-									break;
+							case eSportsAPI.FO_TICKET:
+								lastUploadedWeather = gmHelper.WEATHER_TICKET;
+								break;
 
-								default:
-									realWeather = weathers[lastUploadedWeather];
-									break;
-							}
+							case eSportsAPI.FO_SUC:
+								lastUploadedWeather = gmHelper.WEATHER_SUC;
+								break;
 
-							int action = threesomeDialog(FNX.getLangString(lang, "fastFollowMode"),
-								FNX.formatLangString(lang, "fastFollowGhostQuestion", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather)) +
-								(!ENABLE_AUTOSAVE ? String.format("%n%s", FNX.formatLangString(lang, "fastFollowNoAutosave")) : "") + (currentGhost != null ? String.format("%n%s", currentGhost) : "")
-							, false);
-
-							if(action == BUTTON_NEVER)
-							{
-								cfg(CFG_NDG, "true");
-							}
-							else if(action == BUTTON_YES)
-							{
-								Boolean result = ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather < -1) ? true : false));
-
-								if(result != null && result == true)
-								{
-									if(OfflineProfiles.changed() && !saveFile(true))
-									{
-										throw new Exception("Could not save file");
-									}
-								}
-							}
+							default: // eSportsAPI.FO_NONE
+								lastUploadedWeather = w;
+								break;
 						}
-						else
-						{
-							FNX.dbg("Skipping ghost download because of previous choice...");
-						}
+
+						FNX.dbgf("Set lastUploadedWeather to: %d", lastUploadedWeather);
 					}
-
-					continue;
 				}
 				else
 				{
-					FNX.dbg("Dialog canceled or closed.");
-					break;
+					int[][] filter = new int[ghosts.size()][3];
+					for(int i = 0; i < ghosts.size(); i++)
+					{
+						filter[i][0] = modes[(int) ghosts.get(i).get(0)];
+						filter[i][1] = (int) ghosts.get(i).get(1);
+						filter[i][2] = weathers[(int) ghosts.get(i).get(2)];
+					}
+
+					results = api.getSelectiveResults(filter);
+
+					for(int i = 0; i < ghosts.size(); i++)
+					{
+						ArrayList item = ghosts.get(i);
+						GhostElement ghost = (GhostElement) item.get(3);
+						int w = (int) item.get(2);
+						int t = (int) item.get(1);
+						int m = (int) item.get(0);
+						int o = eSportsAPI.FO_NONE;
+
+						if(ghost.hasTicket())
+						{
+							o = eSportsAPI.FO_TICKET;
+						}
+
+						// eSportsAPI.FO_SUC?
+						// ...
+
+						if(results[o][m][t][w] == -1|| (!gmHelper.isReverseGameMode(m) && ghost.getTime() < results[o][m][t][w]) || (gmHelper.isReverseGameMode(m) && ghost.getTime() > results[o][m][t][w]))
+						{
+							FNX.dbgf("Uploading ghost: %s", ghost.getDebugDetails());
+
+							if(ghostUploadExtended(new GhostElement[]{ghost}, true, false) < 1)
+							{
+								return false;
+							}
+
+							realUpload = true;
+						}
+						else
+						{
+							FNX.dbgf("Ghost upload not possible, because old result (%d) is better or equal: %s", results[o][m][t][w], ghost.getDebugDetails());
+
+							if(o == eSportsAPI.FO_TICKET)
+							{
+								FNX.dbg("Still uploading it because it's a TICKET ghost...");
+
+								if(ghostUploadExtended(new GhostElement[]{ghost}, true, true) < 1)
+								{
+									return false;
+								}
+							}
+
+							// eSportsAPI.FO_SUC?
+							// ...
+						}
+					}
+				}
+			}
+
+			// lastApplicationPosition? (ExpectedPosition)
+			// ...
+
+			if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
+			{
+				if(/*lastFromDefault &&*/ lastUploadedWeather > -1 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
+				{
+					currentGhost = String.format("%s%n", FNX.formatLangString(lang, "fastFollowCurrentGhost", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult()));
 				}
 
-				// Thread.sleep(1000);
+				// TODO
+				// ...
+
+				if(cfg(CFG_NDG) == null)
+				{
+					if(!FNX.isEDT())
+					{
+						return false;
+					}
+
+					int realWeather;
+					switch(lastUploadedWeather)
+					{
+						case gmHelper.WEATHER_SUC:
+						case gmHelper.WEATHER_TICKET:
+							realWeather = lastUploadedWeather;
+							break;
+
+						default:
+							realWeather = weathers[lastUploadedWeather];
+							break;
+					}
+
+					int action = threesomeDialog(FNX.getLangString(lang, "fastFollowMode"),
+						FNX.formatLangString(lang, "fastFollowGhostQuestion", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather)) +
+						(!ENABLE_AUTOSAVE ? String.format("%n%s", FNX.formatLangString(lang, "fastFollowNoAutosave")) : "") + (currentGhost != null ? String.format("%n%s", currentGhost) : "")
+					, false);
+
+					if(action == BUTTON_NEVER)
+					{
+						cfg(CFG_NDG, "true");
+					}
+					else if(action == BUTTON_YES)
+					{
+						Boolean result = ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather < -1) ? true : false));
+
+						if(result != null && result == true)
+						{
+							if(OfflineProfiles.changed() && !saveFile(true))
+							{
+								throw new Exception("Could not save file");
+							}
+						}
+					}
+				}
+				else
+				{
+					FNX.dbg("Skipping ghost download because of previous choice...");
+				}
 			}
+		}/*
+		catch(InterruptedException e)
+		{
+			e.printStackTrace();
+			return false;
 		}
 		catch(eSportsAPIException e)
 		{
 			APIError(e);
-		}
-		catch(InterruptedException e)
-		{
-			e.printStackTrace();
+			return false;
 		}
 		catch(Exception e)
 		{
 			exceptionHandler(e);
+			return false;
 		}
+		*/
 		finally
 		{
-			try
+			if(FNX.isEDT())
 			{
-				// Das ursprüngliche Profil aktivieren!
-				FNX.dbgf("Restoring profile %d...", profile);
-				OfflineProfiles.selectProfile(profile);
-			}
-			catch(Exception e)
-			{
-				exceptionHandler(e);
-				syncGUI();
+				try
+				{
+					// Das ursprüngliche Profil aktivieren!
+					FNX.dbgf("Restoring profile %d...", profile);
+					OfflineProfiles.selectProfile(profile);
+				}
+				catch(Exception e)
+				{
+					exceptionHandler(e);
+					syncGUI();
+				}
 			}
 		}
+
+		// TODO: Exceptions weiterreichen
+		// ...
+
+		return true;
 	}
 
 	private static HTGT_FFM_Analyst  aFFM;
@@ -1933,7 +1941,7 @@ public class HTGT
 		*/
 	}
 
-	public static int fastFollowEvaluation()
+	public static Integer fastFollowEvaluation() throws Exception
 	{
 		// hier wird alles gemacht, was der fastfollowmodus bisher macht.
 		// allerdings in einem dry-mode! es darf hierbei zu keinen rückfragen kommen.
@@ -1942,17 +1950,12 @@ public class HTGT
 		// und ob es dabei im regelfall zu rückfragen kommen würde.
 		// ...
 
-		try
+		if(fastFollowMode())
 		{
-			// DEBUY ONLY !!!
-			//Thread.sleep(10000);
-		}
-		catch(Exception e)
-		{
-
+			return 1;
 		}
 
-		return -1;
+		return 0;
 	}
 
 	public static boolean fastFollowAnalyze()
@@ -2009,22 +2012,31 @@ public class HTGT
 		{
 			try
 			{
-				oFFM = new HTGT_FFM_Observer();
-				oFFM.setFile(file);
-
-				if(firstRun)
+				try
 				{
-					// Diese API-Anfrage ist hier noch nicht notwendig.
-					// Dadurch wird aber schon hier geprüft, ob der Token
-					// gültig ist und ob aktive Strecken verfügbar sind.
-					int[][][][] results = api.getAllResults();
+					oFFM = new HTGT_FFM_Observer();
+					oFFM.setFile(file);
 
-					firstRun = false;
-					oFFM.firstRun();
+					if(firstRun)
+					{
+						// Diese API-Anfrage ist hier noch nicht notwendig.
+						// Dadurch wird aber schon hier geprüft, ob der Token
+						// gültig ist und ob aktive Strecken verfügbar sind.
+						int[][][][] results = api.getAllResults();
+
+						firstRun = false;
+						oFFM.firstRun();
+					}
+					else
+					{
+						oFFM.secondRun();
+					}
 				}
-				else
+				catch(eSportsAPIException e)
 				{
-					oFFM.secondRun();
+					HTGT.fastFollowStop();
+					APIError(e);
+					break;
 				}
 
 				FNX.dbg("Opening new dialog...");
@@ -2073,6 +2085,12 @@ public class HTGT
 				else
 				{
 					FNX.dbg("Hiding dialog...");
+
+					fastFollowMode();
+
+					// ...
+					// ...
+
 					continue;
 				}
 			}
@@ -2080,7 +2098,13 @@ public class HTGT
 			{
 				HTGT.fastFollowStop();
 				APIError(e);
-				break;
+				continue;
+			}
+			catch(Exception e)
+			{
+				HTGT.fastFollowStop();
+				exceptionHandler(e);
+				continue;
 			}
 			finally
 			{
@@ -2175,8 +2199,9 @@ public class HTGT
 					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
 					FNX.formatLangString(lang, "fastFollowMode" + ((time > 0) ? "Extended" : "Empty"),
 						ldt.format(dtf),
-						0, // <!-- TODO!
-						0  // <!-- TODO!
+						0, // <-- TODO!
+						0,  // <-- TODO!
+						"last rank: #12 (time trial, bormio, sun)" // <-- TODO!
 					)
 				);
 			}
@@ -3079,6 +3104,13 @@ public class HTGT
 
 	private static void messageDialog(int type, String title, String msg)
 	{
+		if(!FNX.requireEDT())
+		{
+			FNX.dbgf("Hidden message: %s", msg);
+
+			return;
+		}
+
 		FNX.windowToFront(mainWindow); // <-- APIError, errorMessage, ...
 		JOptionPane.showMessageDialog(mainWindow, msg, title, type);
 	}
@@ -3326,6 +3358,11 @@ public class HTGT
 		{
 			FNX.dbg("API token invalid: Removed from prefs!");
 			updateToken(null);
+		}
+
+		if(!FNX.requireEDT())
+		{
+			return;
 		}
 
 		msg = (msg == null) ? FNX.formatLangString(lang, "APIError") : msg;
@@ -3647,8 +3684,19 @@ public class HTGT
 		return ghostUpload(ghosts, false, false);
 	}
 
-	// Interne Funktion für den sofortigen Upload von Geistern.
+	// Kompatibilitätswrapper
 	private static boolean ghostUpload(GhostElement[] ghosts, boolean silent, boolean doNotApply)
+	{
+		if(ghostUploadExtended(ghosts, silent, doNotApply) > 0)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	// Interne Funktion für den sofortigen Upload von Geistern. Erweiterte Version für FFM.
+	private static int ghostUploadExtended(GhostElement[] ghosts, boolean silent, boolean doNotApply)
 	{
 		lastApplicationPosition = 0;
 		lastApplicationStatus = false;
@@ -3657,7 +3705,11 @@ public class HTGT
 
 		if(!prepareAPI())
 		{
-			return false;
+			return 0;
+		}
+		else if(!FNX.isEDT())
+		{
+			silent = true;
 		}
 
 		try
@@ -3667,13 +3719,13 @@ public class HTGT
 			{
 				FNX.dbgf("ghosts(%d) != selection(%d)", result.size(), ghosts.length);
 				exceptionHandler(new eSportsAPIException("SERVER_DUMB"));
-				return false;
+				return -1;
 			}
 		}
 		catch(eSportsAPIException e)
 		{
 			APIError(e);
-			return false;
+			return -1;
 		}
 
 		for(int i = 0; i < result.size(); i++)
@@ -3705,6 +3757,10 @@ public class HTGT
 				{
 					FNX.dbg("Forcing result registration because of previous choice...");
 					action = BUTTON_YES;
+				}
+				else if(!FNX.requireEDT())
+				{
+					return -1;
 				}
 				else
 				{
@@ -3801,12 +3857,15 @@ public class HTGT
 
 		if(!error)
 		{
-			return true;
+			return 1;
 		}
 		else
 		{
-			return false;
+			return 0;
 		}
+
+		// TODO: Return -1 for Non-EDT questions!
+		// ...
 	}
 
 	// Eingabefeld für Geist-IDs zum Herunterladen. Mehrere IDs können
@@ -5784,14 +5843,12 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 
 class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 {
-	private eSportsAPIException backgroundException;
-
 	public HTGT_FFM_Analyst()
 	{
 		HTGT.fastFollowLock();
 	}
 
-	protected Integer doInBackground()
+	protected Integer doInBackground() throws Exception
 	{
 		FNX.dbg("FFM evaluation thread started.");
 
@@ -5799,18 +5856,24 @@ class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 		// Diese müssen irgendwie beim Hauptthread (EDT) landen!
 		// ...
 
-		try
+		if(false)
 		{
-			if(false)
+			throw new eSportsAPIException("DAMN");
+		}
+
+		if(false)
+		{
+			String test = null;
+
+			if(test.equals("NULL"))
 			{
-				throw new eSportsAPIException("GHOST_DUPLICATE");
+				return 3;
 			}
 		}
-		catch(eSportsAPIException e)
-		{
-			backgroundException = e;
 
-			return 0;
+		if(false)
+		{
+			return 2;
 		}
 
 		return HTGT.fastFollowEvaluation();
@@ -5818,15 +5881,42 @@ class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 
 	protected void done()
 	{
-		// get()
-		// ...
-
-		if(backgroundException != null)
+		try
 		{
+			Integer result = get();
+
+			FNX.dbgf("FFM evaluation thread result: %d", result);
+
+			if(result < 1)
+			{
+				HTGT.fastFollowStop();
+			}
+		}
+		/*
+		catch(CancellationException e)
+		{
+			FNX.dbg("FFM evaluation thread stopped by GUI action.");
+		}
+		*/
+		catch(InterruptedException e)
+		{
+			FNX.dbg("FFM evaluation thread interrupted.");
+			e.printStackTrace();
+		}
+		catch(ExecutionException e)
+		{
+			FNX.dbg("FFM evaluation thread caused an exception...");
+
 			HTGT.fastFollowStop();
-			HTGT.APIError(backgroundException);
-			backgroundException = null;
-			return;
+
+			if(e.getCause() instanceof eSportsAPIException)
+			{
+				HTGT.APIError((eSportsAPIException) e.getCause());
+			}
+			else
+			{
+				HTGT.exceptionHandler(e);
+			}
 		}
 
 		HTGT.fastFollowUnlock();
@@ -5918,4 +6008,7 @@ class HTGT_ActionListener extends AbstractAction
 // ...
 
 // Note: FNX_ContextMenu.java uses or overrides a deprecated API.
+// ...
+
+// TODO: Voraussichtliche Platzierung bei FFM-Statusmeldung anzeigen?
 // ...
