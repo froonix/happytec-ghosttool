@@ -1556,6 +1556,7 @@ public class HTGT
 
 		try
 		{
+			/*
 			if(!FNX.isEDT())
 			{
 				FNX.dbg("Background thread! Uaaaaaaaaaaaaaaaaaahhhhhhhhhhhwwwwwaaaaaahhhhhaaaaaagaaaaaaaaaaa...");
@@ -1566,6 +1567,7 @@ public class HTGT
 				FNX.dbg("Back in the EDT. What's going on?");
 				throw new eSportsAPIException("ROFL");
 			}
+			*/
 
 			int[][][][] results;
 			GhostElement[][][] oldProfileGhosts = null;
@@ -2024,6 +2026,11 @@ public class HTGT
 						// gültig ist und ob aktive Strecken verfügbar sind.
 						int[][][][] results = api.getAllResults();
 
+						if(true)
+						{
+							throw new eSportsAPIException("LMFAO");
+						}
+
 						firstRun = false;
 						oFFM.firstRun();
 					}
@@ -2234,14 +2241,24 @@ public class HTGT
 			startedFFM = -1;
 		}
 
-		FNX.dbg("stopping FFM now!");
+		if(oFFM != null || aFFM != null)
+		{
+			FNX.dbg("stopping FFM now!");
 
-		if(oFFM != null)
-		oFFM.cancel(true);
+			if(oFFM != null)
+			{
+				oFFM.cancel(true);
+				oFFM = null;
+			}
 
-		if(aFFM != null)
-		aFFM.cancel(true);
+			if(aFFM != null)
+			{
+				aFFM.cancel(true);
+				aFFM = null;
+			}
+		}
 
+		if(ffDialog != null)
 		ffDialog.setVisible(false);
 	}
 
@@ -5824,7 +5841,7 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 		}
 		catch(CancellationException e)
 		{
-			FNX.dbg("FFM background thread stopped by GUI action.");
+			FNX.dbg("FFM background thread stopped.");
 		}
 		catch(InterruptedException e)
 		{
@@ -5892,12 +5909,10 @@ class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 				HTGT.fastFollowStop();
 			}
 		}
-		/*
 		catch(CancellationException e)
 		{
-			FNX.dbg("FFM evaluation thread stopped by GUI action.");
+			FNX.dbg("FFM evaluation thread stopped.");
 		}
-		*/
 		catch(InterruptedException e)
 		{
 			FNX.dbg("FFM evaluation thread interrupted.");
@@ -5921,7 +5936,7 @@ class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 
 		HTGT.fastFollowUnlock();
 
-		FNX.dbg("FFM evaluation thread stopped.");
+		FNX.dbg("FFM evaluation thread finished.");
 	}
 }
 
