@@ -251,6 +251,7 @@ public class HTGT
 	private static boolean                    lastApplicationStatus;
 	private static volatile int               lastApplicationPosition;
 	private static volatile GhostElement      lastApplicationGhost;
+	private static volatile boolean           ffDownload;
 
 	private static OfflineProfiles            OfflineProfiles;
 
@@ -1557,11 +1558,19 @@ public class HTGT
 		{
 			return false;
 		}
+		else if(ffDownload)
+		{
+			// Es wurde nur der Download angefordert.
+			// Der Upload ist bereits zuvor passiert.
+			return fastFollowDownload();
+		}
+		ffDownload = false;
 
 		FNX.dbg("Go...");
 
 		try
 		{
+
 			int[][][][] results;
 			GhostElement[][][] oldProfileGhosts = null;
 			GhostElement[][][] oldDefaultGhosts = null;
@@ -1722,6 +1731,7 @@ public class HTGT
 			{
 				FNX.dbgf("ghosts.size() = %d", ghosts.size());
 
+				/*
 				// Worker thread: No auto-apply or ghost download requested? Unable to handle in non-EDT!
 				if(!FNX.isEDT() && (cfg(CFG_AAR) == null || (!foreignGhostEnabled() && cfg(CFG_NDG) == null)))
 				{
@@ -1729,6 +1739,7 @@ public class HTGT
 
 					return false;
 				}
+				*/
 
 				// TODO: Wir brauchen einen Uploadcache in der API-Klasse!
 				// Andernfalls würden wir beim EDT alles nochmals hochladen.
@@ -1845,58 +1856,20 @@ public class HTGT
 			// Wir müssten beim Upload zwei Durchläufe starten: Zuerst ohne Apply und danach nochmals mit Apply, wenn wir wissen, ob sie überhaupt anwendbar sind.
 			// ...
 
+			// Oder alternativ doch erst hier unten abbrechen?
+			// Der zweite FFM-Durchlauf könnte dann nur noch für den Geistdownload getriggert werden, ohne Upload!
+			// Den zuletzt hochgeladenen Geist und die dazugehörige FO haben wir sowieso schon in einer volatile-Variable.
+			// ...
+
 			if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
 			{
-				if(/*lastFromDefault &&*/ lastUploadedWeather > -1 && newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather] != null)
-				{
-					currentGhost = String.format("%s%n", FNX.formatLangString(lang, "fastFollowCurrentGhost", newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getNickname(), newProfileGhosts[lastUploadedMode][lastUploadedTrack][lastUploadedWeather].getResult()));
-				}
-
-				// TODO
-				// ...
-
 				if(cfg(CFG_NDG) == null)
 				{
-					if(!FNX.requireEDT())
+					// Der Download passiert in einer eigenen Methode.
+					// Dieser muss womöglich im EDT ausgeführt werden.
+					if(!fastFollowDownload())
 					{
-						FNX.dbg("CFG_NDG debug");
-
-						return true;
-					}
-
-					int realWeather;
-					switch(lastUploadedWeather)
-					{
-						case gmHelper.WEATHER_SUC:
-						case gmHelper.WEATHER_TICKET:
-							realWeather = lastUploadedWeather;
-							break;
-
-						default:
-							realWeather = weathers[lastUploadedWeather];
-							break;
-					}
-
-					int action = threesomeDialog(FNX.getLangString(lang, "fastFollowMode"),
-						FNX.formatLangString(lang, "fastFollowGhostQuestion", gmHelper.getTrack(tracks[lastUploadedTrack]), gmHelper.getGameModeName(modes[lastUploadedMode]), gmHelper.getWeatherName(realWeather)) +
-						(!ENABLE_AUTOSAVE ? String.format("%n%s", FNX.formatLangString(lang, "fastFollowNoAutosave")) : "") + (currentGhost != null ? String.format("%n%s", currentGhost) : "")
-					, false);
-
-					if(action == BUTTON_NEVER)
-					{
-						cfg(CFG_NDG, "true");
-					}
-					else if(action == BUTTON_YES)
-					{
-						Boolean result = ghostSelect(modes[lastUploadedMode], tracks[lastUploadedTrack], realWeather, true, ((realWeather < -1) ? true : false));
-
-						if(result != null && result == true)
-						{
-							if(tmp.changed() && !saveFile(true))
-							{
-								throw new Exception("Could not save file");
-							}
-						}
+						return false;
 					}
 				}
 				else
@@ -1958,6 +1931,86 @@ public class HTGT
 		if(!FNX.isEDT())
 		{
 			reloadFile(true);
+		}
+
+		return true;
+	}
+
+	private static boolean fastFollowDownload()
+	{
+		ffDownload = false;
+
+		if(!FNX.requireEDT())
+		{
+			ffDownload = true;
+
+			return false;
+		}
+		else if(lastApplicationGhost == null || cfg(CFG_NDG) != null)
+		{
+			FNX.dbg("Nothing to do here...");
+
+			return true;
+		}
+
+		try
+		{
+			String currentGhostLine = null;
+			int g = lastApplicationGhost.getGameMode();
+			String t = lastApplicationGhost.getTrack();
+			int w = lastApplicationGhost.getWeather();
+			int r = w;
+
+			switch(lastFilterOption)
+			{
+				case eSportsAPI.FO_TICKET:
+					r = gmHelper.WEATHER_TICKET;
+					break;
+
+				case eSportsAPI.FO_SUC:
+					r = gmHelper.WEATHER_SUC;
+					break;
+			}
+
+			if(r > -1)
+			{
+				reloadFile(true);
+
+				int currentGhosts[] = OfflineProfiles.getGhostsByCondition(g, t, w);
+
+				if(currentGhosts.length > 0)
+				{
+					GhostElement currentGhost = OfflineProfiles.getGhost(currentGhosts[0]);
+					currentGhostLine = String.format("%s%n", FNX.formatLangString(lang, "fastFollowCurrentGhost", currentGhost.getNickname(), currentGhost.getResult()));
+				}
+			}
+
+			int action = threesomeDialog(FNX.getLangString(lang, "fastFollowMode"),
+				FNX.formatLangString(lang, "fastFollowGhostQuestion", gmHelper.getTrack(t), gmHelper.getGameModeName(g), gmHelper.getWeatherName(r)) +
+					(!ENABLE_AUTOSAVE ? String.format("%n%s", FNX.formatLangString(lang, "fastFollowNoAutosave")) : "") +
+					(currentGhostLine != null ? String.format("%n%s", currentGhostLine) : "")
+			, false);
+
+			if(action == BUTTON_NEVER)
+			{
+				cfg(CFG_NDG, "true");
+			}
+			else if(action == BUTTON_YES)
+			{
+				Boolean result = ghostSelect(g, t, r, true, ((r < -1) ? true : false));
+
+				if(result != null && result == true)
+				{
+					if(OfflineProfiles.changed() && !saveFile(true))
+					{
+						throw new Exception("Could not save file");
+					}
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			exceptionHandler(e);
 		}
 
 		return true;
