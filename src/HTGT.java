@@ -3976,8 +3976,6 @@ public class HTGT
 					}
 					catch(eSportsAPIException e)
 					{
-						error = true;
-
 						if(silent && e.getMessage().equals("GHOST_DOPING") && cfg(CFG_AAR) != null)
 						{
 							FNX.dbgf("Silently discarding GHOST_DOPING exception at ghost with ID %d.", ghostID);
@@ -3986,6 +3984,7 @@ public class HTGT
 						{
 							FNX.dbgf("Failed to apply ghost with ID %d.", ghostID);
 							APIError(e, FNX.formatLangString(lang, "ghostApplyFailed", ghostID));
+							error = true;
 						}
 					}
 				}
