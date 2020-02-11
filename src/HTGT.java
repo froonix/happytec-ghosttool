@@ -1731,16 +1731,6 @@ public class HTGT
 			{
 				FNX.dbgf("ghosts.size() = %d", ghosts.size());
 
-				/*
-				// Worker thread: No auto-apply or ghost download requested? Unable to handle in non-EDT!
-				if(!FNX.isEDT() && (cfg(CFG_AAR) == null || (!foreignGhostEnabled() && cfg(CFG_NDG) == null)))
-				{
-					FNX.dbg("Unable to handle FFM in worker thread. Switching to EDT...");
-
-					return false;
-				}
-				*/
-
 				// TODO: Wir brauchen einen Uploadcache in der API-Klasse!
 				// Andernfalls würden wir beim EDT alles nochmals hochladen.
 				// Nicht vergessen, dass dieser Cache immer geleert gehört.
@@ -1848,19 +1838,6 @@ public class HTGT
 				FNX.dbg("Nothing to upload...");
 			}
 
-			// lastApplicationPosition? (ExpectedPosition)
-			// ...
-
-			// TODO: Ein Problem bleibt!
-			// Wenn der Geist schlechter war, hebt sich der FFM-Dialog trotzdem in den Vordergrund.
-			// Wir müssten beim Upload zwei Durchläufe starten: Zuerst ohne Apply und danach nochmals mit Apply, wenn wir wissen, ob sie überhaupt anwendbar sind.
-			// ...
-
-			// Oder alternativ doch erst hier unten abbrechen?
-			// Der zweite FFM-Durchlauf könnte dann nur noch für den Geistdownload getriggert werden, ohne Upload!
-			// Den zuletzt hochgeladenen Geist und die dazugehörige FO haben wir sowieso schon in einer volatile-Variable.
-			// ...
-
 			if(realUpload && lastUploadedMode > -1 && lastUploadedTrack > -1 && lastUploadedWeather != -1 && !foreignGhostEnabled())
 			{
 				if(cfg(CFG_NDG) == null)
@@ -1923,15 +1900,19 @@ public class HTGT
 			}
 		}
 
-		FNX.dbg("Bye...");
-
-		// TODO: Exceptions weiterreichen
+		// TODO: Exceptions wieder teilweise hier abfangen?
+		// Zumindestens im EDT? Oder ist das bereits der Fall?
 		// ...
 
 		if(!FNX.isEDT())
 		{
+			// Da wir mit einem geklonten OfflineProfiles-Objekt arbeiten,
+			// muss die originale Instanz noch neu geladen werden. Wenn das
+			// Programm bis hier läuft, wird kein Durchlauf im EDT benötigt.
 			reloadFile(true);
 		}
+
+		FNX.dbg("Bye...");
 
 		return true;
 	}
@@ -2066,13 +2047,6 @@ public class HTGT
 
 	public static Integer fastFollowEvaluation() throws Exception
 	{
-		// hier wird alles gemacht, was der fastfollowmodus bisher macht.
-		// allerdings in einem dry-mode! es darf hierbei zu keinen rückfragen kommen.
-		// ich nehme mal an, dabei soll noch kein upload von geistern stattfinden?
-		// es reicht, wenn man an dieser stelle weiß, ob ein upload erforderlich ist
-		// und ob es dabei im regelfall zu rückfragen kommen würde.
-		// ...
-
 		if(fastFollowMode())
 		{
 			FNX.dbg("FFM returned TRUE");
@@ -2101,11 +2075,6 @@ public class HTGT
 			// sein, weil immer nur der neueste Request eine Ausführung bewirkt.
 			return false;
 		}
-
-		// TODO: Kritisch wird es allerdings, wenn Rückfragen oder Fehler für den FFM angezeigt werden.
-		// Was passiert dann mit weiteren neuen Threads im Hintergrund? Oder können die währendessen
-		// eh nicht gestartet werden? Wäre logisch, weil im gleichen Thread, sollte aber getestet werden!
-		// ...
 
 		aFFM = new HTGT_FFM_Analyst();
 		aFFM.execute();
@@ -2136,6 +2105,7 @@ public class HTGT
 		ffForce = force;
 		appliedCount = 0;
 		uploadedCount = 0;
+		ffDownload = false;
 		ffModification = -1;
 		lastApplicationPosition = 0;
 		lastApplicationGhost = null;
@@ -2208,9 +2178,6 @@ public class HTGT
 
 				HTGT.fastFollowStop();
 
-				// TODO: Müssen wir etwas im Vordergrund machen?
-				// ...
-
 				if(ffStarted < 0)
 				{
 					FNX.dbg("Dialog closed!");
@@ -2221,9 +2188,6 @@ public class HTGT
 					FNX.dbg("Hiding dialog...");
 
 					fastFollowMode();
-
-					// ...
-					// ...
 
 					continue;
 				}
@@ -2238,7 +2202,7 @@ public class HTGT
 			{
 				HTGT.fastFollowStop();
 				exceptionHandler(e);
-				continue;
+				break;
 			}
 			finally
 			{
@@ -2246,11 +2210,6 @@ public class HTGT
 				// Andernfalls würden die Threads bei
 				// Exceptions einfach weiterlaufen.
 				fastFollowStop();
-
-				// TODO: Irgendwas stimmt da trotzdem noch nicht.
-				// Der FFM kann danach nicht mehr gestartet werden,
-				// weil ffStarted nicht auf 0 gesetzt wurde. WTF?!
-				// ...
 
 				try
 				{
@@ -2330,12 +2289,6 @@ public class HTGT
 
 		if(ffBody != null)
 		{
-			// TODO: Die time sollte unbedingt in einer Klassenvariable landen, genauso die beiden Zähler!
-			// Wenn der Dialog zwischenzeitlich ausgeblendet und neu gestartet wird, haben wir ansonsten keine Zeit.
-			// Aber nicht vergessen, dass die Variable beim Start des FFM zurückgesetzt werden muss!
-			// Und, dass time/counter bei "-1" nicht überschrieben werden dürfen.
-			// ...
-
 			try
 			{
 				FNX.dbg("Updating status message...");
@@ -2369,9 +2322,6 @@ public class HTGT
 						stateLine
 					)
 				);
-
-				// TODO?
-				// ...
 
 				// reloadFile(true)
 				// syncGUI()
@@ -6192,5 +6142,6 @@ class HTGT_ActionListener extends AbstractAction
 // Note: FNX_ContextMenu.java uses or overrides a deprecated API.
 // ...
 
-// TODO: Voraussichtliche Platzierung bei FFM-Statusmeldung anzeigen?
+// TODO: FFM irgendwann auf Inotify umstellen?
+// Bisher war mir das immer zu kompliziert...
 // ...
