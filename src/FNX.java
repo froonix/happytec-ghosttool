@@ -528,7 +528,7 @@ public abstract class FNX
 		return debugMode;
 	}
 
-	private static void dbg(String msg, int trace)
+	private static synchronized void dbg(String msg, int trace)
 	{
 		if(debugMode)
 		{
@@ -556,7 +556,7 @@ public abstract class FNX
 
 	public static boolean isEDT()
 	{
-		return SwingUtilities.isEventDispatchThread();
+		return (Thread.currentThread().getId() == 1 || SwingUtilities.isEventDispatchThread());
 	}
 
 	public static boolean requireEDT()

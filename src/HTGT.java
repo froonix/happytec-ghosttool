@@ -1406,6 +1406,11 @@ public class HTGT
 
 	public static void syncGUI()
 	{
+		if(!FNX.requireEDT())
+		{
+			return;
+		}
+
 		updateWindowTitle();
 		hideTableHeader();
 		clearTable();
@@ -2026,11 +2031,6 @@ public class HTGT
 						// gültig ist und ob aktive Strecken verfügbar sind.
 						int[][][][] results = api.getAllResults();
 
-						if(true)
-						{
-							throw new eSportsAPIException("LMFAO");
-						}
-
 						firstRun = false;
 						oFFM.firstRun();
 					}
@@ -2124,6 +2124,16 @@ public class HTGT
 				// Der FFM kann danach nicht mehr gestartet werden,
 				// weil startedFFM nicht auf 0 gesetzt wurde. WTF?!
 				// ...
+
+				try
+				{
+					reloadFile(true);
+					syncGUI();
+				}
+				catch(Exception e)
+				{
+					exceptionHandler(e);
+				}
 			}
 		}
 
