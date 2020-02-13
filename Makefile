@@ -13,7 +13,7 @@ JARFILE     = build/HTGT_$(version).jar
 ZIPFILE     = build/HTGT_$(version).zip
 VFILE       = htgt-version.txt
 
-JFLAGS  = -g -sourcepath ./src -classpath ./classes -d ./classes
+JFLAGS  = -source 8 -target 8 -g -sourcepath ./src -classpath ./classes -d ./classes
 VMFLAGS = -classpath ./classes
 JC      = javac
 JAVA    = java
