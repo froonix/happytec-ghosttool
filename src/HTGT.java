@@ -290,7 +290,7 @@ public class HTGT
 		}
 		catch(NoSuchMethodError e)
 		{
-			return Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+			return Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 		}
 	}
 
