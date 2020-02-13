@@ -166,7 +166,7 @@ public class HTGT
 	final public static int       HISTORY_SIZE        = 10;
 
 	final public static int        NONE  = 0;
-	final public static int        CTRL  = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+	final public static int        CTRL  = getCtrlMask();
 	final public static int        SHIFT = ActionEvent.SHIFT_MASK;
 	final public static int        ALT   = ActionEvent.ALT_MASK;
 
@@ -281,6 +281,18 @@ public class HTGT
 	private static DefaultTableModel          mainmodel;
 
 	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
+
+	public static int getCtrlMask()
+	{
+		try
+		{
+			return Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+		}
+		catch(NoSuchMethodError e)
+		{
+			return Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+		}
+	}
 
 	public static void about()
 	{
