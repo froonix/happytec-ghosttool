@@ -30,6 +30,13 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
 import java.nio.file.Files;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 
 import java.nio.file.attribute.FileTime;
 
@@ -153,6 +160,7 @@ public class HTGT
 	final public static boolean   ENABLE_RACE         = true;
 	final public static boolean   ENABLE_XTC          = true;
 	final public static boolean   ENABLE_SUC          = true;
+	final public static boolean   ENABLE_WATCHSERVICE = true;
 	final public static int       FONTSIZE            = 13;
 	final public static double    FONTSMALL           = 0.75;
 	final public static int       HISTORY_SIZE        = 10;
@@ -2353,6 +2361,25 @@ public class HTGT
 		else if(!suspend)
 		{
 			ffStarted = -1;
+		}
+		else if(!HTGT.ENABLE_WATCHSERVICE)
+		{
+			try
+			{
+				// Noch einen allerletzten Durchlauf starten.
+				// Damit uns wirklich nichts entgangen ist...
+				fastFollowLock();
+				fastFollowMode();
+				fastFollowUnlock();
+			}
+			catch(eSportsAPIException e)
+			{
+				APIError(e);
+			}
+			catch(Exception e)
+			{
+				exceptionHandler(e);
+			}
 		}
 
 		if(oFFM != null || aFFM != null)
@@ -4622,6 +4649,11 @@ public class HTGT
  *                            FILE ACTIONS                             *
  ***********************************************************************/
 
+	public static File getFile()
+	{
+		return file;
+	}
+
 	// Öffnet eine neue Datei, beachtet aber ungespeicherte Änderungen
 	// in einer eventuell bereits geöffneten Datei. Ohne die explizite
 	// Zustimmung, gehen keine Daten verloren. Die Funktion hat leider
@@ -5818,6 +5850,7 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 	private boolean firstRun;
 	private FileTime oldTime;
 	private FileTime newTime;
+	private int currentTime;
 
 	public void setFile(File f)
 	{
@@ -5872,34 +5905,102 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 		int m;
 		while(true)
 		{
-			newTime = Files.getLastModifiedTime(fileHandle.toPath());
-			m = 1;
-
-			if(newTime.compareTo(oldTime) > 0)
+			if(HTGT.ENABLE_WATCHSERVICE)
 			{
-				// Durch diesen Teil sparen wir uns die Wartezeit vor dem Laden der XML-Datei.
-				// Dadurch soll sichergestell werden, dass das Spiel mit dem Speichern fertig ist.
-				// Klar, das ist auch kein 100% Schutz und es gibt zig andere problematische Stellen.
-				// Aber es ist ein grundlegender Schutz, dass wir keine halbfertigen Dateien einlesen.
-				if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
+				FNX.dbg("Preparing watchservice...");
+
+				WatchService watchService = FileSystems.getDefault().newWatchService();
+
+				File file = HTGT.getFile();
+				String basename = file.getName();
+
+				Path path = Paths.get(file.getParent().toString());
+				path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+
+				FNX.dbg("Waiting for first event...");
+
+				WatchKey key;
+				Long last = 0L;
+				while((key = watchService.take()) != null)
 				{
-					FNX.dbgf("File modification time changed, but it's too early: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
+					for(WatchEvent<?> event : key.pollEvents())
+					{
+						if(basename.equals(event.context().toString()))
+						{
+							newTime = Files.getLastModifiedTime(fileHandle.toPath());
+
+							if(newTime.toMillis() > last)
+							{
+								last = newTime.toMillis();
+
+								if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
+								{
+									publish((int) (newTime.toMillis() / 1000));
+									Thread.sleep(HTGT.FF_OBSERVER_DELAY);
+
+									newTime = Files.getLastModifiedTime(fileHandle.toPath());
+
+									if(newTime.toMillis() > last)
+									{
+										FNX.dbgf("Watchservice event delayed: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
+
+										continue;
+									}
+								}
+
+								FNX.dbgf("Watchservice event received: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
+								publish((int) (newTime.toMillis() / 1000) * -1);
+								oldTime = newTime;
+							}
+							else
+							{
+								FNX.dbgf("Watchservice event ignored: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
+							}
+						}
+						else
+						{
+							FNX.dbgf("Watchservice event ignored: %s (%s)", event.kind(), event.context());
+						}
+					}
+					key.reset();
+
+					FNX.dbg("Waiting for next event...");
 				}
-				else
-				{
-					FNX.dbgf("File modification time changed: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
-					oldTime = newTime;
-					m = -1;
-				}
+				break;
 			}
 			else
 			{
-				FNX.dbg("Nothing to do! Sleeping...");
-			}
+				newTime = Files.getLastModifiedTime(fileHandle.toPath());
+				m = 1;
 
-			publish((int) (newTime.toMillis() / 1000) * m);
-			Thread.sleep(HTGT.FF_CHECK_INTERVAL);
+				if(newTime.compareTo(oldTime) > 0)
+				{
+					// Durch diesen Teil sparen wir uns die Wartezeit vor dem Laden der XML-Datei.
+					// Dadurch soll sichergestell werden, dass das Spiel mit dem Speichern fertig ist.
+					// Klar, das ist auch kein 100% Schutz und es gibt zig andere problematische Stellen.
+					// Aber es ist ein grundlegender Schutz, dass wir keine halbfertigen Dateien einlesen.
+					if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
+					{
+						FNX.dbgf("File modification time changed, but it's too early: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
+					}
+					else
+					{
+						FNX.dbgf("File modification time changed: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
+						oldTime = newTime;
+						m = -1;
+					}
+				}
+				else
+				{
+					FNX.dbg("Nothing to do! Sleeping...");
+				}
+
+				publish((int) (newTime.toMillis() / 1000) * m);
+				Thread.sleep(HTGT.FF_CHECK_INTERVAL);
+			}
 		}
+
+		return 0;
 	}
 
 	protected void process(List chunks)
@@ -5919,7 +6020,14 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 			else
 			{
 				modificationTime = chunk;
+
+				if(currentTime != modificationTime)
+				{
+					initState = false;
+				}
 			}
+
+			currentTime = modificationTime;
 		}
 
 		if(isCancelled())
