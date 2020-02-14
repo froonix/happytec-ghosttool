@@ -2327,12 +2327,6 @@ public class HTGT
 					);
 				}
 
-				// ACHTUNG: Wir können an dieser Stelle zwar den Text aktualisieren,
-				// aber die Größe des Dialogs passt sich dadurch nicht automatisch an!
-				// Das betrifft vor allem die Höhe (Anzahl der Zeilenumbrüche) sowie die
-				// Breite der Zeilen. Dieses Feature sollte somit mit Vorsicht genutzt
-				// werden, solange es keine bessere Lösung gibt. Es sollten wirklich nur
-				// kurze Statusupdates hinzugefügt werden, für die es Platzhalter gibt.
 				ffBody.setMessage(
 					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
 					FNX.formatLangString(lang, "fastFollowMode" + ((ffModification > 0) ? "Extended" : "Empty"),
@@ -2342,6 +2336,13 @@ public class HTGT
 						stateLine
 					)
 				);
+
+				if(ffDialog != null)
+				{
+					// Passt die Größe des Dialog-Fensters an den neuen Text an.
+					// Dadurch braucht es keine Leerzeilen mehr als Platzhalter.
+					ffDialog.pack();
+				}
 
 				// reloadFile(true)
 				// syncGUI()
