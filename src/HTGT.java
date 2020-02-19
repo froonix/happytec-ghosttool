@@ -2380,7 +2380,7 @@ public class HTGT
 					if((boolean) v.get("PT"))
 					{
 						//weatherName = String.format("%2$s (%1$s)", gmHelper.getWeatherName(gmHelper.WEATHER_PT), weatherName);
-						weatherName = String.format("%s (%s)", weatherName, FNX.formatLangString(gmHelper.getLangBundle(), "pt_from", (String) v.get("GroupName")));
+						weatherName = String.format("%s (%s)", weatherName, FNX.formatLangString(gmHelper.getLangBundle(), "pt_group", (String) v.get("GroupName")));
 					}
 					else if((boolean) v.get("SUC"))
 					{
