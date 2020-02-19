@@ -2293,7 +2293,7 @@ public class HTGT
 		fastFollowStatus(-1);
 	}
 
-	public static void fastFollowStatus(int time)
+	public static synchronized void fastFollowStatus(int time)
 	{
 		if(!FNX.requireEDT())
 		{
@@ -2347,6 +2347,7 @@ public class HTGT
 			StringBuilder data = new StringBuilder();
 			data.insert(0, System.lineSeparator());
 
+			int i = 0; int[] r = new int[lastApplicationDestinations.size()];
 			for(Map<String,Object> v : lastApplicationDestinations.values())
 			{
 				// TODO: Limit einbauen, falls es zu viele GR gibt?
@@ -2359,8 +2360,7 @@ public class HTGT
 					if(lastApplicationGhost != null && v.containsKey("__seen") && (lastApplicationGhost.getGameMode() != (int) v.get("GameMode") || !lastApplicationGhost.getTrack().equalsIgnoreCase((String) v.get("Track")) || lastApplicationGhost.getWeather() != (int) v.get("Weather"))
 					)
 					{
-						FNX.dbgf("Removing data for track %d from lastApplicationDestinations...", (int) v.get("TrackID"));
-						lastApplicationDestinations.remove((int) v.get("TrackID"));
+						r[i++] = (int) v.get("TrackID");
 						continue;
 					}
 
@@ -2405,6 +2405,18 @@ public class HTGT
 				catch(gmException e)
 				{
 					exceptionHandler(e);
+				}
+			}
+
+			if(r.length > 0)
+			{
+				for(i = 0; i < r.length; i++)
+				{
+					if(r[i] > 0)
+					{
+						FNX.dbgf("Removing data for track %d from lastApplicationDestinations...", r[i]);
+						lastApplicationDestinations.remove(r[i]);
+					}
 				}
 			}
 
