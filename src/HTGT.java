@@ -2355,14 +2355,8 @@ public class HTGT
 
 				try
 				{
-					// Uns interessieren nur eingetragene Ergebnisse.
-					if(!(boolean) v.get("Applied"))
-					{
-						FNX.dbgf("Ignoring not applied ghost from track %d...", (int) v.get("TrackID"));
-						continue;
-					}
 					// Wenn sich die Spielmodus/Strecke/Wetter Kombination geändert hat, werden bisherige Statuseinträge ausgeblendet und gelöscht. Aber nur, wenn sie schon angezeigt wurden.
-					else if(lastApplicationGhost != null && v.containsKey("__seen") && (lastApplicationGhost.getGameMode() != (int) v.get("GameMode") || !lastApplicationGhost.getTrack().equalsIgnoreCase((String) v.get("Track")) || lastApplicationGhost.getWeather() != (int) v.get("Weather"))
+					if(lastApplicationGhost != null && v.containsKey("__seen") && (lastApplicationGhost.getGameMode() != (int) v.get("GameMode") || !lastApplicationGhost.getTrack().equalsIgnoreCase((String) v.get("Track")) || lastApplicationGhost.getWeather() != (int) v.get("Weather"))
 					)
 					{
 						FNX.dbgf("Removing data for track %d from lastApplicationDestinations...", (int) v.get("TrackID"));
@@ -4063,11 +4057,17 @@ public class HTGT
 								if(ffStarted == 0)
 								{
 									FNX.dbg("Initializing lastApplicationDestinations.");
-									lastApplicationDestinations = new HashMap(lastResultDestinations.length);
+									lastApplicationDestinations = new HashMap();
 								}
 
 								for(int h = 0; h < lastResultDestinations.length; h++)
 								{
+									if(!(boolean) lastResultDestinations[h].get("Applied"))
+									{
+										FNX.dbgf("Ignoring not applied ghost from track %d...", (int) lastResultDestinations[h].get("TrackID"));
+										continue;
+									}
+
 									FNX.dbgf("lastApplicationDestinations.put(%d, %s)", (int) lastResultDestinations[h].get("TrackID"), lastResultDestinations[h].toString());
 									lastApplicationDestinations.put((int) lastResultDestinations[h].get("TrackID"), lastResultDestinations[h]);
 								}
