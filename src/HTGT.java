@@ -2317,103 +2317,10 @@ public class HTGT
 				ldt = LocalDateTime.ofEpochSecond(ffModification, 0, OffsetDateTime.now().getOffset());
 				dtf = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
 
-				FNX.dbgf("lastApplicationDestinations = %s", lastApplicationDestinations.toString());
-				//lastApplicationDestinations = {2660={SUC=false, GroupName=Test, Ticket=false, PT=true, OldPosition=0, Time=1582141897, NewPosition=1, GhostID=787, GroupID=1, Weather=2, GameMode=1, NewResult=96522, Race=false, Begin=1581995570, End=1582153200, OldResult=0, Track=Soc, TrackID=2660}, 1887={SUC=false, GroupName=null, Ticket=false, PT=false, OldPosition=0, Time=1582141897, NewPosition=3, GhostID=787, GroupID=-1, Weather=2, GameMode=1, NewResult=96522, Race=false, Begin=1574150400, End=1590962400, OldResult=0, Track=Soc, TrackID=1887}};
-
-				if(!lastApplicationDestinations.isEmpty())
-				{
-					StringBuilder data = new StringBuilder();
-
-					for(Map<String,Object> v : lastApplicationDestinations.values())
-					{
-						// TODO: Limit einbauen, falls es zu viele GR gibt?
-						// Das sollte aber definitiv nur für PT-Items gelten!
-						// ...
-
-						try
-						{
-							// Uns interessieren nur eingetragene Ergebnisse.
-							if(!(boolean) v.get("Applied"))
-							{
-								FNX.dbgf("Ignoring not applied ghost from track %d...", (int) v.get("TrackID"));
-
-								continue;
-							}
-							// Wenn sich die Spielmodus/Strecke/Wetter Kombination geändert hat, werden bisherige Statuseinträge ausgeblendet und gelöscht. Aber nur, wenn sie schon angezeigt wurden.
-							else if(
-								lastApplicationGhost != null &&
-								v.containsKey("__seen") &&
-								(
-									lastApplicationGhost.getGameMode() != (int) v.get("GameMode") ||
-									!lastApplicationGhost.getTrack().equalsIgnoreCase((String) v.get("Track")) ||
-									lastApplicationGhost.getWeather() != (int) v.get("Weather")
-								)
-							)
-							{
-								FNX.dbgf("%d != %d", lastApplicationGhost.getGameMode(), (int) v.get("GameMode"));
-								FNX.dbgf("%s != %s (%s)", lastApplicationGhost.getTrack(), (String) v.get("Track"), lastApplicationGhost.getTrack().equals((String) v.get("Track")) ? "true" : "false");
-								FNX.dbgf("%d != %d", lastApplicationGhost.getWeather(), (int) v.get("Weather"));
-
-								FNX.dbgf("Removing data for track %d from lastApplicationDestinations...", (int) v.get("TrackID"));
-								lastApplicationDestinations.remove((int) v.get("TrackID"));
-
-								continue;
-							}
-
-							// -----------------------------------------
-							// Nicht verwendte Elemente:
-							// Time=1582141897, GhostID=787, GroupID=1, Begin=1581995570, End=1582153200, TrackID=2660
-							// -----------------------------------------
-
-							String weatherName = gmHelper.getWeatherName((int) v.get("Weather"));
-
-							if((boolean) v.get("PT"))
-							{
-								//weatherName = String.format("%2$s (%1$s)", gmHelper.getWeatherName(gmHelper.WEATHER_PT), weatherName);
-								weatherName = String.format("%s (%s)", weatherName, FNX.formatLangString(gmHelper.getLangBundle(), "pt_from", (String) v.get("GroupName")));
-							}
-							else if((boolean) v.get("SUC"))
-							{
-								weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_SUC), weatherName);
-							}
-							else if((boolean) v.get("Ticket"))
-							{
-								weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_TICKET), weatherName);
-							}
-							else if((boolean) v.get("Race"))
-							{
-								weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_RACE), weatherName);
-							}
-
-							data.append(FNX.formatLangString(lang, "fastFollowModeState",
-								(int) v.get("GhostID"),
-								gmHelper.getGameModeName((int) v.get("GameMode")),
-								gmHelper.getTrack((String) v.get("Track")),
-								weatherName,
-								gmHelper.getResult((int) v.get("OldResult")),
-								(int) v.get("OldPosition"),
-								gmHelper.getResult((int) v.get("NewResult")),
-								(int) v.get("NewPosition")
-							));
-
-							v.put("__seen", true);
-						}
-						catch(gmException e)
-						{
-							exceptionHandler(e);
-						}
-					}
-
-					stateLine = String.format("%n") + data.toString();
-				}
-
 				ffBody.setMessage(
 					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
-					FNX.formatLangString(lang, "fastFollowMode" + ((ffModification > 0) ? "Extended" : "Empty"),
-						ldt.format(dtf),
-						uploadedCount,
-						appliedCount
-					) + stateLine
+					FNX.formatLangString(lang, "fastFollowMode" + ((ffModification > 0) ? "Extended" : "Empty"), ldt.format(dtf), uploadedCount, appliedCount) +
+					getResultDestinations()
 				);
 
 				if(ffDialog != null)
@@ -2431,6 +2338,86 @@ public class HTGT
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public static String getResultDestinations()
+	{
+		if(!lastApplicationDestinations.isEmpty())
+		{
+			StringBuilder data = new StringBuilder();
+			data.insert(0, System.lineSeparator());
+
+			for(Map<String,Object> v : lastApplicationDestinations.values())
+			{
+				// TODO: Limit einbauen, falls es zu viele GR gibt?
+				// Das sollte aber definitiv nur für PT-Items gelten!
+				// ...
+
+				try
+				{
+					// Uns interessieren nur eingetragene Ergebnisse.
+					if(!(boolean) v.get("Applied"))
+					{
+						FNX.dbgf("Ignoring not applied ghost from track %d...", (int) v.get("TrackID"));
+						continue;
+					}
+					// Wenn sich die Spielmodus/Strecke/Wetter Kombination geändert hat, werden bisherige Statuseinträge ausgeblendet und gelöscht. Aber nur, wenn sie schon angezeigt wurden.
+					else if(lastApplicationGhost != null && v.containsKey("__seen") && (lastApplicationGhost.getGameMode() != (int) v.get("GameMode") || !lastApplicationGhost.getTrack().equalsIgnoreCase((String) v.get("Track")) || lastApplicationGhost.getWeather() != (int) v.get("Weather"))
+					)
+					{
+						FNX.dbgf("Removing data for track %d from lastApplicationDestinations...", (int) v.get("TrackID"));
+						lastApplicationDestinations.remove((int) v.get("TrackID"));
+						continue;
+					}
+
+					// -----------------------------------------
+					// Nicht verwendte Elemente:
+					// Time=1582141897, GhostID=787, GroupID=1, Begin=1581995570, End=1582153200, TrackID=2660
+					// -----------------------------------------
+
+					String weatherName = gmHelper.getWeatherName((int) v.get("Weather"));
+
+					if((boolean) v.get("PT"))
+					{
+						//weatherName = String.format("%2$s (%1$s)", gmHelper.getWeatherName(gmHelper.WEATHER_PT), weatherName);
+						weatherName = String.format("%s (%s)", weatherName, FNX.formatLangString(gmHelper.getLangBundle(), "pt_from", (String) v.get("GroupName")));
+					}
+					else if((boolean) v.get("SUC"))
+					{
+						weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_SUC), weatherName);
+					}
+					else if((boolean) v.get("Ticket"))
+					{
+						weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_TICKET), weatherName);
+					}
+					else if((boolean) v.get("Race"))
+					{
+						weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_RACE), weatherName);
+					}
+
+					data.append(FNX.formatLangString(lang, "fastFollowModeState",
+						(int) v.get("GhostID"),
+						gmHelper.getGameModeName((int) v.get("GameMode")),
+						gmHelper.getTrack((String) v.get("Track")),
+						weatherName,
+						gmHelper.getResult((int) v.get("OldResult")),
+						(int) v.get("OldPosition"),
+						gmHelper.getResult((int) v.get("NewResult")),
+						(int) v.get("NewPosition")
+					));
+
+					v.put("__seen", true);
+				}
+				catch(gmException e)
+				{
+					exceptionHandler(e);
+				}
+			}
+
+			return data.toString();
+		}
+
+		return "";
 	}
 
 	public static void fastFollowStop()
@@ -4091,17 +4078,7 @@ public class HTGT
 
 							if(!silent)
 							{
-								// TODO: Details von lastResultDestinations anzeigen?
-								// ...
-
-								if(position > 0)
-								{
-									infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccessExtended", ghostID, position));
-								}
-								else
-								{
-									infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostID));
-								}
+								infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostID) + getResultDestinations());
 							}
 
 							lastApplicationPosition = position;
