@@ -67,6 +67,7 @@ public class eSportsAPI
 	private String useragent;
 	private String osdata;
 
+	private Map<Integer,Object> lastResultDestinations;
 	private final static int RESULT_TYPE_NEXT = 0;
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
@@ -133,6 +134,11 @@ public class eSportsAPI
 	public int getPrevResultIndex()
 	{
 		return this.lastTypeIndex[RESULT_TYPE_PREV];
+	}
+
+	public Map<Integer,Object> getLastResultDestinations()
+	{
+		return this.lastResultDestinations;
 	}
 
 	public GhostElement getGhostByID(int id) throws eSportsAPIException
@@ -320,6 +326,8 @@ public class eSportsAPI
 
 	public int applyResultByGhostIDExtended(int ghostID) throws eSportsAPIException
 	{
+		lastResultDestinations = null;
+
 		try
 		{
 			Map<String,Object> args = new HashMap<String,Object>();
@@ -339,6 +347,182 @@ public class eSportsAPI
 				if(id == ghostID)
 				{
 					NodeList position = doc.getElementsByTagName("ExpectedPosition");
+					NodeList destinationsNode = doc.getElementsByTagName("ResultDestinations");
+
+					if(destinationsNode.getLength() > 0)
+					{
+						Element destinationsElement = (Element) destinationsNode.item(0);
+						NodeList destinationsList = destinationsElement.getElementsByTagName("ResultDestination");
+						lastResultDestinations = new HashMap<Integer,Object>(destinationsList.getLength());
+
+						for(int i = 0; i < destinationsList.getLength(); i++)
+						{
+							String t, n; t = n = null;
+							boolean de, ae, ad, pt, r, x, s; de = ae = ad = pt = r = x = s = false;
+							int tID, b, a, gID, or, op, nr, np, g, w; tID = gID = b = a = or = op = nr = np = g = w = -1;
+							Map<String,Object> item = new HashMap<String,Object>();
+
+							Element destination = (Element) destinationsList.item(0);
+							NodeList trackNode = destination.getElementsByTagName("Track");
+							NodeList groupNode = destination.getElementsByTagName("Group");
+							NodeList stateNode = destination.getElementsByTagName("ResultState");
+							NodeList oldResultNode = destination.getElementsByTagName("OldResult");
+							NodeList newResultNode = destination.getElementsByTagName("NewResult");
+
+							if(stateNode.getLength() > 0)
+							{
+								Element stateElement = (Element) stateNode.item(0);
+								NodeList duplicate = stateElement.getElementsByTagName("Duplicate");
+								NodeList applicable = stateElement.getElementsByTagName("Applicable");
+								NodeList applied = stateElement.getElementsByTagName("Applied");
+
+								if(duplicate.getLength() > 0 && duplicate.item(0).getTextContent().equalsIgnoreCase("true"))
+								{
+									de = true;
+								}
+
+								if(applicable.getLength() > 0 && applicable.item(0).getTextContent().equalsIgnoreCase("true"))
+								{
+									ae = true;
+								}
+
+								if(applied.getLength() > 0 && applied.item(0).getTextContent().equalsIgnoreCase("true"))
+								{
+									ad = true;
+								}
+							}
+
+							if(oldResultNode.getLength() > 0)
+							{
+								Element oldResultElement = (Element) oldResultNode.item(0);
+								NodeList oldResult = oldResultElement.getElementsByTagName("Result");
+								NodeList oldPosition = oldResultElement.getElementsByTagName("Position");
+
+								if(oldResult.getLength() > 0 && oldPosition.getLength() > 0)
+								{
+									or = FNX.intval(oldResult.item(0).getTextContent(), true);
+									op = FNX.intval(oldPosition.item(0).getTextContent(), true);
+								}
+							}
+
+							if(newResultNode.getLength() > 0)
+							{
+								Element newResultElement = (Element) newResultNode.item(0);
+								NodeList newResult = newResultElement.getElementsByTagName("Result");
+								NodeList newPosition = newResultElement.getElementsByTagName("Position");
+
+								if(newResult.getLength() > 0 && newPosition.getLength() > 0)
+								{
+									nr = FNX.intval(newResult.item(0).getTextContent(), true);
+									np = FNX.intval(newPosition.item(0).getTextContent(), true);
+								}
+							}
+
+							if(trackNode.getLength() > 0)
+							{
+								Element trackElement = (Element) trackNode.item(0);
+								NodeList trackID = trackElement.getElementsByTagName("TrackID");
+								NodeList begin = trackElement.getElementsByTagName("Begin");
+								NodeList end = trackElement.getElementsByTagName("End");
+								t = trackElement.getAttribute("Track");
+
+								try
+								{
+									g = gmHelper.parseGameMode(trackElement.getAttribute("GameMode"));
+									w = gmHelper.parseWeather(trackElement.getAttribute("Weather"));
+								}
+								catch(gmException e)
+								{
+									throw new eSportsAPIException(e);
+								}
+
+								if(trackElement.getAttribute("Race").equalsIgnoreCase("true"))
+								{
+									r = true;
+								}
+
+								if(trackElement.getAttribute("Ticket").equalsIgnoreCase("true"))
+								{
+									x = true;
+								}
+
+								if(trackElement.getAttribute("SUC").equalsIgnoreCase("true"))
+								{
+									s = true;
+								}
+
+								if(trackElement.getAttribute("PT").equalsIgnoreCase("true") && groupNode.getLength() > 0)
+								{
+									Element groupElement = (Element) groupNode.item(0);
+									NodeList name = groupElement.getElementsByTagName("Name");
+									NodeList groupID = groupElement.getElementsByTagName("GroupID");
+
+									if(groupID.getLength() > 0)
+									{
+										gID = Integer.parseInt(groupID.item(0).getTextContent());
+									}
+
+									if(name.getLength() > 0)
+									{
+										n = name.item(0).getTextContent();
+									}
+
+									pt = true;
+								}
+
+								if(trackID.getLength() > 0)
+								{
+									tID = Integer.parseInt(trackID.item(0).getTextContent());
+								}
+
+								if(begin.getLength() > 0)
+								{
+									b = Integer.parseInt(begin.item(0).getTextContent());
+								}
+
+								if(end.getLength() > 0)
+								{
+									a = Integer.parseInt(end.item(0).getTextContent());
+								}
+							}
+
+							if(tID < 0)
+							{
+								throw new ParserConfigurationException("Missing or invalid <TrackID> tag in reply");
+							}
+
+							item.put("TrackID", tID);
+							item.put("Begin", b);
+							item.put("End", a);
+
+							item.put("GameMode", g);
+							item.put("Track", t);
+							item.put("Weather", w);
+
+							item.put("Race", r);
+							item.put("Ticket", x);
+							item.put("SUC", s);
+							item.put("PT", pt);
+
+							item.put("GroupID", gID);
+							item.put("GroupName", n);
+
+							item.put("OldResult", or);
+							item.put("OldPosition", op);
+
+							item.put("NewResult", nr);
+							item.put("NewPosition", np);
+
+							//FNX.dbgf("item = %s", item.toString());
+							lastResultDestinations.put(tID, item);
+
+							/*
+                                <Track>
+                                        <Title>...</Title>
+                                </Track>
+                            */
+						}
+					}
 
 					if(position.getLength() > 0)
 					{
