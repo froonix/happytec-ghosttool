@@ -259,6 +259,7 @@ public class HTGT
 	private static boolean                    lastApplicationStatus;
 	private static volatile int               lastApplicationPosition;
 	private static volatile GhostElement      lastApplicationGhost;
+	private static volatile Map<Integer,Map>  lastApplicationDestinations;
 	private static volatile boolean           ffDownload;
 
 	private static OfflineProfiles            OfflineProfiles;
@@ -2128,6 +2129,7 @@ public class HTGT
 		ffModification = -1;
 		lastApplicationPosition = 0;
 		lastApplicationGhost = null;
+		lastApplicationDestinations = new HashMap();
 
 		boolean firstRun = true;
 
@@ -2325,6 +2327,11 @@ public class HTGT
 						lastApplicationGhost.getResult()
 					);
 				}
+
+				// TODO: Details von lastResultDestinations anzeigen?
+				// Nicht vergessen, dass dort auch alte Einträge drinnen sind!
+				// Notfalls einfach die GhostID mit lastApplicationGhost vergleichen.
+				// ...
 
 				ffBody.setMessage(
 					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
@@ -3990,11 +3997,28 @@ public class HTGT
 						{
 							FNX.dbgf("Successfully applied result from ghost with ID %d. (expected rank %d)", ghostID, position);
 
+							Map[] lastResultDestinations = api.getLastResultDestinations();
+							if(lastResultDestinations != null && lastResultDestinations.length > 0)
+							{
+								if(ffStarted == 0)
+								{
+									lastApplicationDestinations = new HashMap(lastResultDestinations.length);
+								}
+
+								for(int h = 0; h < lastResultDestinations.length; h++)
+								{
+									lastApplicationDestinations.put((int) lastResultDestinations[h].get("TrackID"), lastResultDestinations[h]);
+								}
+							}
+
 							lastApplicationGhost = ghost;
 							appliedCount++;
 
 							if(!silent)
 							{
+								// TODO: Details von lastResultDestinations anzeigen?
+								// ...
+
 								if(position > 0)
 								{
 									infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccessExtended", ghostID, position));

@@ -36,6 +36,8 @@ import java.net.URL;
 
 import java.text.ParseException;
 
+import java.time.Instant;
+
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,7 +69,7 @@ public class eSportsAPI
 	private String useragent;
 	private String osdata;
 
-	private Object[] lastResultDestinations;
+	private Map[] lastResultDestinations;
 	private final static int RESULT_TYPE_NEXT = 0;
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
@@ -136,7 +138,7 @@ public class eSportsAPI
 		return this.lastTypeIndex[RESULT_TYPE_PREV];
 	}
 
-	public Object[] getLastResultDestinations()
+	public Map[] getLastResultDestinations()
 	{
 		return this.lastResultDestinations;
 	}
@@ -353,7 +355,7 @@ public class eSportsAPI
 					{
 						Element destinationsElement = (Element) destinationsNode.item(0);
 						NodeList destinationsList = destinationsElement.getElementsByTagName("ResultDestination");
-						lastResultDestinations = new Object[destinationsList.getLength()];
+						lastResultDestinations = new Map[destinationsList.getLength()];
 
 						for(int i = 0; i < destinationsList.getLength(); i++)
 						{
@@ -490,6 +492,9 @@ public class eSportsAPI
 							{
 								throw new ParserConfigurationException("Missing or invalid <TrackID> tag in reply");
 							}
+
+							item.put("GhostID", ghostID);
+							item.put("Time", Instant.now().toEpochMilli() / 1000);
 
 							item.put("TrackID", tID);
 							item.put("Begin", b);
