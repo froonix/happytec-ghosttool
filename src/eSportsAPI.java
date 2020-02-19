@@ -364,7 +364,7 @@ public class eSportsAPI
 							int tID, b, a, gID, or, op, nr, np, g, w; tID = gID = b = a = or = op = nr = np = g = w = -1;
 							Map<String,Object> item = new HashMap<String,Object>();
 
-							Element destination = (Element) destinationsList.item(0);
+							Element destination = (Element) destinationsList.item(i);
 							NodeList trackNode = destination.getElementsByTagName("Track");
 							NodeList groupNode = destination.getElementsByTagName("Group");
 							NodeList stateNode = destination.getElementsByTagName("ResultState");
@@ -495,6 +495,9 @@ public class eSportsAPI
 
 							item.put("GhostID", ghostID);
 							item.put("Time", Instant.now().toEpochMilli() / 1000);
+							item.put("Duplicate", de);
+							item.put("Applicable", ae);
+							item.put("Applied", ad);
 
 							item.put("TrackID", tID);
 							item.put("Begin", b);
