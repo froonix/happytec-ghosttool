@@ -1590,7 +1590,6 @@ public class HTGT
 
 		try
 		{
-
 			int[][][][] results;
 			GhostElement[][][] oldProfileGhosts = null;
 			GhostElement[][][] oldDefaultGhosts = null;
@@ -1690,7 +1689,7 @@ public class HTGT
 					{
 						//FNX.dbgf("[%02d][%02d][%02d]: %s - %s", m, t, w, (oldProfileGhosts[m][t][w] == null ? "null" : "data"), (newProfileGhosts[m][t][w] == null ? "null" : "data"));
 
-						if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime()))
+						if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && (oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime() || !newProfileGhosts[m][t][w].getHash().equals(oldProfileGhosts[m][t][w].getHash()))))
 						{
 							FNX.dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
@@ -1720,7 +1719,7 @@ public class HTGT
 					{
 						for(int w = 0; w < weathers.length; w++)
 						{
-							if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime()))
+							if((oldDefaultGhosts[m][t][w] == null && newDefaultGhosts[m][t][w] != null) || (oldDefaultGhosts[m][t][w] != null && newDefaultGhosts[m][t][w] != null && (oldDefaultGhosts[m][t][w].getTime() != newDefaultGhosts[m][t][w].getTime() || !newDefaultGhosts[m][t][w].getHash().equals(oldDefaultGhosts[m][t][w].getHash()))))
 							{
 								FNX.dbgf("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
