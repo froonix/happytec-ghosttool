@@ -6386,5 +6386,5 @@ class HTGT_ActionListener extends AbstractAction
 // Ich glaube, der FFM hat ein kleines Problem.
 // Bei jedem Start explodiert der Ram-Verbrauch.
 // Egal, ob mit oder ohne ENABLE_BLURRY...
-// System.gc(); bringt auch nichts.
+// System.gc() bringt auch nichts.
 // ...
