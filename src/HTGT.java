@@ -76,6 +76,7 @@ import java.util.regex.Pattern;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.ComponentOrientation;
+import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -108,6 +109,7 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JLayer;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -129,6 +131,8 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import javax.swing.plaf.basic.BasicTableHeaderUI;
+
+import javax.swing.plaf.LayerUI;
 
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -161,6 +165,7 @@ public class HTGT
 	final public static boolean   ENABLE_XTC          = true;
 	final public static boolean   ENABLE_SUC          = true;
 	final public static boolean   ENABLE_WATCHSERVICE = true;
+	final public static boolean   ENABLE_BLURRY       = true;
 	final public static int       FONTSIZE            = 13;
 	final public static double    FONTSMALL           = 0.75;
 	final public static int       HISTORY_SIZE        = 10;
@@ -280,6 +285,8 @@ public class HTGT
 	private static JFrame                     mainWindow;
 	private static JTable                     maintable;
 	private static DefaultTableModel          mainmodel;
+	private static LayerUI<Container>         mainLayer;
+	private static Container                  mainPane;
 
 	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
 
@@ -584,6 +591,7 @@ public class HTGT
 		columnNames[4] = FNX.getLangString(lang, "skiSettings");
 		columnNames[5] = FNX.getLangString(lang, "timeResult");
 
+		mainPane = mainWindow.getContentPane();
 		mainmodel = new DefaultTableModel(rowData, columnNames);
 		maintable = new HTGT_JTable(mainmodel);
 
@@ -621,6 +629,36 @@ public class HTGT
 		// DEBUG ONLY !!!
 		//openDefaultFile();
 		//fastFollowTest();
+	}
+
+	public static void blur()
+	{
+		if(!ENABLE_BLURRY)
+		{
+			return;
+		}
+		else if(mainLayer == null)
+		{
+			mainLayer = new BlurLayerUI();
+		}
+
+		mainWindow.setVisible(false);
+		FNX.dbg("Blurring main window...");
+		mainWindow.setContentPane(new JLayer<Container>(mainPane, mainLayer));
+		mainWindow.setVisible(true);
+	}
+
+	public static void unblur()
+	{
+		if(!ENABLE_BLURRY)
+		{
+			return;
+		}
+
+		mainWindow.setVisible(false);
+		FNX.dbg("Unblurring main window...");
+		mainWindow.setContentPane(mainPane);
+		mainWindow.setVisible(true);
 	}
 
 	private static JMenuBar getMenubar()
@@ -2137,6 +2175,8 @@ public class HTGT
 		{
 			try
 			{
+				blur();
+
 				try
 				{
 					oFFM = new HTGT_FFM_Observer();
@@ -2234,6 +2274,7 @@ public class HTGT
 
 				try
 				{
+					unblur();
 					reloadFile(true);
 					syncGUI();
 				}
