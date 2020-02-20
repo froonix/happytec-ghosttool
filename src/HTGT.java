@@ -2334,7 +2334,7 @@ public class HTGT
 		fastFollowStatus(-1);
 	}
 
-	public static synchronized void fastFollowStatus(int time)
+	public static void fastFollowStatus(int time)
 	{
 		if(!FNX.requireEDT())
 		{
