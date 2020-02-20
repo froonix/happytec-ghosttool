@@ -44,21 +44,27 @@ import javax.swing.JComponent;
 
 import javax.swing.plaf.LayerUI;
 
-class BlurLayerUI extends LayerUI<Container>
+class MainLayerUI extends LayerUI<Container>
 {
 	private BufferedImage mOffscreenImage;
 	private BufferedImageOp mOperation;
+	private boolean effectsEnabled;
 
-	public BlurLayerUI()
+	public MainLayerUI()
 	{
 		float ninth = 1.0f / 9.0f;
 		float[] blurKernel = {ninth, ninth, ninth, ninth, ninth, ninth, ninth, ninth, ninth};
 		mOperation = new ConvolveOp(new Kernel(3, 3, blurKernel), ConvolveOp.EDGE_NO_OP, null);
 	}
 
-	@Override
-	public void paint (Graphics g, JComponent c)
+	public void paint(Graphics g, JComponent c)
 	{
+		if(!effectsEnabled)
+		{
+			super.paint(g, c);
+			return;
+		}
+
 		int w = c.getWidth();
 		int h = c.getHeight();
 
@@ -83,10 +89,20 @@ class BlurLayerUI extends LayerUI<Container>
 
 		// Gray it out.
 		Composite urComposite = g2.getComposite();
-		g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .5f * 1f));
+		g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .75f));
 		g2.fillRect(0, 0, w, h);
 		g2.setComposite(urComposite);
 
 		g2.dispose();
+	}
+
+	public void enableEffects()
+	{
+		effectsEnabled = true;
+	}
+
+	public void disableEffects()
+	{
+		effectsEnabled = false;
 	}
 }

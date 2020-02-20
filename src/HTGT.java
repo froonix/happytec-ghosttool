@@ -283,10 +283,11 @@ public class HTGT
 	private static volatile int               appliedCount;
 
 	private static JFrame                     mainWindow;
-	private static JTable                     maintable;
-	private static DefaultTableModel          mainmodel;
-	private static LayerUI<Container>         mainLayer;
+	private static JTable                     mainTable;
+	private static DefaultTableModel          mainModel;
+	private static JLayer<Container>          mainLayer;
 	private static Container                  mainPane;
+	private static MainLayerUI                mainUI;
 
 	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
 
@@ -591,33 +592,37 @@ public class HTGT
 		columnNames[4] = FNX.getLangString(lang, "skiSettings");
 		columnNames[5] = FNX.getLangString(lang, "timeResult");
 
-		mainPane = mainWindow.getContentPane();
-		mainmodel = new DefaultTableModel(rowData, columnNames);
-		maintable = new HTGT_JTable(mainmodel);
+		mainModel = new DefaultTableModel(rowData, columnNames);
+		mainTable = new HTGT_JTable(mainModel);
 
 		// Nur ganze Zeilen dürfen markiert werden!
-		maintable.setColumnSelectionAllowed(false);
-		maintable.setFocusable(false);
+		mainTable.setColumnSelectionAllowed(false);
+		mainTable.setFocusable(false);
 
 		// Spalten dürfen nicht verschoben oder verkleinert werden!
-		maintable.getTableHeader().setReorderingAllowed(false);
-		maintable.getTableHeader().setResizingAllowed(false);
+		mainTable.getTableHeader().setReorderingAllowed(false);
+		mainTable.getTableHeader().setResizingAllowed(false);
 
 		// macOS würde z.B. gar keine Rahmen anzeigen.
 		// Das dürfte aber an der weißen Farbe liegen.
-		maintable.setShowHorizontalLines(true);
-		maintable.setShowVerticalLines(true);
+		mainTable.setShowHorizontalLines(true);
+		mainTable.setShowVerticalLines(true);
 
 		// Für die Menüelemente müssen wir wissen, wann eine Auswahl getroffen wurde.
-		maintable.getSelectionModel().addListSelectionListener(new HTGT_SelectionHandler());
+		mainTable.getSelectionModel().addListSelectionListener(new HTGT_SelectionHandler());
 
 		// ...
-		maintable.requestFocusInWindow();
+		mainTable.requestFocusInWindow();
 
-		JScrollPane scrollPane = new JScrollPane(maintable);
+		JScrollPane scrollPane = new JScrollPane(mainTable);
 		mainWindow.add(scrollPane, BorderLayout.CENTER);
 
 		reset();
+
+		mainUI = new MainLayerUI();
+		mainPane = mainWindow.getContentPane();
+		mainLayer = new JLayer<Container>(mainPane, mainUI);
+		mainWindow.setContentPane(mainLayer);
 
 		mainWindow.setSize(WINDOW_SIZE_START);
 		mainWindow.setMinimumSize(WINDOW_SIZE_MIN);
@@ -637,15 +642,10 @@ public class HTGT
 		{
 			return;
 		}
-		else if(mainLayer == null)
-		{
-			mainLayer = new BlurLayerUI();
-		}
 
-		mainWindow.setVisible(false);
 		FNX.dbg("Blurring main window...");
-		mainWindow.setContentPane(new JLayer<Container>(mainPane, mainLayer));
-		mainWindow.setVisible(true);
+		mainUI.enableEffects();
+		mainLayer.repaint();
 	}
 
 	public static void unblur()
@@ -655,10 +655,9 @@ public class HTGT
 			return;
 		}
 
-		mainWindow.setVisible(false);
 		FNX.dbg("Unblurring main window...");
-		mainWindow.setContentPane(mainPane);
-		mainWindow.setVisible(true);
+		mainUI.disableEffects();
+		mainLayer.repaint();
 	}
 
 	private static JMenuBar getMenubar()
@@ -887,7 +886,7 @@ public class HTGT
 
 	public static void updateSelectionMenuItems()
 	{
-		if(maintable != null && maintable.getSelectedRows().length > 0)
+		if(mainTable != null && mainTable.getSelectedRows().length > 0)
 		{
 			updateSelectionMenuItems(true);
 		}
@@ -961,19 +960,19 @@ public class HTGT
 
 	private static void clearTable()
 	{
-		mainmodel.setRowCount(0);
+		mainModel.setRowCount(0);
 	}
 
 	private static void hideTableHeader()
 	{
 		// Das ist ein sehr schmutziger Hack...
-		maintable.getTableHeader().setUI(null);
+		mainTable.getTableHeader().setUI(null);
 	}
 
 	private static void showTableHeader()
 	{
 		// Und das ist eine noch viel unschönere Lösung...
-		maintable.getTableHeader().setUI(new BasicTableHeaderUI());
+		mainTable.getTableHeader().setUI(new BasicTableHeaderUI());
 	}
 
 	private static void highlightLastRow()
@@ -988,51 +987,51 @@ public class HTGT
 			throw new IndexOutOfBoundsException(String.format("%d < 1", num));
 		}
 
-		int row = mainmodel.getRowCount();
+		int row = mainModel.getRowCount();
 		highlightRows(row - num, row - 1);
 	}
 
 	private static void highlightRows(int start, int end)
 	{
-		maintable.clearSelection();
-		maintable.addRowSelectionInterval(start, end);
+		mainTable.clearSelection();
+		mainTable.addRowSelectionInterval(start, end);
 	}
 
 	private static void highlightRows(int[] rows)
 	{
-		maintable.clearSelection();
+		mainTable.clearSelection();
 		for(int i = 0; i < rows.length; i++)
 		{
-			maintable.addRowSelectionInterval(rows[i], rows[i]);
+			mainTable.addRowSelectionInterval(rows[i], rows[i]);
 		}
 	}
 
 	public static void selectAll()
 	{
-		if(maintable != null)
+		if(mainTable != null)
 		{
-			maintable.selectAll();
+			mainTable.selectAll();
 		}
 	}
 
 	public static void clearSelection()
 	{
-		if(maintable != null)
+		if(mainTable != null)
 		{
-			maintable.clearSelection();
+			mainTable.clearSelection();
 		}
 	}
 
 	public static void invertSelection()
 	{
-		if(maintable != null)
+		if(mainTable != null)
 		{
-			int[] selection = maintable.getSelectedRows();
-			maintable.selectAll();
+			int[] selection = mainTable.getSelectedRows();
+			mainTable.selectAll();
 
 			for(int i = 0; i < selection.length; i++)
 			{
-				maintable.removeRowSelectionInterval(selection[i], selection[i]);
+				mainTable.removeRowSelectionInterval(selection[i], selection[i]);
 			}
 		}
 	}
@@ -1507,7 +1506,7 @@ public class HTGT
 		}
 
 		Object tmp[] = {ghost.getNickname(), ghost.getGameModeName(), ghost.getTrackName(), ghost.getWeatherName(), gmHelper.formatSki(ghost.getSki()), ghost.getResult()};
-		mainmodel.addRow(tmp);
+		mainModel.addRow(tmp);
 		showTableHeader();
 	}
 
@@ -1521,7 +1520,7 @@ public class HTGT
 		try
 		{
 			OfflineProfiles.deleteGhost(index);
-			mainmodel.removeRow(index);
+			mainModel.removeRow(index);
 			updateWindowTitle();
 		}
 		catch(Exception e)
@@ -3560,7 +3559,7 @@ public class HTGT
 		}
 
 		StringBuilder data = new StringBuilder();
-		int[] selection = maintable.getSelectedRows();
+		int[] selection = mainTable.getSelectedRows();
 
 		if(selection.length == 0)
 		{
@@ -3941,7 +3940,7 @@ public class HTGT
 			return false;
 		}
 
-		int[] selection = maintable.getSelectedRows();
+		int[] selection = mainTable.getSelectedRows();
 		if(selection.length == 0) return noSelection();
 
 		ghosts = new GhostElement[selection.length];
@@ -5159,7 +5158,7 @@ public class HTGT
 
 		if(OfflineProfiles != null)
 		{
-			int[] selection = maintable.getSelectedRows();
+			int[] selection = mainTable.getSelectedRows();
 			if(selection.length == 0) return noSelection();
 
 			Date date = new Date(); DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss");
@@ -5548,7 +5547,7 @@ public class HTGT
 
 	private static void ghostsProfileAction(boolean move)
 	{
-		if(OfflineProfiles != null && maintable != null)
+		if(OfflineProfiles != null && mainTable != null)
 		{
 			String title = FNX.getLangString(lang, (move ? "move" : "copy") + "ToProfile");
 			String message = "";
@@ -5558,7 +5557,7 @@ public class HTGT
 
 			try
 			{
-				int[] selection = maintable.getSelectedRows();
+				int[] selection = mainTable.getSelectedRows();
 
 				if(selection.length == 0)
 				{
