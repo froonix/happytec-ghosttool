@@ -29,6 +29,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+import java.awt.AlphaComposite;
+import java.awt.Composite;
 import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -78,5 +80,13 @@ class BlurLayerUI extends LayerUI<Container>
 
 		Graphics2D g2 = (Graphics2D)g;
 		g2.drawImage(mOffscreenImage, mOperation, 0, 0);
+
+		// Gray it out.
+		Composite urComposite = g2.getComposite();
+		g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .5f * 1f));
+		g2.fillRect(0, 0, w, h);
+		g2.setComposite(urComposite);
+
+		g2.dispose();
 	}
 }
