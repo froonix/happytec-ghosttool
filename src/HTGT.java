@@ -2369,35 +2369,38 @@ public class HTGT
 					// Time=1582141897, GhostID=787, GroupID=1, Begin=1581995570, End=1582153200, TrackID=2660
 					// -----------------------------------------
 
-					String weatherName = gmHelper.getWeatherName((int) v.get("Weather"));
-
+					String suffix = " (%s)";
 					if((boolean) v.get("PT"))
 					{
-						//weatherName = String.format("%2$s (%1$s)", gmHelper.getWeatherName(gmHelper.WEATHER_PT), weatherName);
-						weatherName = String.format("%s (%s)", weatherName, FNX.formatLangString(gmHelper.getLangBundle(), "pt_group", (String) v.get("GroupName")));
+						suffix = String.format(suffix, FNX.formatLangString(gmHelper.getLangBundle(), "pt_group", (String) v.get("GroupName")));
 					}
 					else if((boolean) v.get("SUC"))
 					{
-						weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_SUC), weatherName);
+						suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_SUC));
 					}
 					else if((boolean) v.get("Ticket"))
 					{
-						weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_TICKET), weatherName);
+						suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_TICKET));
 					}
 					else if((boolean) v.get("Race"))
 					{
-						weatherName = String.format("%s (%s)", gmHelper.getWeatherName(gmHelper.WEATHER_RACE), weatherName);
+						suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_RACE));
+					}
+					else
+					{
+						suffix = "";
 					}
 
 					data.append(FNX.formatLangString(lang, "fastFollowModeState",
 						(int) v.get("GhostID"),
 						gmHelper.getGameModeName((int) v.get("GameMode")),
 						gmHelper.getTrack((String) v.get("Track")),
-						weatherName,
+						gmHelper.getWeatherName((int) v.get("Weather")),
 						gmHelper.getResult((int) v.get("OldResult")),
 						(int) v.get("OldPosition"),
 						gmHelper.getResult((int) v.get("NewResult")),
-						(int) v.get("NewPosition")
+						(int) v.get("NewPosition"),
+						suffix
 					));
 
 					v.put("__seen", true);
