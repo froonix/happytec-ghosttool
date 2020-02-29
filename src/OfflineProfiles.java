@@ -245,32 +245,34 @@ public class OfflineProfiles
 		return result;
 	}
 
-	// Gibt im Gegensatz zu getAllGhosts() wirklich
-	// alle Geister zurück, auch mehrere je Bedingung.
-	public ArrayList<GhostElement>[][][] getGhostList()
+	// Gibt im Gegensatz zu getAllGhosts() wirklich alle Geister zurück, auch mehrere je Bedingung.
+	public ArrayList<ArrayList<ArrayList<ArrayList<GhostElement>>>> getGhostList()
 	{
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs();
 
-		ArrayList<GhostElement> result[][][] = new ArrayList[modes.length][tracks.length][weathers.length];
+		ArrayList<ArrayList<ArrayList<ArrayList<GhostElement>>>> result = new ArrayList<ArrayList<ArrayList<ArrayList<GhostElement>>>>(modes.length);
 
 		for(int m = 0; m < modes.length; m++)
 		{
+			ArrayList<ArrayList<ArrayList<GhostElement>>> mi = new ArrayList<ArrayList<ArrayList<GhostElement>>>(tracks.length);
+			result.add(mi);
+
 			for(int t = 0; t < tracks.length; t++)
 			{
+				ArrayList<ArrayList<GhostElement>> ti = new ArrayList<ArrayList<GhostElement>>(weathers.length);
+				mi.add(ti);
+
 				for(int w = 0; w < weathers.length; w++)
 				{
-					if(result[m][t][w] == null)
-					{
-						result[m][t][w] = new ArrayList<GhostElement>();
-					}
-
 					int[] ghosts = this.getGhostsByCondition(modes[m], tracks[t], weathers[w]);
+					ArrayList<GhostElement> wi = new ArrayList<GhostElement>(ghosts.length);
+					ti.add(wi);
 
 					for(int i = 0; i < ghosts.length; i++)
 					{
-						result[m][t][w].add(this.getGhost(ghosts[i]));
+						wi.add(this.getGhost(ghosts[i]));
 					}
 				}
 			}

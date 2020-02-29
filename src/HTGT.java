@@ -100,6 +100,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.Box;
+import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.InputMap;
 import javax.swing.JButton;
@@ -2835,27 +2836,25 @@ public class HTGT
 		{
 			if(isSpecialProfile())
 			{
-				ArrayList<GhostElement>[][][] ghosts = OfflineProfiles.getGhostList();
+				ArrayList<ArrayList<ArrayList<ArrayList<GhostElement>>>> ghosts = OfflineProfiles.getGhostList();
 
 				for(int i = (OfflineProfiles.getGhostCount() - 1); i > -1; i--)
 				{
 					deleteGhost(i);
 				}
 
-				for(int m = 0; m < ghosts.length; m++)
+				for(int m = 0; m < ghosts.size(); m++)
 				{
-					for(int t = 0; t < ghosts[m].length; t++)
+					for(int t = 0; t < ghosts.get(m).size(); t++)
 					{
-						for(int w = 0; w < ghosts[m][t].length; w++)
+						for(int w = 0; w < ghosts.get(m).get(t).size(); w++)
 						{
-							if(ghosts[m][t][w] != null)
-							{
-								ghosts[m][t][w].sort(Comparator.comparing(GhostElement::getTime));
+							ArrayList<GhostElement> item = ghosts.get(m).get(t).get(w);
+							item.sort(Comparator.comparing(GhostElement::getTime));
 
-								for(int i = 0; i < ghosts[m][t][w].size(); i++)
-								{
-									addGhost(ghosts[m][t][w].get(i), true);
-								}
+							for(int i = 0; i < item.size(); i++)
+							{
+								addGhost(item.get(i), true);
 							}
 						}
 					}
