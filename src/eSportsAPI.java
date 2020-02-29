@@ -69,7 +69,7 @@ public class eSportsAPI
 	private String useragent;
 	private String osdata;
 
-	private HashMap<String,Object>[] lastResultDestinations;
+	private ArrayList<HashMap<String,Object>> lastResultDestinations;
 	private final static int RESULT_TYPE_NEXT = 0;
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
@@ -138,7 +138,7 @@ public class eSportsAPI
 		return this.lastTypeIndex[RESULT_TYPE_PREV];
 	}
 
-	public HashMap<String,Object>[] getLastResultDestinations()
+	public ArrayList<HashMap<String,Object>> getLastResultDestinations()
 	{
 		return this.lastResultDestinations;
 	}
@@ -355,7 +355,7 @@ public class eSportsAPI
 					{
 						Element destinationsElement = (Element) destinationsNode.item(0);
 						NodeList destinationsList = destinationsElement.getElementsByTagName("ResultDestination");
-						lastResultDestinations = new HashMap[destinationsList.getLength()];
+						lastResultDestinations = new ArrayList<HashMap<String,Object>>(destinationsList.getLength());
 
 						for(int i = 0; i < destinationsList.getLength(); i++)
 						{
@@ -522,7 +522,7 @@ public class eSportsAPI
 							item.put("NewPosition", np);
 
 							//FNX.dbgf("item = %s", item.toString());
-							lastResultDestinations[i] = item;
+							lastResultDestinations.add(i, item);
 
 							/*
                                 <Track>

@@ -4094,8 +4094,8 @@ public class HTGT
 						{
 							FNX.dbgf("Successfully applied result from ghost with ID %d. (expected rank %d)", ghostID, position);
 
-							HashMap<String,Object>[] lastResultDestinations = api.getLastResultDestinations();
-							if(lastResultDestinations != null && lastResultDestinations.length > 0)
+							ArrayList<HashMap<String,Object>> lastResultDestinations = api.getLastResultDestinations();
+							if(lastResultDestinations != null && lastResultDestinations.size() > 0)
 							{
 								if(ffStarted == 0)
 								{
@@ -4103,16 +4103,18 @@ public class HTGT
 									lastApplicationDestinations = new HashMap<Integer,HashMap<String,Object>>();
 								}
 
-								for(int h = 0; h < lastResultDestinations.length; h++)
+								for(int h = 0; h < lastResultDestinations.size(); h++)
 								{
-									if(!(boolean) lastResultDestinations[h].get("Applied"))
+									HashMap<String,Object> item = lastResultDestinations.get(h);
+
+									if(!(boolean) item.get("Applied"))
 									{
-										FNX.dbgf("Ignoring not applied ghost from track %d...", (int) lastResultDestinations[h].get("TrackID"));
+										FNX.dbgf("Ignoring not applied ghost from track %d...", (int) item.get("TrackID"));
 										continue;
 									}
 
-									FNX.dbgf("lastApplicationDestinations.put(%d, %s)", (int) lastResultDestinations[h].get("TrackID"), lastResultDestinations[h].toString());
-									lastApplicationDestinations.put((int) lastResultDestinations[h].get("TrackID"), lastResultDestinations[h]);
+									FNX.dbgf("lastApplicationDestinations.put(%d, %s)", (int) item.get("TrackID"), item.toString());
+									lastApplicationDestinations.put((int) item.get("TrackID"), item);
 								}
 							}
 
