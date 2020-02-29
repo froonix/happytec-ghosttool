@@ -47,7 +47,7 @@ public class Profiles
 		this.document = FNX.getDOMDocument(this.file);
 		this.document.setXmlStandalone(true);
 
-		NodeList profileNodes = document.getElementsByTagName(this.XML_TAG_PROFILES);
+		NodeList profileNodes = document.getElementsByTagName(XML_TAG_PROFILES);
 
 		if(profileNodes.getLength() == 0)
 		{
@@ -69,7 +69,7 @@ public class Profiles
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
 		Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
-		NodeList profileNodes = profileDoc.getElementsByTagName(this.XML_TAG_PROFILE);
+		NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
 
 		if(profileNodes.getLength() != 1)
 		{
@@ -120,7 +120,7 @@ public class Profiles
 
 	private Node[] getProfiles() throws ProfileException
 	{
-		NodeList profileNodes = this.document.getElementsByTagName(this.XML_TAG_PROFILE);
+		NodeList profileNodes = this.document.getElementsByTagName(XML_TAG_PROFILE);
 
 		if(profileNodes.getLength() == 0)
 		{
@@ -139,7 +139,7 @@ public class Profiles
 
 	private Node getPlayerNode(Element c) throws ProfileException
 	{
-		NodeList players = c.getElementsByTagName(this.XML_TAG_PLAYER);
+		NodeList players = c.getElementsByTagName(XML_TAG_PLAYER);
 
 		if(players.getLength() > 0)
 		{

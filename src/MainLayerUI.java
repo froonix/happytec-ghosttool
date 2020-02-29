@@ -44,6 +44,7 @@ import javax.swing.JComponent;
 
 import javax.swing.plaf.LayerUI;
 
+@SuppressWarnings("serial")
 class MainLayerUI extends LayerUI<Container>
 {
 	private BufferedImage mOffscreenImage;

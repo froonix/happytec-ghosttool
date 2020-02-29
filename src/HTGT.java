@@ -171,7 +171,7 @@ public class HTGT
 	final public static int       HISTORY_SIZE        = 10;
 
 	final public static int        NONE  = 0;
-	final public static int        CTRL  = getCtrlMask();
+	final public static int        CTRL  = FNX.getCtrlMask();
 	final public static int        SHIFT = ActionEvent.SHIFT_MASK;
 	final public static int        ALT   = ActionEvent.ALT_MASK;
 
@@ -244,64 +244,52 @@ public class HTGT
 	final public static String MENU_PTOKEN  = "ptoken";                // Aktiv, sobald ein API-Token im geladenen XML-Profil existiert.
 	final public static String MENU_SELECT  = "select";                // Aktiv, sobald Geister markiert wurden.
 
-	private static Locale                     defaultLocaleAtStartUp;
-	private static ResourceBundle             lang;
+	private static Locale                                               defaultLocaleAtStartUp;
+	private static ResourceBundle                                       lang;
 
-	private static Preferences                cfg;
-	private static File                       dll;
-	private static File                       file;
-	private static int                        profile;
-	private static String                     nickname;
+	private static Preferences                                          cfg;
+	private static File                                                 dll;
+	private static File                                                 file;
+	private static int                                                  profile;
+	private static String                                               nickname;
 
-	private static String[]                   history;
-	private static int                        historyIndex;
+	private static String[]                                             history;
+	private static int                                                  historyIndex;
 
-	private static String                     token;
-	private static eSportsAPI                 anonAPI;
-	private static eSportsAPI                 api;
+	private static String                                               token;
+	private static eSportsAPI                                           anonAPI;
+	private static eSportsAPI                                           api;
 
-	private static int                        lastFilterOption;
-	private static boolean                    lastApplicationStatus;
-	private static volatile int               lastApplicationPosition;
-	private static volatile GhostElement      lastApplicationGhost;
-	private static volatile Map<Integer,Map>  lastApplicationDestinations;
-	private static volatile boolean           ffDownload;
+	private static int                                                  lastFilterOption;
+	private static boolean                                              lastApplicationStatus;
+	private static volatile int                                         lastApplicationPosition;
+	private static volatile GhostElement                                lastApplicationGhost;
+	private static volatile HashMap<Integer,HashMap<String,Object>>     lastApplicationDestinations;
+	private static volatile boolean                                     ffDownload;
 
-	private static OfflineProfiles            OfflineProfiles;
+	private static OfflineProfiles                                      OfflineProfiles;
 
-	private static JDialog                    ffDialog;
-	private static JButton                    ffButton;
-	private static JOptionPane                ffBody;
-	private static HTGT_FFM_KeyListener       ffListener;
-	private static int                        ffModification;
-	private static int                        ffStarted;
-	private static boolean                    ffForce;
-	private static HTGT_FFM_Analyst           aFFM;
-	private static HTGT_FFM_Observer          oFFM;
+	private static JDialog                                              ffDialog;
+	private static JButton                                              ffButton;
+	private static JOptionPane                                          ffBody;
+	private static HTGT_FFM_KeyListener                                 ffListener;
+	private static int                                                  ffModification;
+	private static int                                                  ffStarted;
+	private static boolean                                              ffForce;
+	private static HTGT_FFM_Analyst                                     aFFM;
+	private static HTGT_FFM_Observer                                    oFFM;
 
-	private static volatile int               uploadedCount;
-	private static volatile int               appliedCount;
+	private static volatile int                                         uploadedCount;
+	private static volatile int                                         appliedCount;
 
-	private static JFrame                     mainWindow;
-	private static JTable                     mainTable;
-	private static DefaultTableModel          mainModel;
-	private static JLayer<Container>          mainLayer;
-	private static Container                  mainPane;
-	private static MainLayerUI                mainUI;
+	private static JFrame                                               mainWindow;
+	private static JTable                                               mainTable;
+	private static DefaultTableModel                                    mainModel;
+	private static JLayer<Container>                                    mainLayer;
+	private static Container                                            mainPane;
+	private static MainLayerUI                                          mainUI;
 
 	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
-
-	public static int getCtrlMask()
-	{
-		try
-		{
-			return Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
-		}
-		catch(NoSuchMethodError e)
-		{
-			return Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-		}
-	}
 
 	public static void about()
 	{
@@ -1717,7 +1705,7 @@ public class HTGT
 			boolean lastFromDefault = false;
 			boolean realUpload = false;
 
-			ArrayList<ArrayList> ghosts = new ArrayList<ArrayList>();
+			ArrayList<ArrayList<Object>> ghosts = new ArrayList<ArrayList<Object>>();
 
 			for(int m = 0; m < modes.length; m++)
 			{
@@ -1797,7 +1785,7 @@ public class HTGT
 				{
 					for(int i = 0; i < ghosts.size(); i++)
 					{
-						ArrayList item = ghosts.get(i);
+						ArrayList<Object> item = ghosts.get(i);
 						GhostElement ghost = (GhostElement) item.get(3);
 						int w = (int) item.get(2);
 
@@ -1844,7 +1832,7 @@ public class HTGT
 
 					for(int i = 0; i < ghosts.size(); i++)
 					{
-						ArrayList item = ghosts.get(i);
+						ArrayList<Object> item = ghosts.get(i);
 						GhostElement ghost = (GhostElement) item.get(3);
 						int w = (int) item.get(2);
 						int t = (int) item.get(1);
@@ -2166,7 +2154,7 @@ public class HTGT
 		ffModification = -1;
 		lastApplicationPosition = 0;
 		lastApplicationGhost = null;
-		lastApplicationDestinations = new HashMap();
+		lastApplicationDestinations = new HashMap<Integer,HashMap<String,Object>>();
 
 		boolean firstRun = true;
 
@@ -3243,22 +3231,22 @@ public class HTGT
 		return stepDialog(type, title, message, null, null, prev);
 	}
 
-	private static Object stepDialog(String title, Object message, Object[] selectionValues, Object initialSelectionValue)
+	private static Object stepDialog(String title, Object message, String[] selectionValues, String initialSelectionValue)
 	{
 		return stepDialog(JOptionPane.PLAIN_MESSAGE, title, message, selectionValues, initialSelectionValue, false);
 	}
 
-	private static Object stepDialog(int type, String title, Object message, Object[] selectionValues, Object initialSelectionValue)
+	private static Object stepDialog(int type, String title, Object message, String[] selectionValues, String initialSelectionValue)
 	{
 		return stepDialog(type, title, message, selectionValues, initialSelectionValue, false);
 	}
 
-	private static Object stepDialog(String title, Object message, Object[] selectionValues, Object initialSelectionValue, boolean prev)
+	private static Object stepDialog(String title, Object message, String[] selectionValues, String initialSelectionValue, boolean prev)
 	{
 		return stepDialog(JOptionPane.PLAIN_MESSAGE, title, message, selectionValues, initialSelectionValue, prev);
 	}
 
-	private static Object stepDialog(int type, String title, Object message, Object[] selectionValues, Object initialSelectionValue, boolean prev)
+	private static Object stepDialog(int type, String title, Object message, String[] selectionValues, String initialSelectionValue, boolean prev)
 	{
 		FNX.windowToFront(mainWindow);
 
@@ -3267,7 +3255,7 @@ public class HTGT
 		Object defaultButton;
 		String dialogType;
 
-		JComboBox  comboBox = null;
+		JComboBox<DefaultComboBoxModel<String>> comboBox = null;
 		Integer[] returnValues = null;
 		JTextField textField = null;
 
@@ -3277,7 +3265,7 @@ public class HTGT
 
 		if(selectionValues != null)
 		{
-			DefaultComboBoxModel model = new DefaultComboBoxModel();
+			DefaultComboBoxModel<String> model = new DefaultComboBoxModel<String>();
 			returnValues = new Integer[selectionValues.length];
 
 			for(int i = 0, h = 0; i < selectionValues.length; i++)
@@ -3301,7 +3289,7 @@ public class HTGT
 		else
 		{
 			dialogType = "INPUTFIELD";
-			textField = new JTextField(initialSelectionValue != null ? initialSelectionValue.toString() : null);
+			textField = new JTextField(initialSelectionValue != null ? initialSelectionValue : null);
 			panel.add(textField);
 		}
 
@@ -4106,13 +4094,13 @@ public class HTGT
 						{
 							FNX.dbgf("Successfully applied result from ghost with ID %d. (expected rank %d)", ghostID, position);
 
-							Map[] lastResultDestinations = api.getLastResultDestinations();
+							HashMap<String,Object>[] lastResultDestinations = api.getLastResultDestinations();
 							if(lastResultDestinations != null && lastResultDestinations.length > 0)
 							{
 								if(ffStarted == 0)
 								{
 									FNX.dbg("Initializing lastApplicationDestinations.");
-									lastApplicationDestinations = new HashMap();
+									lastApplicationDestinations = new HashMap<Integer,HashMap<String,Object>>();
 								}
 
 								for(int h = 0; h < lastResultDestinations.length; h++)
@@ -5780,6 +5768,7 @@ public class HTGT
 	}
 }
 
+@SuppressWarnings("serial")
 class HTGT_JTable extends JTable
 {
 	DefaultTableCellRenderer renderLeft = new DefaultTableCellRenderer();
@@ -6347,6 +6336,7 @@ class HTGT_FFM_KeyListener extends KeyAdapter /*implements KeyListener*/
 }
 
 // Wird für zusätzliche Hotkeys ohne Menüeintrag benötigt.
+@SuppressWarnings("serial")
 class HTGT_ActionListener extends AbstractAction
 {
 	private String action;

@@ -22,6 +22,7 @@ import java.awt.event.ActionListener;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
 
+@SuppressWarnings("serial")
 public class DynamicMenuItem extends JMenuItem implements ActionListener
 {
 	String className;

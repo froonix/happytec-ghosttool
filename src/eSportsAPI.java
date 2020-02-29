@@ -69,7 +69,7 @@ public class eSportsAPI
 	private String useragent;
 	private String osdata;
 
-	private Map[] lastResultDestinations;
+	private HashMap<String,Object>[] lastResultDestinations;
 	private final static int RESULT_TYPE_NEXT = 0;
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
@@ -138,7 +138,7 @@ public class eSportsAPI
 		return this.lastTypeIndex[RESULT_TYPE_PREV];
 	}
 
-	public Map[] getLastResultDestinations()
+	public HashMap<String,Object>[] getLastResultDestinations()
 	{
 		return this.lastResultDestinations;
 	}
@@ -272,7 +272,7 @@ public class eSportsAPI
 
 				if(!ghost.hasAttribute("FO"))
 				{
-					hm.put("FilterOption", ghosts[i].hasTicket() ? this.FO_TICKET : this.FO_NONE);
+					hm.put("FilterOption", ghosts[i].hasTicket() ? FO_TICKET : FO_NONE);
 				}
 				else
 				{
@@ -355,14 +355,14 @@ public class eSportsAPI
 					{
 						Element destinationsElement = (Element) destinationsNode.item(0);
 						NodeList destinationsList = destinationsElement.getElementsByTagName("ResultDestination");
-						lastResultDestinations = new Map[destinationsList.getLength()];
+						lastResultDestinations = new HashMap[destinationsList.getLength()];
 
 						for(int i = 0; i < destinationsList.getLength(); i++)
 						{
 							String t, n; t = n = null;
 							boolean de, ae, ad, pt, r, x, s; de = ae = ad = pt = r = x = s = false;
 							int tID, b, a, gID, or, op, nr, np, g, w; tID = gID = b = a = or = op = nr = np = g = w = -1;
-							Map<String,Object> item = new HashMap<String,Object>();
+							HashMap<String,Object> item = new HashMap<String,Object>();
 
 							Element destination = (Element) destinationsList.item(i);
 							NodeList trackNode = destination.getElementsByTagName("Track");
@@ -679,9 +679,9 @@ public class eSportsAPI
 
 		// Es ist intern wesentlich einfacher mit numerischen Schlüsseln zu arbeiten.
 		// Eine Map würde nur unnötigen Overhead erzeugen, der nicht notwendig ist.
-		int results[][][][] = new int[this.FOS][modes.length][tracks.length][weathers.length];
+		int results[][][][] = new int[FOS][modes.length][tracks.length][weathers.length];
 
-		for(int o = 0; o < this.FOS; o++)
+		for(int o = 0; o < FOS; o++)
 		{
 			for(int m = 0; m < modes.length; m++)
 			{
@@ -738,7 +738,7 @@ public class eSportsAPI
 					String weather = OfflineResult.getAttribute("Weather").toLowerCase();
 					String gamemode = OfflineResult.getAttribute("GameMode").toLowerCase();
 
-					int o = this.FO_NONE;
+					int o = FO_NONE;
 					int m = -1;
 					int t = -1;
 					int w = -1;
@@ -772,11 +772,11 @@ public class eSportsAPI
 
 					if(OfflineResult.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
-						o = this.FO_TICKET;
+						o = FO_TICKET;
 					}
 					else if(OfflineResult.getAttribute("SUC").equalsIgnoreCase("true"))
 					{
-						o = this.FO_SUC;
+						o = FO_SUC;
 					}
 
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t][w] != -1)
@@ -796,7 +796,7 @@ public class eSportsAPI
 		return results;
 	}
 
-	// ACHTUNG: Das erste Array ist nun für this.FO_* reserviert!
+	// ACHTUNG: Das erste Array ist nun für FO_* reserviert!
 	public int[][][] getRaceWeather() throws eSportsAPIException
 	{
 		// TODO: forceOption implementieren!
@@ -805,9 +805,9 @@ public class eSportsAPI
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs(true, true, true);
-		int results[][][] = new int[this.FOS][modes.length][tracks.length];
+		int results[][][] = new int[FOS][modes.length][tracks.length];
 
-		for(int o = 0; o < this.FOS; o++)
+		for(int o = 0; o < FOS; o++)
 		{
 			for(int m = 0; m < modes.length; m++)
 			{
@@ -844,7 +844,7 @@ public class eSportsAPI
 					String weather = Track.getAttribute("Weather").toLowerCase();
 					String gamemode = Track.getAttribute("GameMode").toLowerCase();
 
-					int o = this.FO_NONE;
+					int o = FO_NONE;
 					int m = -1;
 					int t = -1;
 					int w = -1;
@@ -910,11 +910,11 @@ public class eSportsAPI
 
 					if(Track.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
-						o = this.FO_TICKET;
+						o = FO_TICKET;
 					}
 					else if(Track.getAttribute("SUC").equalsIgnoreCase("true"))
 					{
-						o = this.FO_SUC;
+						o = FO_SUC;
 					}
 
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t] != gmHelper.WEATHER_NONE)

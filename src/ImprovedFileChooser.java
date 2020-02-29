@@ -23,6 +23,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
+@SuppressWarnings("serial")
 public class ImprovedFileChooser extends JFileChooser
 {
 	private static ResourceBundle lang = FNX.getLangBundle("ImprovedFileChooser");

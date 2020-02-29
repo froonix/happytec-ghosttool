@@ -21,6 +21,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JMenuItem;
 
+@SuppressWarnings("serial")
 public class FlexibleActionHandler extends JMenuItem implements ActionListener
 {
 	String className;

@@ -113,8 +113,8 @@ public class OfflineProfiles
 		this.OfflineProfile  = null;
 
 		// xsi:type="GameOfflineProfile"
-		this.OfflineProfiles = document.getElementsByTagName(this.XML_TAG_PROFILE);
-		NodeList DefaultProfiles = document.getElementsByTagName(this.XML_TAG_DEFAULT);
+		this.OfflineProfiles = document.getElementsByTagName(XML_TAG_PROFILE);
+		NodeList DefaultProfiles = document.getElementsByTagName(XML_TAG_DEFAULT);
 
 		if(this.getProfileCount() == 0 && DefaultProfiles.getLength() == 0)
 		{
@@ -323,7 +323,7 @@ public class OfflineProfiles
 
 			if(i == this.defaultProfile())
 			{
-				profile = (Element) DefaultProfile;
+				profile = DefaultProfile;
 			}
 			else
 			{
@@ -338,14 +338,14 @@ public class OfflineProfiles
 
 	private Node getNickNode(Element profile) throws ProfileException
 	{
-		NodeList nick = profile.getElementsByTagName(this.XML_TAG_NICK);
+		NodeList nick = profile.getElementsByTagName(XML_TAG_NICK);
 
 		if(nick.getLength() > 0)
 		{
 			return nick.item(0);
 		}
 
-		throw new ProfileException(String.format("No <%s> tag in profile", this.XML_TAG_NICK));
+		throw new ProfileException(String.format("No <%s> tag in profile", XML_TAG_NICK));
 	}
 
 	public int getProfileByNick(String nickname)
@@ -390,13 +390,13 @@ public class OfflineProfiles
 		// Siehe auch die Verwendung von VERSION_FILE in HTGT.getVersion()!
 		// ...
 
-		String xml = String.format("<OfflineProfile xsi:type=\"GameOfflineProfile\"><Nickname>%s</Nickname><Token>%s</Token><ReceivedAchievements>false</ReceivedAchievements><TrainingGhosts /><DuelReplays /><DuelNicks /><IgnoredFriendDuels /><IgnoredOpenFriends /><PendingPts /><PendingDuelSelection><DuelSelection /></PendingDuelSelection></OfflineProfile>", nickname, this.DEFAULT_TOKEN);
+		String xml = String.format("<OfflineProfile xsi:type=\"GameOfflineProfile\"><Nickname>%s</Nickname><Token>%s</Token><ReceivedAchievements>false</ReceivedAchievements><TrainingGhosts /><DuelReplays /><DuelNicks /><IgnoredFriendDuels /><IgnoredOpenFriends /><PendingPts /><PendingDuelSelection><DuelSelection /></PendingDuelSelection></OfflineProfile>", nickname, DEFAULT_TOKEN);
 
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
 		Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
-		NodeList profileNodes = profileDoc.getElementsByTagName(this.XML_TAG_PROFILE);
+		NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
 
 		if(profileNodes.getLength() != 1)
 		{
@@ -406,7 +406,7 @@ public class OfflineProfiles
 		Element profileElement = (Element) profileNodes.item(0);
 		Node importedNode = this.document.importNode(profileElement, true);
 
-		NodeList profilesNodes = this.document.getElementsByTagName(this.XML_TAG_PROFILES);
+		NodeList profilesNodes = this.document.getElementsByTagName(XML_TAG_PROFILES);
 
 		if(profilesNodes.getLength() == 0)
 		{
@@ -490,13 +490,13 @@ public class OfflineProfiles
 
 	public String getToken() throws ProfileException
 	{
-		NodeList token = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
+		NodeList token = this.OfflineProfile.getElementsByTagName(XML_TAG_TOKEN);
 
 		if(token.getLength() > 0)
 		{
 			String t = ((Element) token.item(0)).getTextContent();
 
-			if(!t.equalsIgnoreCase(this.DEFAULT_TOKEN))
+			if(!t.equalsIgnoreCase(DEFAULT_TOKEN))
 			{
 				return t;
 			}
@@ -507,7 +507,7 @@ public class OfflineProfiles
 
 	public void setToken(String token) throws Exception
 	{
-		NodeList TokenNode = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
+		NodeList TokenNode = this.OfflineProfile.getElementsByTagName(XML_TAG_TOKEN);
 		Element TokenElement = null;
 		boolean create = false;
 
@@ -522,12 +522,12 @@ public class OfflineProfiles
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
 			Document doc = dBuilder.newDocument();
-			TokenElement = doc.createElement(this.XML_TAG_TOKEN);
+			TokenElement = doc.createElement(XML_TAG_TOKEN);
 
 			create = true;
 		}
 
-		token = (token != null) ? token : this.DEFAULT_TOKEN;
+		token = (token != null) ? token : DEFAULT_TOKEN;
 		TokenElement.setTextContent(token);
 		this.changed = true;
 
@@ -559,21 +559,21 @@ public class OfflineProfiles
 
 		if(this.profile == this.defaultProfile())
 		{
-			this.OfflineProfile = (Element) DefaultProfile;
+			this.OfflineProfile = DefaultProfile;
 		}
 		else
 		{
 			this.OfflineProfile = (Element) OfflineProfiles.item(this.profile);
 		}
 
-		NodeList GhostNodes = this.OfflineProfile.getElementsByTagName(this.XML_TAG_GHOSTS);
+		NodeList GhostNodes = this.OfflineProfile.getElementsByTagName(XML_TAG_GHOSTS);
 		this.GhostElements = new ArrayList<GhostElement>(0);
 
 		if(GhostNodes.getLength() > 0)
 		{
 			this.TrainingNode = GhostNodes.item(0);
 			this.TrainingElement = (Element) this.TrainingNode;
-			this.TrainingGhosts = this.TrainingElement.getElementsByTagName(this.XML_TAG_GHOST);
+			this.TrainingGhosts = this.TrainingElement.getElementsByTagName(XML_TAG_GHOST);
 
 			if(this.getGhostCount() > 0)
 			{

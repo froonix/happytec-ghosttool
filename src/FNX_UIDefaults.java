@@ -24,6 +24,7 @@ import javax.swing.plaf.ComponentUI;
 
 import javax.swing.text.JTextComponent;
 
+@SuppressWarnings("serial")
 class FNX_UIDefaults extends UIDefaults
 {
 	@Override

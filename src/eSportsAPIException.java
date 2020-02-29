@@ -19,6 +19,7 @@
 
 import java.util.ResourceBundle;
 
+@SuppressWarnings("serial")
 public class eSportsAPIException extends Exception
 {
 	private ResourceBundle lang;

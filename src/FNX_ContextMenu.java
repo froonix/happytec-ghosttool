@@ -18,7 +18,6 @@
  */
 
 import java.awt.Component;
-import java.awt.Toolkit;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -31,6 +30,7 @@ import javax.swing.text.JTextComponent;
 
 import java.util.ResourceBundle;
 
+@SuppressWarnings("serial")
 public class FNX_ContextMenu extends JPopupMenu implements ActionListener
 {
 	public static final FNX_ContextMenu INSTANCE = new FNX_ContextMenu();
@@ -60,7 +60,7 @@ public class FNX_ContextMenu extends JPopupMenu implements ActionListener
 
 	private JMenuItem newItem(String t, char c)
 	{
-		return this.newItem(t, KeyStroke.getKeyStroke(c, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+		return this.newItem(t, KeyStroke.getKeyStroke(c, FNX.getCtrlMask()));
 	}
 
 	private JMenuItem newItem(String t, KeyStroke k)

@@ -13,8 +13,8 @@ JARFILE     = build/HTGT_$(version).jar
 ZIPFILE     = build/HTGT_$(version).zip
 VFILE       = htgt-version.txt
 
-TARGET  = 8
-XLINT    = -Xlint:deprecation -Xlint:unchecked
+TARGET   = 8
+XLINT    = -Xlint:all -Xlint:-options
 JFLAGS   = -source $(TARGET) -target $(TARGET) -g -sourcepath ./src -classpath ./classes -d ./classes $(XLINT)
 VMFLAGS  = -classpath ./classes
 JC       = javac

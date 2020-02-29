@@ -17,6 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+import java.awt.Toolkit;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -462,7 +464,7 @@ public abstract class FNX
 
 		try
 		{
-			Class<?> methodParams[] = new Class[l];
+			Class<?> methodParams[] = new Class<?>[l];
 
 			for(int i = 0; i < l; i++)
 			{
@@ -585,5 +587,20 @@ public abstract class FNX
 		}
 
 		return false;
+	}
+
+	@SuppressWarnings("deprecation")
+	public static int getCtrlMask()
+	{
+		Toolkit dtk = Toolkit.getDefaultToolkit();
+
+		try
+		{
+			return dtk.getMenuShortcutKeyMaskEx();
+		}
+		catch(NoSuchMethodError e)
+		{
+			return dtk.getMenuShortcutKeyMask();
+		}
 	}
 }

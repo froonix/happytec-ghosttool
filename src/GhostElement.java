@@ -154,7 +154,7 @@ public class GhostElement
 
 		if(GhostPattern == null)
 		{
-			this.GhostPattern = Pattern.compile("\030.\042.(?:\010(?<c>.))?(?:\020(?<g>.))?(?:\030(?<s>.))?\042..+?\\\050.\060.(?:\010(?<b>.{1,5})\\\052)?.*?\062.\012.(?<n>.{1,32})\022\016(?<e>.{1,32})\030(?<v>.)\100.$", Pattern.DOTALL);
+			GhostPattern = Pattern.compile("\030.\042.(?:\010(?<c>.))?(?:\020(?<g>.))?(?:\030(?<s>.))?\042..+?\\\050.\060.(?:\010(?<b>.{1,5})\\\052)?.*?\062.\012.(?<n>.{1,32})\022\016(?<e>.{1,32})\030(?<v>.)\100.$", Pattern.DOTALL);
 		}
 
 		try
@@ -193,7 +193,7 @@ public class GhostElement
 
 			// Normalerweise gehört das mit Google's Protocol Buffers extrahiert.
 			// Ich habe aber keine Lust das zu implementieren, wenn es auch so geht.
-			Matcher m = this.GhostPattern.matcher(new String(this.DataBinary, "ISO-8859-1"));
+			Matcher m = GhostPattern.matcher(new String(this.DataBinary, "ISO-8859-1"));
 
 			if(m.find())
 			{
