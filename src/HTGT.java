@@ -619,10 +619,6 @@ public class HTGT
 
 		// Die automatische Updateprüfung wird im Hintergrund ausgeführt...
 		new Thread(new HTGT_Background(HTGT_Background.EXEC_UPDATECHECK)).start();
-
-		// DEBUG ONLY !!!
-		//openDefaultFile();
-		//fastFollowTest();
 	}
 
 	public static void blur()
@@ -1613,8 +1609,6 @@ public class HTGT
 		}
 		ffDownload = false;
 
-		FNX.dbg("Go...");
-
 		try
 		{
 			int[][][][] results;
@@ -1622,15 +1616,6 @@ public class HTGT
 			GhostElement[][][] oldDefaultGhosts = null;
 			int oldProfileCount = OfflineProfiles.getProfileCount();
 			int oldDefaultProfile = OfflineProfiles.defaultProfile();
-
-			// DEBUY ONLY !!!
-			FNX.dbg("----- GHOSTS BEFORE RELOADING -----");
-			for(int i = 0; i < OfflineProfiles.getGhostCount(); i++)
-			{
-				FNX.dbgf("  #%02d: %s", i, OfflineProfiles.getGhost(i).getDebugDetails());
-			}
-			FNX.dbg("-----------------------------------");
-
 			oldProfileGhosts = OfflineProfiles.getAllGhosts();
 
 			if(oldDefaultProfile > -1)
@@ -1661,14 +1646,6 @@ public class HTGT
 				tmp = OfflineProfiles;
 				reloadFile(true);
 			}
-
-			// DEBUY ONLY !!!
-			FNX.dbg("----- GHOSTS AFTER RELOADING -----");
-			for(int i = 0; i < tmp.getGhostCount(); i++)
-			{
-				FNX.dbgf("  #%02d: %s", i, tmp.getGhost(i).getDebugDetails());
-			}
-			FNX.dbg("----------------------------------");
 
 			GhostElement[][][] newProfileGhosts = null;
 			GhostElement[][][] newDefaultGhosts = null;
@@ -1714,8 +1691,6 @@ public class HTGT
 				{
 					for(int w = 0; w < weathers.length; w++)
 					{
-						//FNX.dbgf("[%02d][%02d][%02d]: %s - %s", m, t, w, (oldProfileGhosts[m][t][w] == null ? "null" : "data"), (newProfileGhosts[m][t][w] == null ? "null" : "data"));
-
 						if((oldProfileGhosts[m][t][w] == null && newProfileGhosts[m][t][w] != null) || (oldProfileGhosts[m][t][w] != null && newProfileGhosts[m][t][w] != null && (oldProfileGhosts[m][t][w].getTime() != newProfileGhosts[m][t][w].getTime() || !newProfileGhosts[m][t][w].getHash().equals(oldProfileGhosts[m][t][w].getHash()))))
 						{
 							FNX.dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
@@ -1900,46 +1875,19 @@ public class HTGT
 					FNX.dbg("Skipping ghost download because of previous choice...");
 				}
 			}
-
-			FNX.dbg("End of try block...");
 		}
-		/*
-		catch(InterruptedException e)
-		{
-			e.printStackTrace();
-			return false;
-		}
-		catch(eSportsAPIException e)
-		{
-			APIError(e);
-			return false;
-		}
-		catch(Exception e)
-		{
-			exceptionHandler(e);
-			return false;
-		}
-		*/
 		finally
 		{
-			FNX.dbg("Final block...");
-
 			if(FNX.isEDT())
 			{
 				try
 				{
-					FNX.dbg("Final try block...");
-
 					// Das ursprüngliche Profil aktivieren!
 					FNX.dbgf("Restoring profile %d...", profile);
 					OfflineProfiles.selectProfile(profile);
-
-					FNX.dbg("Final try block finished...");
 				}
 				catch(Exception e)
 				{
-					FNX.dbg("Final block: Exception!");
-
 					exceptionHandler(e);
 					syncGUI();
 				}
@@ -2059,36 +2007,10 @@ public class HTGT
 
 			fastFollowStart(force);
 		}
-		/*
-		catch(eSportsAPIException e)
-		{
-			APIError(e);
-		}
-		catch(InterruptedException e)
-		{
-			e.printStackTrace();
-		}
-		*/
 		catch(Exception e)
 		{
 			exceptionHandler(e);
 		}
-		/*
-		finally
-		{
-			try
-			{
-				// Das ursprüngliche Profil aktivieren!
-				FNX.dbgf("Restoring profile %d...", profile);
-				OfflineProfiles.selectProfile(profile);
-			}
-			catch(Exception e)
-			{
-				exceptionHandler(e);
-				syncGUI();
-			}
-		}
-		*/
 	}
 
 	public static Integer fastFollowEvaluation() throws Exception
@@ -6090,14 +6012,8 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 								FNX.dbgf("Watchservice event ignored: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
 							}
 						}
-						else
-						{
-							FNX.dbgf("Watchservice event ignored: %s (%s)", event.kind(), event.context());
-						}
 					}
 					key.reset();
-
-					FNX.dbg("Waiting for next event...");
 				}
 				break;
 			}
@@ -6122,10 +6038,6 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 						oldTime = newTime;
 						m = -1;
 					}
-				}
-				else
-				{
-					FNX.dbg("Nothing to do! Sleeping...");
 				}
 
 				publish((int) (newTime.toMillis() / 1000) * m);
@@ -6198,16 +6110,10 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 			HTGT.fastFollowStatus(modificationTime);
 			initState = true;
 		}
-		else
-		{
-			FNX.dbg("Nothing to do, sleeping...");
-		}
 	}
 
 	protected void done()
 	{
-		FNX.dbg("done() called");
-
 		try
 		{
 			get();
@@ -6227,7 +6133,8 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 		}
 
 		HTGT.fastFollowStop();
-		FNX.dbg("done() finished");
+
+		FNX.dbg("FFM background thread finished.");
 	}
 }
 
