@@ -13,20 +13,30 @@ JARFILE     = build/HTGT_$(version).jar
 ZIPFILE     = build/HTGT_$(version).zip
 VFILE       = htgt-version.txt
 
-JFLAGS  = -source 8 -target 8 -g -sourcepath ./src -classpath ./classes -d ./classes
-VMFLAGS = -classpath ./classes
-JC      = javac
-JAVA    = java
-JAR     = jar
+TARGET  = 8
+XLINT    = -Xlint:deprecation -Xlint:unchecked
+JFLAGS   = -source $(TARGET) -target $(TARGET) -g -sourcepath ./src -classpath ./classes -d ./classes $(XLINT)
+VMFLAGS  = -classpath ./classes
+JC       = javac
+JAVA     = java
+JAR      = jar
 
-sources = $(wildcard src/*.java)
-classes = $(sources:.java=.class)
-version = $(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
-commit  = $(shell git rev-parse --short HEAD)
+sources  = $(wildcard src/*.java)
+classes  = $(sources:.java=.class)
+lbundles = $(wildcard src/LangBundle_*.properties)
+rbundles = $(lbundles:src/LangBundle_%=src/RealLangBundle_%)
+version  = $(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
+commit   = $(shell git rev-parse --short HEAD)
 
 all: clean compile jar zip
 
-compile: $(classes)
+i18n: $(rbundles)
+
+RealLangBundle_%.properties: LangBundle_%.properties
+	native2ascii -encoding UTF-8 $< $@
+	sed -i 's/(UTF-8!)/(ISO-8859-1!)/' $@
+
+compile: $(classes) i18n
 	echo Original version: $(version)
 	@echo git-$(commit) > $(VFILE)
 
