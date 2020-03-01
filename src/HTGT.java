@@ -3176,7 +3176,7 @@ public class HTGT
 		Object defaultButton;
 		String dialogType;
 
-		JComboBox<DefaultComboBoxModel<String>> comboBox = null;
+		JComboBox<String> comboBox = null;
 		Integer[] returnValues = null;
 		JTextField textField = null;
 
@@ -3186,32 +3186,34 @@ public class HTGT
 
 		if(selectionValues != null)
 		{
-			DefaultComboBoxModel<String> model = new DefaultComboBoxModel<String>();
+			ArrayList<String> items = new ArrayList<String>();
 			returnValues = new Integer[selectionValues.length];
 
 			for(int i = 0, h = 0; i < selectionValues.length; i++)
 			{
 				if(selectionValues[i] != null)
 				{
-					model.addElement(selectionValues[i]);
+					items.add(selectionValues[i]);
 					returnValues[h++] = i;
 				}
 			}
 
+			comboBox = new JComboBox<>(items.toArray(new String[items.size()]));
+
 			if(initialSelectionValue != null)
 			{
-				model.setSelectedItem(initialSelectionValue);
+				comboBox.setSelectedItem(initialSelectionValue);
 			}
 
-			dialogType = "SELECTION";
-			comboBox = new JComboBox(model);
 			panel.add(comboBox);
+			dialogType = "SELECTION";
 		}
 		else
 		{
-			dialogType = "INPUTFIELD";
 			textField = new JTextField(initialSelectionValue != null ? initialSelectionValue : null);
+
 			panel.add(textField);
+			dialogType = "INPUTFIELD";
 		}
 
 		String langPrev = String.format("« %s", FNX.getLangString(lang, "prev"));
@@ -6048,14 +6050,14 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 		return 0;
 	}
 
-	protected void process(List chunks)
+	protected void process(List<Integer> chunks)
 	{
 		int modificationTime = 0;
 		boolean invokeCheck = false;
 
 		for(int i = 0; i < chunks.size(); i++)
 		{
-			int chunk = (int) chunks.get(i);
+			int chunk = chunks.get(i);
 
 			if(chunk < 0)
 			{
