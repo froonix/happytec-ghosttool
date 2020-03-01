@@ -2537,11 +2537,9 @@ public class HTGT
 
 		try
 		{
-			// TODO: Reload profile? (falls die SC erst später geschlossen wurde)
-			// ...
-
 			resetHistory();
 
+			profiles.reload();
 			OfflineProfiles.addProfile(nick);
 			profiles.addProfile(nick);
 
@@ -2557,8 +2555,6 @@ public class HTGT
 			reloadFile();
 			return;
 		}
-
-		//infoDialog("Das Profil wurde hinzugefügt.");
 	}
 
 	public static void renameProfile()
@@ -2625,11 +2621,9 @@ public class HTGT
 
 		try
 		{
-			// TODO: Reload profile? (falls die SC erst später geschlossen wurde)
-			// ...
-
 			resetHistory();
 
+			profiles.reload();
 			profiles.renameProfile(nickname, nick);
 			OfflineProfiles.renameProfile(nick);
 
@@ -2645,8 +2639,6 @@ public class HTGT
 			reloadFile();
 			return;
 		}
-
-		//infoDialog("Das Profil wurde umbenannt.");
 	}
 
 	public static void deleteProfile()
@@ -2689,11 +2681,9 @@ public class HTGT
 				return;
 			}
 
-			// TODO: Reload profile? (falls die SC erst später geschlossen wurde)
-			// ...
-
 			resetHistory();
 
+			profiles.reload();
 			profiles.deleteProfile(nickname);
 			OfflineProfiles.deleteProfile(profile);
 
@@ -2709,8 +2699,6 @@ public class HTGT
 			reloadFile();
 			return;
 		}
-
-		// infoDialog("Das Profil wurde gelöscht.");
 	}
 
 	private static boolean foreignGhostEnabled()

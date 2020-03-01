@@ -45,6 +45,11 @@ public class Profiles
 	{
 		this.file = xmlfile;
 		this.document = FNX.getDOMDocument(this.file);
+		this.postParsing();
+	}
+
+	private void postParsing() throws ProfileException, GhostException
+	{
 		this.document.setXmlStandalone(true);
 
 		NodeList profileNodes = document.getElementsByTagName(XML_TAG_PROFILES);
@@ -55,6 +60,12 @@ public class Profiles
 		}
 
 		this.profiles = profileNodes.item(0);
+	}
+
+	public void reload() throws Exception
+	{
+		this.document = FNX.getDOMDocument(this.file);
+		this.postParsing();
 	}
 
 	public void addProfile(String nickname) throws Exception
