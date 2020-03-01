@@ -385,7 +385,7 @@ public class GhostElement
 	{
 		try
 		{
-			return FNX.getWinNL(FNX.getStringFromDOM(this.XML, false));
+			return FNX.getWinNL(FNX.getCleanXML(this.XML));
 		}
 		catch(Exception e)
 		{

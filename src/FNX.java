@@ -362,7 +362,38 @@ public abstract class FNX
 		}
 	}
 
+	public static String getCleanXML(Element input)
+	{
+		return getCleanXML(input, false);
+	}
+
+	public static String getCleanXML(Element input, boolean full)
+	{
+		try
+		{
+			setupDOMParser();
+
+			StreamResult output = new StreamResult(new StringWriter());
+			TransformerFactory tf = TransformerFactory.newInstance();
+			Transformer t = tf.newTransformer();
+
+			t.transform(new DOMSource(input), output);
+
+			return getCleanXML(dBuilder.parse(new InputSource(new StringReader(output.getWriter().toString()))), full);
+		}
+		catch(SAXException|TransformerException|ParserConfigurationException|IOException e)
+		{
+			e.printStackTrace();
+			return e.getMessage();
+		}
+	}
+
 	public static String getCleanXML(Document doc)
+	{
+		return getCleanXML(doc, true);
+	}
+
+	public static String getCleanXML(Document doc, boolean full)
 	{
 		String XML;
 
@@ -377,7 +408,7 @@ public abstract class FNX
 				blankTextNodes.item(i).getParentNode().removeChild(blankTextNodes.item(i));
 			}
 
-			return FNX.getStringFromDOM(doc, true);
+			return FNX.getStringFromDOM(doc, full);
 		}
 		catch(Exception e)
 		{
