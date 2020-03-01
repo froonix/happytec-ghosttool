@@ -4471,11 +4471,6 @@ public class HTGT
 		return false;
 	}
 
-	private static Boolean ghostSelect(int mode, String track, int weather)
-	{
-		return ghostSelect(mode, track, weather, false);
-	}
-
 	// Auswahl eines Geists aus der Rangliste zum Herunterladen.
 	// Vorher muss bereits nach Strecke/Wetter gefragt worden sein!
 	private static Boolean ghostSelect(int mode, String track, int weather, boolean forceWeather)
