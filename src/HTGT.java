@@ -1972,7 +1972,7 @@ public class HTGT
 			}
 			else if(action == BUTTON_YES)
 			{
-				Boolean result = ghostSelect(g, t, r, true, ((r < -1) ? true : false));
+				Boolean result = ghostSelect(g, t, r, ((r < -1) ? true : false));
 
 				if(result != null && result == true)
 				{
@@ -4432,7 +4432,7 @@ public class HTGT
 					lastTrack = cfg(CFG_TRACK, conditions[input][1]);
 					lastWeather = cfg(CFG_WEATHER, conditions[input][2]);
 
-					result = ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather), false, ENABLE_RACE);
+					result = ghostSelect(mode, lastTrack, Integer.parseInt(lastWeather), ENABLE_RACE);
 
 					if(result == null)
 					{
@@ -4471,20 +4471,14 @@ public class HTGT
 		return false;
 	}
 
-	// Auswahl eines Geists aus der Rangliste zum Herunterladen.
-	// Vorher muss bereits nach Strecke/Wetter gefragt worden sein!
 	private static Boolean ghostSelect(int mode, String track, int weather)
 	{
 		return ghostSelect(mode, track, weather, false);
 	}
 
-	private static Boolean ghostSelect(int mode, String track, int weather, boolean force)
-	{
-		return ghostSelect(mode, track, weather, force, false);
-	}
-
-	// Ermöglicht alle Rückfragen zu umgehen, die beim Download auftreten.
-	private static Boolean ghostSelect(int mode, String track, int weather, boolean force, boolean forceWeather)
+	// Auswahl eines Geists aus der Rangliste zum Herunterladen.
+	// Vorher muss bereits nach Strecke/Wetter gefragt worden sein!
+	private static Boolean ghostSelect(int mode, String track, int weather, boolean forceWeather)
 	{
 		try
 		{
