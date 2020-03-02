@@ -1240,7 +1240,7 @@ public class HTGT
 
 	public static void selectProfile(int index) throws Exception
 	{
-		if(OfflineProfiles == null)
+		if(!FNX.requireEDT() || OfflineProfiles == null)
 		{
 			return;
 		}
@@ -1750,8 +1750,6 @@ public class HTGT
 
 			if(ghosts.size() > 0)
 			{
-				FNX.dbgf("ghosts.size() = %d", ghosts.size());
-
 				// TODO: Wir brauchen einen Uploadcache in der API-Klasse!
 				// Andernfalls würden wir beim EDT alles nochmals hochladen.
 				// Nicht vergessen, dass dieser Cache immer geleert gehört.
@@ -2017,12 +2015,8 @@ public class HTGT
 	{
 		if(fastFollowMode())
 		{
-			FNX.dbg("FFM returned TRUE");
-
 			return 1;
 		}
-
-		FNX.dbg("FFM returned FALSE");
 
 		return 0;
 	}
@@ -2061,12 +2055,10 @@ public class HTGT
 		}
 		else if(ffStarted != 0)
 		{
-			FNX.dbg("ffStarted != 0");
 			return;
 		}
 		else
 		{
-			FNX.dbg("ffStarted > 0");
 			ffStarted = 1;
 		}
 
@@ -2423,7 +2415,7 @@ public class HTGT
 
 		if(oFFM != null || aFFM != null)
 		{
-			FNX.dbg("stopping FFM now!");
+			FNX.dbg("Stopping FFM now!");
 
 			if(oFFM != null)
 			{
@@ -4866,7 +4858,7 @@ public class HTGT
 	// Diese Funktion ist für interne Zwecke über Fast-Follow gedacht.
 	private static void reloadFile(boolean force) throws Exception
 	{
-		if(!force && (OfflineProfiles == null || unsavedChanges()))
+		if(!FNX.requireEDT() || (!force && (OfflineProfiles == null || unsavedChanges())))
 		{
 			return;
 		}
@@ -6064,10 +6056,6 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 			{
 				FNX.dbg("Executing earlier queue request(s)...");
 			}
-			else
-			{
-				FNX.dbg("Woohoo! Ready to party...");
-			}
 
 			if(!HTGT.fastFollowAnalyze())
 			{
@@ -6085,7 +6073,6 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 		}
 		else if(!initState)
 		{
-			FNX.dbg("Updating status message...");
 			HTGT.fastFollowStatus(modificationTime);
 			initState = true;
 		}
@@ -6136,8 +6123,6 @@ class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
 		try
 		{
 			Integer result = get();
-
-			FNX.dbgf("FFM evaluation thread result: %d", result);
 
 			if(result < 1)
 			{
