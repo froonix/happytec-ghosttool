@@ -1240,7 +1240,7 @@ public class HTGT
 
 	public static void selectProfile(int index) throws Exception
 	{
-		if(!FNX.requireEDT() || OfflineProfiles == null)
+		if(OfflineProfiles == null)
 		{
 			return;
 		}
@@ -1275,7 +1275,11 @@ public class HTGT
 		}
 
 		profile = index;
-		syncGUI();
+
+		if(FNX.isEDT())
+		{
+			syncGUI();
+		}
 	}
 
 	public static void selectNextProfile()
@@ -4858,7 +4862,7 @@ public class HTGT
 	// Diese Funktion ist für interne Zwecke über Fast-Follow gedacht.
 	private static void reloadFile(boolean force) throws Exception
 	{
-		if(!FNX.requireEDT() || (!force && (OfflineProfiles == null || unsavedChanges())))
+		if(!force && (OfflineProfiles == null || unsavedChanges()))
 		{
 			return;
 		}
@@ -4866,7 +4870,11 @@ public class HTGT
 		FNX.dbg("Reloading file...");
 		OfflineProfiles.reload();
 		selectProfile(profile);
-		syncGUI();
+
+		if(FNX.isEDT())
+		{
+			syncGUI();
+		}
 	}
 
 	// Änderungen automatisch speichern.
