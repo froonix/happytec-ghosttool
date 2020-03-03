@@ -94,4 +94,4 @@ sig: zip
 clean:
 	$(RM) build/HTGT_*.*
 	$(RM) $(MFFILE) $(VFILE) $(LICENCEFILE)
-	$(RM) classes/*.class classes/*.properties src/*.class
+	$(RM) classes/*.class classes/*.properties src/*.class src/RealLangBundle_*.properties
