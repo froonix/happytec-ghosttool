@@ -6,4 +6,4 @@ Work in progress!
 ### Build requirements
 * Debian/Ubuntu recommended
 * OpenJDK 8 (JDK) or newer
-* `git`, `make`, `zip`, `dos2unix`, ... (+ `sed`/`gpg` for official releases)
+* `git`, `make`, `zip`, `dos2unix`, `native2ascii`, ... (+ `sed`/`gpg` for official releases)
