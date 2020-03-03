@@ -28,7 +28,7 @@ rbundles = $(lbundles:src/LangBundle_%=src/RealLangBundle_%)
 version  = $(strip $(shell $(JAVA) $(VMFLAGS) HTGT -v))
 commit   = $(shell git rev-parse --short HEAD)
 
-all: clean compile jar zip
+all: clean compile jar zip simpleclean
 
 i18n: $(rbundles)
 
