@@ -60,22 +60,22 @@ jar: compile
 zip: jar
 	@echo Zipping version $(version)
 
-	cp -af HTGT-Debug-Linux.sh $(SHFILE)
+	cp -af scr/HTGT-Debug-Linux.sh $(SHFILE)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(SHFILE)
 
-	cp -af Start-HTGT-Linux.sh $(SHSTART)
+	cp -af scr/Start-HTGT-Linux.sh $(SHSTART)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(SHSTART)
 
-	cp -af HTGT-Debug-macOS $(MACFILE)
+	cp -af scr/HTGT-Debug-macOS $(MACFILE)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(MACFILE)
 
-	cp -af Start-HTGT-macOS $(MACSTART)
+	cp -af scr/Start-HTGT-macOS $(MACSTART)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(MACSTART)
 
-	cp -af HTGT-Debug-Windows.bat $(BATFILE)
+	cp -af scr/HTGT-Debug-Windows.bat $(BATFILE)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(BATFILE)
 
-	cp -af Start-HTGT-Windows.bat $(BATSTART)
+	cp -af scr/Start-HTGT-Windows.bat $(BATSTART)
 	sed -i "s/HTGT.jar/HTGT_$(version).jar/" $(BATSTART)
 
 	cp -af LICENCE $(LICENCEFILE)
@@ -91,7 +91,12 @@ sig: zip
 	sed -i 's#build/##' $(CSUMFILE) && $(RM) $(SIGFILE)
 	gpg -u $(GPGKEY) --armor --output $(SIGFILE) --detach-sig $(CSUMFILE)
 
-clean:
+clean: simpleclean
 	$(RM) build/HTGT_*.*
+
+simpleclean:
 	$(RM) $(MFFILE) $(VFILE) $(LICENCEFILE)
 	$(RM) classes/*.class classes/*.properties src/*.class src/RealLangBundle_*.properties
+
+fullclean: clean
+	$(RM) HTGT-Debug.log
