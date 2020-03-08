@@ -183,7 +183,7 @@ public class OfflineProfiles
 
 	public int[] getGhostsByCondition(int mode, String track, int weather)
 	{
-		ArrayList<Integer> ghosts = new ArrayList<Integer>();
+		ArrayList<Integer> ghosts = new ArrayList<>();
 
 		for(int i = 0; i < this.getGhostCount(); i++)
 		{
@@ -267,7 +267,7 @@ public class OfflineProfiles
 				for(int w = 0; w < weathers.length; w++)
 				{
 					int[] ghosts = this.getGhostsByCondition(modes[m], tracks[t], weathers[w]);
-					ArrayList<GhostElement> wi = new ArrayList<GhostElement>(ghosts.length);
+					ArrayList<GhostElement> wi = new ArrayList<>(ghosts.length);
 					ti.add(wi);
 
 					for(int i = 0; i < ghosts.length; i++)
@@ -569,7 +569,7 @@ public class OfflineProfiles
 		}
 
 		NodeList GhostNodes = this.OfflineProfile.getElementsByTagName(XML_TAG_GHOSTS);
-		this.GhostElements = new ArrayList<GhostElement>(0);
+		this.GhostElements = new ArrayList<>(0);
 
 		if(GhostNodes.getLength() > 0)
 		{
@@ -579,7 +579,7 @@ public class OfflineProfiles
 
 			if(this.getGhostCount() > 0)
 			{
-				this.GhostElements = new ArrayList<GhostElement>(this.getGhostCount());
+				this.GhostElements = new ArrayList<>(this.getGhostCount());
 
 				for(int i = 0; i < this.getGhostCount(); i++)
 				{

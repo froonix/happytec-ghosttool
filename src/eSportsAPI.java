@@ -147,7 +147,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("byID", id);
 
 			return new GhostElement(this.request("OFFLINE", "ghost.get", args));
@@ -162,7 +162,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			StringBuilder value = new StringBuilder();
 
 			for(int i = 0; i < ids.length; i++)
@@ -203,7 +203,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			StringBuilder data = new StringBuilder();
 
 			for(int i = 0; i < ghosts.length; i++)
@@ -239,7 +239,7 @@ public class eSportsAPI
 
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			StringBuilder data = new StringBuilder();
 
 			for(int i = 0; i < ghosts.length; i++)
@@ -260,12 +260,12 @@ public class eSportsAPI
 				throw new eSportsAPIException("SERVER_DUMB");
 			}
 
-			List<Map<String,Object>> info = new ArrayList<Map<String,Object>>(GhostNodes.getLength());
+			List<Map<String,Object>> info = new ArrayList<>(GhostNodes.getLength());
 
 			for(int i = 0; i < GhostNodes.getLength(); i++)
 			{
 				Element ghost = (Element) GhostNodes.item(i);
-				Map<String,Object> hm = new HashMap<String,Object>(3);
+				Map<String,Object> hm = new HashMap<>(3);
 
 				hm.put("GhostID", Integer.parseInt(ghost.getAttribute("ID")));
 				hm.put("Applicable", (!ghost.hasAttribute("Applicable") || !ghost.getAttribute("Applicable").equalsIgnoreCase("false")) ? 1 : 0);
@@ -294,7 +294,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("ghostID", Integer.toString(ghostID));
 			String result = this.request("OFFLINE", "result.apply", args);
 
@@ -332,7 +332,7 @@ public class eSportsAPI
 
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("ghostID", Integer.toString(ghostID));
 			args.put("includePosition", "true");
 
@@ -355,14 +355,14 @@ public class eSportsAPI
 					{
 						Element destinationsElement = (Element) destinationsNode.item(0);
 						NodeList destinationsList = destinationsElement.getElementsByTagName("ResultDestination");
-						lastResultDestinations = new ArrayList<HashMap<String,Object>>(destinationsList.getLength());
+						lastResultDestinations = new ArrayList<>(destinationsList.getLength());
 
 						for(int i = 0; i < destinationsList.getLength(); i++)
 						{
 							String t, n; t = n = null;
 							boolean de, ae, ad, pt, r, x, s; de = ae = ad = pt = r = x = s = false;
 							int tID, b, a, gID, or, op, nr, np, g, w; tID = gID = b = a = or = op = nr = np = g = w = -1;
-							HashMap<String,Object> item = new HashMap<String,Object>();
+							HashMap<String,Object> item = new HashMap<>();
 
 							Element destination = (Element) destinationsList.item(i);
 							NodeList trackNode = destination.getElementsByTagName("Track");
@@ -561,7 +561,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> values = new HashMap<String,Object>();
+			Map<String,Object> values = new HashMap<>();
 			String result = this.request("OFFLINE", "player.info", null);
 
 			Document doc = FNX.getDOMDocument(result);
@@ -616,7 +616,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("byGameModeID", mode);
 			args.put("byTrack", track);
 			args.put("byWeatherID", weather);
@@ -625,14 +625,14 @@ public class eSportsAPI
 
 			Document doc = FNX.getDOMDocument(result);
 			NodeList OfflineResults = doc.getElementsByTagName("OfflineResult");
-			List<Map<String,Object>> values = new ArrayList<Map<String,Object>>(OfflineResults.getLength());
+			List<Map<String,Object>> values = new ArrayList<>(OfflineResults.getLength());
 
 			if(OfflineResults.getLength() > 0)
 			{
 				for(int i = 0; i < OfflineResults.getLength(); i++)
 				{
 					Element OfflineResult = (Element) OfflineResults.item(i);
-					Map<String,Object> hm = new HashMap<String,Object>(4);
+					Map<String,Object> hm = new HashMap<>(4);
 
 					hm.put("Nickname", OfflineResult.getElementsByTagName("Nickname").item(0).getTextContent());
 					hm.put("Result", Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent()));
@@ -697,7 +697,7 @@ public class eSportsAPI
 
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 
 			// DO NOT USE FALSE!
 			args.put("includeTicket", "true");
@@ -732,7 +732,7 @@ public class eSportsAPI
 				for(int i = 0; i < OfflineResults.getLength(); i++)
 				{
 					Element OfflineResult = (Element) OfflineResults.item(i);
-					Map<String,Object> hm = new HashMap<String,Object>(4);
+					Map<String,Object> hm = new HashMap<>(4);
 
 					String track = OfflineResult.getAttribute("Track").toLowerCase();
 					String weather = OfflineResult.getAttribute("Weather").toLowerCase();
@@ -820,7 +820,7 @@ public class eSportsAPI
 
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 
 			// DO NOT USE FALSE!
 			args.put("includeTicket", "true");
@@ -955,7 +955,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("autocheck", ((autocheck) ? "true" : "false"));
 			args.put("application", app); args.put("version", version);
 			String result = this.request("OFFLINE", "update.check", args);

@@ -610,7 +610,7 @@ public class HTGT
 
 		mainUI = new MainLayerUI();
 		mainPane = mainWindow.getContentPane();
-		mainLayer = new JLayer<Container>(mainPane, mainUI);
+		mainLayer = new JLayer<>(mainPane, mainUI);
 		mainWindow.setContentPane(mainLayer);
 
 		mainWindow.setSize(WINDOW_SIZE_START);
@@ -789,12 +789,12 @@ public class HTGT
 	{
 		if(menuitems == null)
 		{
-			menuitems = new HashMap<String,ArrayList<DynamicMenuItem>>();
+			menuitems = new HashMap<>();
 		}
 
 		if(menuitems.get(o) == null)
 		{
-			menuitems.put(o, new ArrayList<DynamicMenuItem>());
+			menuitems.put(o, new ArrayList<>());
 		}
 
 		DynamicMenuItem DMI = new DynamicMenuItem(FNX.getLangString(lang, t), HTGT.class.getName(), m, k);
@@ -1083,7 +1083,7 @@ public class HTGT
 	public static int ghostImport(GhostElement[] ghosts, boolean force)
 	{
 		FNX.dbg("ghosts.length: " + ghosts.length);
-		ArrayList<Integer> selection = new ArrayList<Integer>();
+		ArrayList<Integer> selection = new ArrayList<>();
 		boolean deleteDuplicates = isSpecialProfile() ? false : true;
 		boolean delete = false;
 
@@ -1687,7 +1687,7 @@ public class HTGT
 			boolean lastFromDefault = false;
 			boolean realUpload = false;
 
-			ArrayList<ArrayList<Object>> ghosts = new ArrayList<ArrayList<Object>>();
+			ArrayList<ArrayList<Object>> ghosts = new ArrayList<>();
 
 			for(int m = 0; m < modes.length; m++)
 			{
@@ -1699,7 +1699,7 @@ public class HTGT
 						{
 							FNX.dbgf("Changed result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
-							ArrayList<Object> item = new ArrayList<Object>(4);
+							ArrayList<Object> item = new ArrayList<>(4);
 							item.add(m); item.add(t); item.add(w);
 							item.add(newProfileGhosts[m][t][w]);
 							ghosts.add(item);
@@ -1729,7 +1729,7 @@ public class HTGT
 							{
 								FNX.dbgf("Changed (default) result: %s / %s / %s", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), gmHelper.getWeatherName(weathers[w]));
 
-								ArrayList<Object> item = new ArrayList<Object>(4);
+								ArrayList<Object> item = new ArrayList<>(4);
 								item.add(m); item.add(t); item.add(w);
 								item.add(newDefaultGhosts[m][t][w]);
 								ghosts.add(item);
@@ -2073,7 +2073,7 @@ public class HTGT
 		ffModification = -1;
 		lastApplicationPosition = 0;
 		lastApplicationGhost = null;
-		lastApplicationDestinations = new HashMap<Integer,HashMap<String,Object>>();
+		lastApplicationDestinations = new HashMap<>();
 
 		boolean firstRun = true;
 
@@ -3170,7 +3170,7 @@ public class HTGT
 
 		if(selectionValues != null)
 		{
-			ArrayList<String> items = new ArrayList<String>();
+			ArrayList<String> items = new ArrayList<>();
 			returnValues = new Integer[selectionValues.length];
 
 			for(int i = 0, h = 0; i < selectionValues.length; i++)
@@ -4007,7 +4007,7 @@ public class HTGT
 								if(ffStarted == 0)
 								{
 									FNX.dbg("Initializing lastApplicationDestinations.");
-									lastApplicationDestinations = new HashMap<Integer,HashMap<String,Object>>();
+									lastApplicationDestinations = new HashMap<>();
 								}
 
 								for(int h = 0; h < lastResultDestinations.size(); h++)
@@ -4085,7 +4085,7 @@ public class HTGT
 			{
 				if((input = (String) inputDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostDownloadByID"), input)) != null)
 				{
-					ids = new ArrayList<Integer>(0);
+					ids = new ArrayList<>(0);
 					parts = input.split("[^0-9]+");
 
 					for(int i = 0; i < parts.length; i++)

@@ -107,7 +107,7 @@ public class GhostElement
 			GhostsPattern = Pattern.compile("(<GhostDataPair[^>]+>)", Pattern.CASE_INSENSITIVE);
 		}
 
-		ArrayList<GhostElement> Ghosts = new ArrayList<GhostElement>();
+		ArrayList<GhostElement> Ghosts = new ArrayList<>();
 		Matcher GhostsMatcher = GhostsPattern.matcher(xml);
 
 		while(GhostsMatcher.find())
