@@ -4020,7 +4020,6 @@ public class HTGT
 										continue;
 									}
 
-									FNX.dbgf("lastApplicationDestinations.put(%d, %s)", (int) item.get("TrackID"), item.toString());
 									lastApplicationDestinations.put((int) item.get("TrackID"), item);
 								}
 							}
