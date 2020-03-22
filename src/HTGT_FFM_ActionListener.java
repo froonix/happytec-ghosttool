@@ -1,5 +1,5 @@
 /**
- * FNX_LookAndFeel.java: Context menu for everything
+ * HTGT_FFM_ActionListener.java: Custom button action
  * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,45 +17,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-import javax.swing.LookAndFeel;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-public class FNX_LookAndFeel extends LookAndFeel
+class HTGT_FFM_ActionListener implements ActionListener
 {
-	private final FNX_UIDefaults defaults = new FNX_UIDefaults();
-
-	@Override
-	public FNX_UIDefaults getDefaults()
+	public void actionPerformed(ActionEvent e)
 	{
-		return defaults;
-	};
-
-	@Override
-	public String getID()
-	{
-		return "FNX_ContextMenu";
-	}
-
-	@Override
-	public String getName()
-	{
-		return getID();
-	}
-
-	@Override
-	public String getDescription()
-	{
-		return getID();
-	}
-
-	@Override
-	public boolean isNativeLookAndFeel()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean isSupportedLookAndFeel()
-	{
-		return true;
+		FNX.dbg("Button clicked");
+		HTGT.fastFollowStop(false);
 	}
 }

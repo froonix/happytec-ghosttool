@@ -1,6 +1,6 @@
 /**
  * Profiles.java: Very limited representation of UserConfig.xml
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ public class UserConfig
 		this.document = FNX.getDOMDocument(this.file);
 		this.document.setXmlStandalone(true);
 
-		if(document.getElementsByTagName(this.XML_TAG_USERCONFIG).getLength() == 0)
+		if(document.getElementsByTagName(XML_TAG_USERCONFIG).getLength() == 0)
 		{
 			throw new ProfileException(String.format("Missing <%s> tag", XML_TAG_USERCONFIG));
 		}
@@ -54,7 +54,7 @@ public class UserConfig
 
 	public boolean getMultiGhost() throws Exception
 	{
-		NodeList nodes = this.document.getElementsByTagName(this.XML_TAG_MULTIGHOST);
+		NodeList nodes = this.document.getElementsByTagName(XML_TAG_MULTIGHOST);
 
 		if(nodes.getLength() == 0)
 		{
@@ -71,7 +71,7 @@ public class UserConfig
 
 	public String getTrainingGhostNick() throws Exception
 	{
-		NodeList nodes = this.document.getElementsByTagName(this.XML_TAG_GHOSTNICK);
+		NodeList nodes = this.document.getElementsByTagName(XML_TAG_GHOSTNICK);
 
 		if(nodes.getLength() == 0)
 		{

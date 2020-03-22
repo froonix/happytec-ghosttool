@@ -1,6 +1,6 @@
 /**
  * Profiles.java: Very limited representation of Profiles.xml
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,9 +45,14 @@ public class Profiles
 	{
 		this.file = xmlfile;
 		this.document = FNX.getDOMDocument(this.file);
+		this.postParsing();
+	}
+
+	private void postParsing() throws ProfileException, GhostException
+	{
 		this.document.setXmlStandalone(true);
 
-		NodeList profileNodes = document.getElementsByTagName(this.XML_TAG_PROFILES);
+		NodeList profileNodes = document.getElementsByTagName(XML_TAG_PROFILES);
 
 		if(profileNodes.getLength() == 0)
 		{
@@ -55,6 +60,12 @@ public class Profiles
 		}
 
 		this.profiles = profileNodes.item(0);
+	}
+
+	public void reload() throws Exception
+	{
+		this.document = FNX.getDOMDocument(this.file);
+		this.postParsing();
 	}
 
 	public void addProfile(String nickname) throws Exception
@@ -69,7 +80,7 @@ public class Profiles
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
 		Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
-		NodeList profileNodes = profileDoc.getElementsByTagName(this.XML_TAG_PROFILE);
+		NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
 
 		if(profileNodes.getLength() != 1)
 		{
@@ -120,7 +131,7 @@ public class Profiles
 
 	private Node[] getProfiles() throws ProfileException
 	{
-		NodeList profileNodes = this.document.getElementsByTagName(this.XML_TAG_PROFILE);
+		NodeList profileNodes = this.document.getElementsByTagName(XML_TAG_PROFILE);
 
 		if(profileNodes.getLength() == 0)
 		{
@@ -139,7 +150,7 @@ public class Profiles
 
 	private Node getPlayerNode(Element c) throws ProfileException
 	{
-		NodeList players = c.getElementsByTagName(this.XML_TAG_PLAYER);
+		NodeList players = c.getElementsByTagName(XML_TAG_PLAYER);
 
 		if(players.getLength() > 0)
 		{

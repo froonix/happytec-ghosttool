@@ -1,6 +1,6 @@
 /**
  * ImprovedFileChooser.java: Handle existing files, …
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
+@SuppressWarnings("serial")
 public class ImprovedFileChooser extends JFileChooser
 {
 	private static ResourceBundle lang = FNX.getLangBundle("ImprovedFileChooser");

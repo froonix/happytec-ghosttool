@@ -10,7 +10,7 @@ echo "executable: $java"
 "$java" -version
 
 cd "$(dirname $0)" && \
-"$java" -jar "HTGT.jar" -d 2>> HTGT-Debug.log && \
+"$java" -jar "HTGT.jar" -d 2>&1 | tee -a HTGT-Debug.log && \
 exit $? || status=$?
 
 echo; echo "Das Programm wurde mit einem Fehler beendet: $status"

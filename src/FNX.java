@@ -1,6 +1,6 @@
 /**
  * FNX.java: Static helper methods for various stuff
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+
+import java.awt.Toolkit;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +40,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
@@ -47,6 +50,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -75,8 +79,12 @@ import org.xml.sax.SAXException;
 public abstract class FNX
 {
 	private static DateFormat             dateFormat;
+
 	private static DocumentBuilderFactory dbFactory;
 	private static DocumentBuilder        dBuilder;
+
+	private static boolean                debugMode;
+	private static DateFormat             debugDate;
 
 	public static String getDateString()
 	{
@@ -354,7 +362,38 @@ public abstract class FNX
 		}
 	}
 
+	public static String getCleanXML(Element input)
+	{
+		return getCleanXML(input, false);
+	}
+
+	public static String getCleanXML(Element input, boolean full)
+	{
+		try
+		{
+			setupDOMParser();
+
+			StreamResult output = new StreamResult(new StringWriter());
+			TransformerFactory tf = TransformerFactory.newInstance();
+			Transformer t = tf.newTransformer();
+
+			t.transform(new DOMSource(input), output);
+
+			return getCleanXML(dBuilder.parse(new InputSource(new StringReader(output.getWriter().toString()))), full);
+		}
+		catch(SAXException|TransformerException|ParserConfigurationException|IOException e)
+		{
+			e.printStackTrace();
+			return e.getMessage();
+		}
+	}
+
 	public static String getCleanXML(Document doc)
+	{
+		return getCleanXML(doc, true);
+	}
+
+	public static String getCleanXML(Document doc, boolean full)
 	{
 		String XML;
 
@@ -369,7 +408,7 @@ public abstract class FNX
 				blankTextNodes.item(i).getParentNode().removeChild(blankTextNodes.item(i));
 			}
 
-			return FNX.getStringFromDOM(doc, true);
+			return FNX.getStringFromDOM(doc, full);
 		}
 		catch(Exception e)
 		{
@@ -429,17 +468,170 @@ public abstract class FNX
 		return lang.containsKey(key);
 	}
 
+	// Ruft die Methode einer statischen Klasse ohne Argumente auf.
 	public static void actionCallback(String className, String methodName)
 	{
+		actionCallback(className, methodName, new Object[0]);
+	}
+
+	// Ruft die Methode einer statischen Klasse mit beliebigen Argumenten auf.
+	// WICHTIG: Der dritte Parameter muss unbedingt NULL sein, damit es klappt!
+	public static void actionCallback(String className, String methodName, Object ignore, Object... args)
+	{
+		if(ignore != null)
+		{
+			throw new RuntimeException();
+		}
+
+		actionCallback(className, methodName, args);
+	}
+
+	// Ruft die Methode einer statischen Klasse mit den Argumenten in args[] auf.
+	public static void actionCallback(String className, String methodName, Object[] args)
+	{
+		int l = (args != null) ? args.length : 0;
+
+		dbgf("c=%s m=%s a=%d", className, methodName, l);
+
 		try
 		{
+			Class<?> methodParams[] = new Class<?>[l];
+
+			for(int i = 0; i < l; i++)
+			{
+				if(args[i] instanceof Integer)
+				{
+					methodParams[i] = Integer.class;
+				}
+				else if(args[i] instanceof Long)
+				{
+					methodParams[i] = Long.class;
+				}
+				else if(args[i] instanceof String)
+				{
+					methodParams[i] = String.class;
+				}
+				else if(args[i] instanceof Boolean)
+				{
+					methodParams[i] = Boolean.class;
+				}
+				// ...
+				// ...
+				else
+				{
+					methodParams[i] = args[i].getClass().getComponentType();
+				}
+
+				if(methodParams[i] == null)
+				{
+					throw new RuntimeException();
+				}
+
+				//dbgf("methodParams[%d] = %s (%s)", i, args[i]);
+			}
+
 			Class<?> c = Class.forName(className);
-			Method m = c.getDeclaredMethod(methodName);
-			m.invoke(null);
+			Method m = c.getDeclaredMethod(methodName, methodParams);
+
+			m.invoke(null, args);
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
+		}
+	}
+
+	public static void enableDebugging()
+	{
+		setDebugging(true);
+	}
+
+	public static void disableDebugging()
+	{
+		setDebugging(false);
+	}
+
+	public static void setDebugging(boolean value)
+	{
+		debugMode = value;
+	}
+
+	public static boolean getDebugging()
+	{
+		return debugMode;
+	}
+
+	private static synchronized void dbg(String msg, int trace)
+	{
+		if(debugMode)
+		{
+			if(debugDate == null)
+			{
+				debugDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZZZZ");
+			}
+
+			Long threadID = Thread.currentThread().getId();
+			String threadType = (threadID == 1) ? "R" : (isEDT() ? "E" : "W");
+
+			System.err.printf("%2$5d-%3$s [%1$s] %4$s - %5$s%n", debugDate.format(new Date()), threadID, threadType, Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
+		}
+	}
+
+	public static void dbgf(String msg, Object... args)
+	{
+		dbg(String.format(msg, args), 1);
+	}
+
+	public static void dbg(String msg)
+	{
+		dbg(msg, 1);
+	}
+
+	public static boolean isEDT()
+	{
+		return (Thread.currentThread().getId() == 1 || SwingUtilities.isEventDispatchThread());
+	}
+
+	public static boolean requireEDT()
+	{
+		if(!isEDT())
+		{
+			FNX.dbg("This is not an EDT! (Event Dispatch Thread)", 1);
+			//throw new RuntimeException("Not in EDT! Oops...");
+
+			return false;
+		}
+
+		return true;
+	}
+
+	// Das ist die einzige Lösung, die wirklich funktioniert!
+	// Quelle: https://stackoverflow.com/a/3684815/3747688
+	public static boolean isValidLocale(String value)
+	{
+		for(Locale locale : Locale.getAvailableLocales())
+		{
+			if(value.equals(locale.toString()))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	@SuppressWarnings("deprecation")
+	public static int getCtrlMask()
+	{
+		Toolkit dtk = Toolkit.getDefaultToolkit();
+
+		try
+		{
+			return dtk.getMenuShortcutKeyMaskEx();
+		}
+		catch(NoSuchMethodError e)
+		{
+			return dtk.getMenuShortcutKeyMask();
 		}
 	}
 }

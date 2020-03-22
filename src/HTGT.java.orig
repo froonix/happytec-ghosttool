@@ -265,6 +265,35 @@ public class HTGT
 
 	private static Map<String,ArrayList<DynamicMenuItem>> menuitems;
 
+<<<<<<< HEAD
+	private static void dbg(String msg, int trace)
+	{
+		if(debugMode)
+		{
+			if(debugDate == null)
+			{
+				debugDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZZZZ");
+			}
+
+			Long threadID = Thread.currentThread().getId();
+			String threadType = (threadID == 1) ? "R" : (javax.swing.SwingUtilities.isEventDispatchThread() ? "E" : "W");
+
+			System.err.printf("%2$5d-%3$s [%1$s] %4$s - %5$s%n", debugDate.format(new Date()), threadID, threadType, Thread.currentThread().getStackTrace()[2 + trace].toString(), msg);
+		}
+	}
+
+	public static void dbgf(String msg, Object... args)
+	{
+		dbg(String.format(msg, args), 1);
+	}
+
+	public static void dbg(String msg)
+	{
+		dbg(msg, 1);
+	}
+
+=======
+>>>>>>> swing-rewrite
 	public static void about()
 	{
 		String licence = String.format(
@@ -5656,4 +5685,3 @@ public class HTGT
 // Egal, ob mit oder ohne ENABLE_BLURRY...
 // System.gc() bringt auch nichts.
 // ...
-
