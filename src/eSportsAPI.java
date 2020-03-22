@@ -523,12 +523,6 @@ public class eSportsAPI
 
 							//FNX.dbgf("item = %s", item.toString());
 							lastResultDestinations.add(i, item);
-
-							/*
-                                <Track>
-                                        <Title>...</Title>
-                                </Track>
-                            */
 						}
 					}
 
