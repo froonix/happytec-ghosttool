@@ -22,23 +22,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.InputStream;
 import java.io.Reader;
 
 import java.nio.charset.StandardCharsets;
 
-import java.nio.file.Files;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
-
-import java.nio.file.attribute.FileTime;
 
 import java.net.URI;
 
@@ -47,7 +37,6 @@ import java.lang.IndexOutOfBoundsException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
@@ -64,9 +53,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 
 import java.util.prefs.Preferences;
 
@@ -93,19 +79,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.ActionMap;
 import javax.swing.Box;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -120,13 +101,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingWorker;
 import javax.swing.UIManager;
-
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -135,10 +110,7 @@ import javax.swing.plaf.basic.BasicTableHeaderUI;
 
 import javax.swing.plaf.LayerUI;
 
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 
 public class HTGT
 {
@@ -5669,586 +5641,12 @@ public class HTGT
 	}
 }
 
-@SuppressWarnings("serial")
-class HTGT_JTable extends JTable
-{
-	DefaultTableCellRenderer renderLeft = new DefaultTableCellRenderer();
-	DefaultTableCellRenderer renderCenter = new DefaultTableCellRenderer();
-	DefaultTableCellRenderer renderRight = new DefaultTableCellRenderer();
-	{
-		renderLeft.setHorizontalAlignment(SwingConstants.LEFT);
-		renderCenter.setHorizontalAlignment(SwingConstants.CENTER);
-		renderRight.setHorizontalAlignment(SwingConstants.RIGHT);
-	}
-
-	public HTGT_JTable(TableModel dm)
-	{
-		super(dm);
-
-		HTGT_ActionListener action;
-		ActionMap actionMap = getActionMap();
-		InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP,         HTGT.NONE             ), "scrollUpChangeSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN,       HTGT.NONE             ), "scrollDownChangeSelection");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,              HTGT.NONE             ), "selectPreviousRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,           HTGT.NONE             ), "selectPreviousRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,              HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_UP,           HTGT.SHIFT            ), "selectPreviousRowExtendSelection");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,            HTGT.NONE             ), "selectNextRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,         HTGT.NONE             ), "selectNextRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,            HTGT.SHIFT            ), "selectNextRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_DOWN,         HTGT.SHIFT            ), "selectNextRowExtendSelection");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.NONE             ), "selectFirstRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.CTRL             ), "selectFirstRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.SHIFT            ), "selectFirstRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_HOME,            HTGT.SHIFT + HTGT.CTRL), "selectFirstRowExtendSelection");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.NONE             ), "selectLastRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.CTRL             ), "selectLastRow");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.SHIFT            ), "selectLastRowExtendSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_END,             HTGT.SHIFT + HTGT.CTRL), "selectLastRowExtendSelection");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,          HTGT.NONE             ), "clearSelection");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A,               HTGT.CTRL             ), "selectAll");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DIVIDE ,         HTGT.NONE             ), "moveGhostsToProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_MULTIPLY ,       HTGT.NONE             ), "copyGhostsToProfile");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT ,       HTGT.NONE             ), "selectPreviousGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_LEFT,         HTGT.NONE             ), "selectPreviousGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS,           HTGT.NONE             ), "selectPreviousGameProfile");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ADD,             HTGT.NONE             ), "selectNextGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_KP_RIGHT,        HTGT.NONE             ), "selectNextGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PLUS,            HTGT.NONE             ), "selectNextGameProfile");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA,           HTGT.NONE             ), "selectSpecialGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD,          HTGT.NONE             ), "selectSpecialGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DECIMAL,         HTGT.NONE             ), "selectSpecialGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SEPARATOR,       HTGT.NONE             ), "selectSpecialGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_CIRCUMFLEX,      HTGT.NONE             ), "selectSpecialGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DEAD_CIRCUMFLEX, HTGT.NONE             ), "selectSpecialGameProfile");
-
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_NUMBER_SIGN,     HTGT.NONE             ), "selectDefaultGameProfile");
-		inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,           HTGT.NONE             ), "selectRegularGameProfile");
-
-		action = new HTGT_ActionListener();
-		action.setPrivateAction("moveGhosts");
-		actionMap.put("moveGhostsToProfile", action);
-
-		action = new HTGT_ActionListener();
-		action.setPrivateAction("copyGhosts");
-		actionMap.put("copyGhostsToProfile", action);
-
-		action = new HTGT_ActionListener();
-		action.setPrivateAction("selectPrevProfile");
-		actionMap.put("selectPreviousGameProfile", action);
-
-		action = new HTGT_ActionListener();
-		action.setPrivateAction("selectNextProfile");
-		actionMap.put("selectNextGameProfile", action);
-
-		action = new HTGT_ActionListener();
-		action.setPrivateAction("selectDefaultProfile");
-		actionMap.put("selectDefaultGameProfile", action);
-
-		action = new HTGT_ActionListener();
-		action.setPrivateAction("selectRegularProfile");
-		actionMap.put("selectRegularGameProfile", action);
-
-		action = new HTGT_ActionListener();
-		action.setPrivateArguments(new Object[]{-1});
-		action.setPrivateAction("selectProfileByNumber");
-		actionMap.put("selectSpecialGameProfile", action);
-
-		for(int i = 0; i < 10; i++)
-		{
-			try
-			{
-				inputMap.put(KeyStroke.getKeyStroke(KeyEvent.class.getField("VK_NUMPAD" + i).getInt(null), HTGT.NONE), "selectGameProfileWithNumber" + i);
-				inputMap.put(KeyStroke.getKeyStroke(KeyEvent.class.getField("VK_" + i).getInt(null), HTGT.NONE), "selectGameProfileWithNumber" + i);
-
-				action = new HTGT_ActionListener();
-				action.setPrivateArguments(new Object[]{i});
-				action.setPrivateAction("selectProfileByNumber");
-				actionMap.put("selectGameProfileWithNumber" + i, action);
-			}
-			catch(NoSuchFieldException|IllegalAccessException e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		//getColumnModel().addColumnModelListener(this);
-		getModel().addTableModelListener(this);
-	}
-
-	public void test123()
-	{
-		FNX.dbg("hello world");
-	}
-
-	@Override
-	public TableCellRenderer getCellRenderer(int row, int column)
-	{
-		if(column == 0)
-		{
-			return renderLeft;
-		}
-		else if(column == 5)
-		{
-			return renderRight;
-		}
-		else
-		{
-			return renderCenter;
-		}
-	}
-
-	@Override
-	public boolean isCellEditable(int row, int column)
-	{
-		return false;
-	}
-}
-
-class HTGT_WindowAdapter extends WindowAdapter
-{
-	@Override
-	public void windowClosing(WindowEvent windowEvent)
-	{
-		HTGT.quit();
-	}
-}
-
-class HTGT_Background implements Runnable
-{
-	public static final int EXEC_UPDATECHECK = 1;
-	public static final int EXEC_DLLCHECK    = 3;
-
-	private int exec;
-
-	public HTGT_Background(int exec)
-	{
-		this.exec = exec;
-	}
-
-	@Override
-	public void run()
-	{
-		switch(this.exec)
-		{
-			case EXEC_UPDATECHECK:
-				HTGT.updateCheck(false, true);
-				break;
-
-			case EXEC_DLLCHECK:
-				HTGT.updateCheckDLL(false, true);
-				break;
-		}
-	}
-}
-
-class HTGT_SelectionHandler implements ListSelectionListener
-{
-	public void valueChanged(ListSelectionEvent e)
-	{
-		ListSelectionModel lsm = (ListSelectionModel) e.getSource();
-
-		if(!e.getValueIsAdjusting())
-		{
-			if(lsm.isSelectionEmpty())
-			{
-				FNX.dbg("No selection available - disabling menus...");
-				HTGT.updateSelectionMenuItems(false);
-			}
-			else
-			{
-				FNX.dbg("Selection available - enabling menus...");
-				HTGT.updateSelectionMenuItems(true);
-			}
-		}
-	}
-}
-
-class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
-{
-	private File fileHandle;
-	private boolean initState;
-	private boolean queueState;
-	private boolean firstRun;
-	private FileTime oldTime;
-	private FileTime newTime;
-	private int currentTime;
-
-	public void setFile(File f)
-	{
-		fileHandle = f;
-	}
-
-	public void firstRun()
-	{
-		firstRun = true;
-
-		secondRun();
-	}
-
-	public void secondRun()
-	{
-		execute();
-	}
-
-	protected Integer doInBackground() throws IOException, InterruptedException
-	{
-		if(fileHandle == null)
-		{
-			throw new IllegalStateException("FFM not initialized");
-		}
-
-		// Ein schmutziger Hack, damit auf jeden Fall die GUI bereits
-		// blockiert ist. Andernfalls könnte das zu unschönen Race-
-		// Conditions führen, die noch nicht abgefangen werden.
-		Thread.sleep(HTGT.FF_OBSERVER_DELAY);
-
-		// Durch diesen kleinen Hack wird die Datei beim Start
-		// auf jeden Fall einmal neu eingelesen. Dadurch sollte
-		// es keine Probleme mehr geben, wenn User den FFM erst
-		// zu spät starten. Wenn es keine Änderungen gibt, macht
-		// das nichts, da das sowieso im Hintergrund passiert...
-		oldTime = Files.getLastModifiedTime(fileHandle.toPath());
-		FNX.dbgf("FFM background thread started: o=%d", oldTime.toMillis());
-
-		if(firstRun)
-		{
-			FNX.dbg("This is the first run, triggering now!");
-			publish((int) (oldTime.toMillis() / 1000) * -1);
-
-			firstRun = false;
-		}
-		else
-		{
-			FNX.dbg("This is not the first run...");
-			publish((int) (oldTime.toMillis() / 1000));
-		}
-
-		int m;
-		while(true)
-		{
-			if(HTGT.ENABLE_WATCHSERVICE)
-			{
-				FNX.dbg("Preparing watchservice...");
-
-				WatchService watchService = FileSystems.getDefault().newWatchService();
-
-				File file = HTGT.getFile();
-				String basename = file.getName();
-
-				Path path = Paths.get(file.getParent().toString());
-				path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
-
-				FNX.dbg("Waiting for first event...");
-
-				WatchKey key;
-				Long last = 0L;
-				while((key = watchService.take()) != null)
-				{
-					for(WatchEvent<?> event : key.pollEvents())
-					{
-						if(basename.equals(event.context().toString()))
-						{
-							newTime = Files.getLastModifiedTime(fileHandle.toPath());
-
-							if(newTime.toMillis() > last)
-							{
-								last = newTime.toMillis();
-
-								if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
-								{
-									publish((int) (newTime.toMillis() / 1000));
-									Thread.sleep(HTGT.FF_OBSERVER_DELAY);
-
-									newTime = Files.getLastModifiedTime(fileHandle.toPath());
-
-									if(newTime.toMillis() > last)
-									{
-										FNX.dbgf("Watchservice event delayed: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
-
-										continue;
-									}
-								}
-
-								FNX.dbgf("Watchservice event received: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
-								publish((int) (newTime.toMillis() / 1000) * -1);
-								oldTime = newTime;
-							}
-							else
-							{
-								FNX.dbgf("Watchservice event ignored: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
-							}
-						}
-					}
-					key.reset();
-				}
-				break;
-			}
-			else
-			{
-				newTime = Files.getLastModifiedTime(fileHandle.toPath());
-				m = 1;
-
-				if(newTime.compareTo(oldTime) > 0)
-				{
-					// Durch diesen Teil sparen wir uns die Wartezeit vor dem Laden der XML-Datei.
-					// Dadurch soll sichergestell werden, dass das Spiel mit dem Speichern fertig ist.
-					// Klar, das ist auch kein 100% Schutz und es gibt zig andere problematische Stellen.
-					// Aber es ist ein grundlegender Schutz, dass wir keine halbfertigen Dateien einlesen.
-					if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
-					{
-						FNX.dbgf("File modification time changed, but it's too early: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
-					}
-					else
-					{
-						FNX.dbgf("File modification time changed: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
-						oldTime = newTime;
-						m = -1;
-					}
-				}
-
-				publish((int) (newTime.toMillis() / 1000) * m);
-				Thread.sleep(HTGT.FF_CHECK_INTERVAL);
-			}
-		}
-
-		return 0;
-	}
-
-	protected void process(List<Integer> chunks)
-	{
-		int modificationTime = 0;
-		boolean invokeCheck = false;
-
-		for(int i = 0; i < chunks.size(); i++)
-		{
-			int chunk = chunks.get(i);
-
-			if(chunk < 0)
-			{
-				invokeCheck = true;
-				modificationTime = chunk * -1;
-			}
-			else
-			{
-				modificationTime = chunk;
-
-				if(currentTime != modificationTime)
-				{
-					initState = false;
-				}
-			}
-
-			currentTime = modificationTime;
-		}
-
-		if(isCancelled())
-		{
-			FNX.dbg("Already cancelled!");
-		}
-		else if(invokeCheck || queueState)
-		{
-			if(queueState)
-			{
-				FNX.dbg("Executing earlier queue request(s)...");
-			}
-
-			if(!HTGT.fastFollowAnalyze())
-			{
-				FNX.dbg("Worker thread busy, waiting for next run...");
-
-				queueState = true;
-			}
-			else
-			{
-				HTGT.fastFollowStatus(modificationTime);
-
-				queueState = false;
-				initState = true;
-			}
-		}
-		else if(!initState)
-		{
-			HTGT.fastFollowStatus(modificationTime);
-			initState = true;
-		}
-	}
-
-	protected void done()
-	{
-		try
-		{
-			get();
-		}
-		catch(CancellationException e)
-		{
-			FNX.dbg("FFM background thread stopped.");
-		}
-		catch(InterruptedException e)
-		{
-			FNX.dbg("FFM background thread interrupted.");
-			e.printStackTrace();
-		}
-		catch(ExecutionException e)
-		{
-			HTGT.exceptionHandler(e);
-		}
-
-		HTGT.fastFollowStop();
-
-		FNX.dbg("FFM background thread finished.");
-	}
-}
-
-class HTGT_FFM_Analyst extends SwingWorker<Integer,Integer>
-{
-	public HTGT_FFM_Analyst()
-	{
-		HTGT.fastFollowLock();
-	}
-
-	protected Integer doInBackground() throws Exception
-	{
-		FNX.dbg("FFM evaluation thread started.");
-
-		return HTGT.fastFollowEvaluation();
-	}
-
-	protected void done()
-	{
-		try
-		{
-			Integer result = get();
-
-			if(result < 1)
-			{
-				HTGT.fastFollowStop();
-			}
-			else
-			{
-				HTGT.fastFollowStatus();
-			}
-		}
-		catch(CancellationException e)
-		{
-			FNX.dbg("FFM evaluation thread stopped.");
-		}
-		catch(InterruptedException e)
-		{
-			FNX.dbg("FFM evaluation thread interrupted.");
-			e.printStackTrace();
-		}
-		catch(ExecutionException e)
-		{
-			FNX.dbg("FFM evaluation thread caused an exception...");
-
-			HTGT.fastFollowStop();
-
-			if(e.getCause() instanceof eSportsAPIException)
-			{
-				HTGT.APIError((eSportsAPIException) e.getCause());
-			}
-			else
-			{
-				HTGT.exceptionHandler(e);
-			}
-		}
-
-		HTGT.fastFollowUnlock();
-
-		FNX.dbg("FFM evaluation thread finished.");
-	}
-}
-
-// Wird benötigt, damit der benutzerdefinierte Button eine Funktion hat.
-class HTGT_FFM_ActionListener implements ActionListener
-{
-	public void actionPerformed(ActionEvent e)
-	{
-		FNX.dbg("Button clicked");
-		HTGT.fastFollowStop(false);
-	}
-}
-
-// Wird benötigt, damit wirklich jeder Ausstieg deaktiviert werden kann.
-class HTGT_FFM_KeyListener extends KeyAdapter /*implements KeyListener*/
-{
-	private boolean disable;
-
-	public void enable()
-	{
-		disable = false;
-	}
-
-	public void disable()
-	{
-		disable = true;
-	}
-
-	public void keyPressed(KeyEvent e)
-	{
-		if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
-		{
-			if(disable)
-			{
-				FNX.dbg("Ignoring VK_ESCAPE event");
-				e.consume();
-			}
-			else
-			{
-				FNX.dbg("VK_ESCAPE event triggered");
-				HTGT.fastFollowStop(false);
-			}
-		}
-	}
-}
-
-// Wird für zusätzliche Hotkeys ohne Menüeintrag benötigt.
-@SuppressWarnings("serial")
-class HTGT_ActionListener extends AbstractAction
-{
-	private String action;
-	private Object[] args;
-
-	public void setPrivateAction(String m)
-	{
-		action = m;
-	}
-
-	public void setPrivateArguments(Object[] a)
-	{
-		args = a;
-	}
-
-	public void actionPerformed(ActionEvent e)
-	{
-		if(action != null)
-		{
-			FNX.actionCallback("HTGT", action, args);
-		}
-	}
-}
-
 // TODO: Echte Sortierung der Tabelle ermöglichen? Dafür bräuchten wir
 // aber die einzelnen Geister irgendwo versteckt in der Tabelle, oder?
 // https://docs.oracle.com/javase/tutorial/uiswing/components/table.html#sorting
 // ...
 
 // TODO: Menüfunktion (Hilfe), um den Pfad der aktuellen Datei in die Zwischenablage zu kopieren?
-// ...
-
-// Note: FNX_ContextMenu.java uses or overrides a deprecated API.
 // ...
 
 // Ich glaube, der FFM hat ein kleines Problem.
