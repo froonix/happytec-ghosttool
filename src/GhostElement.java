@@ -1,6 +1,6 @@
 /**
  * GhostElement.java: Representation of GhostDataPair
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -107,7 +107,7 @@ public class GhostElement
 			GhostsPattern = Pattern.compile("(<GhostDataPair[^>]+>)", Pattern.CASE_INSENSITIVE);
 		}
 
-		ArrayList<GhostElement> Ghosts = new ArrayList<GhostElement>();
+		ArrayList<GhostElement> Ghosts = new ArrayList<>();
 		Matcher GhostsMatcher = GhostsPattern.matcher(xml);
 
 		while(GhostsMatcher.find())
@@ -154,7 +154,7 @@ public class GhostElement
 
 		if(GhostPattern == null)
 		{
-			this.GhostPattern = Pattern.compile("\030.\042.(?:\010(?<c>.))?(?:\020(?<g>.))?(?:\030(?<s>.))?\042..+?\\\050.\060.(?:\010(?<b>.{1,5})\\\052)?.*?\062.\012.(?<n>.{1,32})\022\016(?<e>.{1,32})\030(?<v>.)\100.$", Pattern.DOTALL);
+			GhostPattern = Pattern.compile("\030.\042.(?:\010(?<c>.))?(?:\020(?<g>.))?(?:\030(?<s>.))?\042..+?\\\050.\060.(?:\010(?<b>.{1,5})\\\052)?.*?\062.\012.(?<n>.{1,32})\022\016(?<e>.{1,32})\030(?<v>.)\100.$", Pattern.DOTALL);
 		}
 
 		try
@@ -193,7 +193,7 @@ public class GhostElement
 
 			// Normalerweise gehört das mit Google's Protocol Buffers extrahiert.
 			// Ich habe aber keine Lust das zu implementieren, wenn es auch so geht.
-			Matcher m = this.GhostPattern.matcher(new String(this.DataBinary, "ISO-8859-1"));
+			Matcher m = GhostPattern.matcher(new String(this.DataBinary, "ISO-8859-1"));
 
 			if(m.find())
 			{
@@ -210,7 +210,7 @@ public class GhostElement
 				};
 			}
 
-			if(this.Nickname == null || !this.Nickname.matches("^(?i)[A-Z0-9_]{1,20}$"))
+			if(this.Nickname == null /*|| !this.Nickname.matches("^(?i)[A-Z0-9_]{1,20}$")*/)
 			{
 				throw new GhostException("GhostData: Missing or invalid nickname");
 			}
@@ -347,17 +347,16 @@ public class GhostElement
 	{
 		try
 		{
-			System.out.printf("--------------------------------%n");
-			System.out.printf(" Nick:    %s%n", this.getNickname());
-			System.out.printf(" Time:    %s (%d)%n", this.getResult(), this.getTime());
-			System.out.printf(" Track:   [%s] %s%n", this.getTrack().toUpperCase(), this.getTrackName());
-			System.out.printf(" Weather: [%s] %s (%d)%n", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
-			System.out.printf(" Mode:    [%s] %s (%d)%n", gmHelper.getGameMode(this.GameMode).toUpperCase(), this.getGameModeName(), this.getGameMode());
-			System.out.printf(" Ski:     %d-%d-%d%n", this.Ski[0], this.Ski[1], this.Ski[2]);
-			System.out.printf(" Ticket:  %s%n", this.Ticket ? "Yes" : "No");
-			System.out.printf(" Hash:    %s%n", this.getHash());
-			// System.out.printf("%n%s%n", DataRaw);
-			System.out.printf("--------------------------------%n");
+			FNX.dbgf("--------------------------------");
+			FNX.dbgf(" Nick:    %s", this.getNickname());
+			FNX.dbgf(" Time:    %s (%d)", this.getResult(), this.getTime());
+			FNX.dbgf(" Track:   [%s] %s", this.getTrack().toUpperCase(), this.getTrackName());
+			FNX.dbgf(" Weather: [%s] %s (%d)", gmHelper.getWeather(this.Weather).toUpperCase(), this.getWeatherName(), this.getWeather());
+			FNX.dbgf(" Mode:    [%s] %s (%d)", gmHelper.getGameMode(this.GameMode).toUpperCase(), this.getGameModeName(), this.getGameMode());
+			FNX.dbgf(" Ski:     %d-%d-%d", this.Ski[0], this.Ski[1], this.Ski[2]);
+			FNX.dbgf(" Ticket:  %s", this.Ticket ? "Yes" : "No");
+			FNX.dbgf(" Hash:    %s", this.getHash());
+			FNX.dbgf("--------------------------------");
 		}
 		catch(gmException e)
 		{
@@ -385,7 +384,7 @@ public class GhostElement
 	{
 		try
 		{
-			return FNX.getWinNL(FNX.getStringFromDOM(this.XML, false));
+			return FNX.getWinNL(FNX.getCleanXML(this.XML));
 		}
 		catch(Exception e)
 		{

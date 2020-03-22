@@ -1,6 +1,6 @@
 /**
  * FNX_UIDefaults.java: Context menu for everything
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import javax.swing.plaf.ComponentUI;
 
 import javax.swing.text.JTextComponent;
 
+@SuppressWarnings("serial")
 class FNX_UIDefaults extends UIDefaults
 {
 	@Override

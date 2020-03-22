@@ -1,6 +1,6 @@
 /**
  * OfflineProfiles.java: Representation of OfflineProfiles.xml
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,8 +113,8 @@ public class OfflineProfiles
 		this.OfflineProfile  = null;
 
 		// xsi:type="GameOfflineProfile"
-		this.OfflineProfiles = document.getElementsByTagName(this.XML_TAG_PROFILE);
-		NodeList DefaultProfiles = document.getElementsByTagName(this.XML_TAG_DEFAULT);
+		this.OfflineProfiles = document.getElementsByTagName(XML_TAG_PROFILE);
+		NodeList DefaultProfiles = document.getElementsByTagName(XML_TAG_DEFAULT);
 
 		if(this.getProfileCount() == 0 && DefaultProfiles.getLength() == 0)
 		{
@@ -183,7 +183,7 @@ public class OfflineProfiles
 
 	public int[] getGhostsByCondition(int mode, String track, int weather)
 	{
-		ArrayList<Integer> ghosts = new ArrayList<Integer>();
+		ArrayList<Integer> ghosts = new ArrayList<>();
 
 		for(int i = 0; i < this.getGhostCount(); i++)
 		{
@@ -245,32 +245,34 @@ public class OfflineProfiles
 		return result;
 	}
 
-	// Gibt im Gegensatz zu getAllGhosts() wirklich
-	// alle Geister zurück, auch mehrere je Bedingung.
-	public ArrayList<GhostElement>[][][] getGhostList()
+	// Gibt im Gegensatz zu getAllGhosts() wirklich alle Geister zurück, auch mehrere je Bedingung.
+	public ArrayList<ArrayList<ArrayList<ArrayList<GhostElement>>>> getGhostList()
 	{
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs();
 
-		ArrayList<GhostElement> result[][][] = new ArrayList[modes.length][tracks.length][weathers.length];
+		ArrayList<ArrayList<ArrayList<ArrayList<GhostElement>>>> result = new ArrayList<ArrayList<ArrayList<ArrayList<GhostElement>>>>(modes.length);
 
 		for(int m = 0; m < modes.length; m++)
 		{
+			ArrayList<ArrayList<ArrayList<GhostElement>>> mi = new ArrayList<ArrayList<ArrayList<GhostElement>>>(tracks.length);
+			result.add(mi);
+
 			for(int t = 0; t < tracks.length; t++)
 			{
+				ArrayList<ArrayList<GhostElement>> ti = new ArrayList<ArrayList<GhostElement>>(weathers.length);
+				mi.add(ti);
+
 				for(int w = 0; w < weathers.length; w++)
 				{
-					if(result[m][t][w] == null)
-					{
-						result[m][t][w] = new ArrayList<GhostElement>();
-					}
-
 					int[] ghosts = this.getGhostsByCondition(modes[m], tracks[t], weathers[w]);
+					ArrayList<GhostElement> wi = new ArrayList<>(ghosts.length);
+					ti.add(wi);
 
 					for(int i = 0; i < ghosts.length; i++)
 					{
-						result[m][t][w].add(this.getGhost(ghosts[i]));
+						wi.add(this.getGhost(ghosts[i]));
 					}
 				}
 			}
@@ -323,7 +325,7 @@ public class OfflineProfiles
 
 			if(i == this.defaultProfile())
 			{
-				profile = (Element) DefaultProfile;
+				profile = DefaultProfile;
 			}
 			else
 			{
@@ -338,14 +340,14 @@ public class OfflineProfiles
 
 	private Node getNickNode(Element profile) throws ProfileException
 	{
-		NodeList nick = profile.getElementsByTagName(this.XML_TAG_NICK);
+		NodeList nick = profile.getElementsByTagName(XML_TAG_NICK);
 
 		if(nick.getLength() > 0)
 		{
 			return nick.item(0);
 		}
 
-		throw new ProfileException(String.format("No <%s> tag in profile", this.XML_TAG_NICK));
+		throw new ProfileException(String.format("No <%s> tag in profile", XML_TAG_NICK));
 	}
 
 	public int getProfileByNick(String nickname)
@@ -390,13 +392,13 @@ public class OfflineProfiles
 		// Siehe auch die Verwendung von VERSION_FILE in HTGT.getVersion()!
 		// ...
 
-		String xml = String.format("<OfflineProfile xsi:type=\"GameOfflineProfile\"><Nickname>%s</Nickname><Token>%s</Token><ReceivedAchievements>false</ReceivedAchievements><TrainingGhosts /><DuelReplays /><DuelNicks /><IgnoredFriendDuels /><IgnoredOpenFriends /><PendingPts /><PendingDuelSelection><DuelSelection /></PendingDuelSelection></OfflineProfile>", nickname, this.DEFAULT_TOKEN);
+		String xml = String.format("<OfflineProfile xsi:type=\"GameOfflineProfile\"><Nickname>%s</Nickname><Token>%s</Token><ReceivedAchievements>false</ReceivedAchievements><TrainingGhosts /><DuelReplays /><DuelNicks /><IgnoredFriendDuels /><IgnoredOpenFriends /><PendingPts /><PendingDuelSelection><DuelSelection /></PendingDuelSelection></OfflineProfile>", nickname, DEFAULT_TOKEN);
 
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
 		Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
-		NodeList profileNodes = profileDoc.getElementsByTagName(this.XML_TAG_PROFILE);
+		NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
 
 		if(profileNodes.getLength() != 1)
 		{
@@ -406,7 +408,7 @@ public class OfflineProfiles
 		Element profileElement = (Element) profileNodes.item(0);
 		Node importedNode = this.document.importNode(profileElement, true);
 
-		NodeList profilesNodes = this.document.getElementsByTagName(this.XML_TAG_PROFILES);
+		NodeList profilesNodes = this.document.getElementsByTagName(XML_TAG_PROFILES);
 
 		if(profilesNodes.getLength() == 0)
 		{
@@ -490,13 +492,13 @@ public class OfflineProfiles
 
 	public String getToken() throws ProfileException
 	{
-		NodeList token = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
+		NodeList token = this.OfflineProfile.getElementsByTagName(XML_TAG_TOKEN);
 
 		if(token.getLength() > 0)
 		{
 			String t = ((Element) token.item(0)).getTextContent();
 
-			if(!t.equalsIgnoreCase(this.DEFAULT_TOKEN))
+			if(!t.equalsIgnoreCase(DEFAULT_TOKEN))
 			{
 				return t;
 			}
@@ -507,7 +509,7 @@ public class OfflineProfiles
 
 	public void setToken(String token) throws Exception
 	{
-		NodeList TokenNode = this.OfflineProfile.getElementsByTagName(this.XML_TAG_TOKEN);
+		NodeList TokenNode = this.OfflineProfile.getElementsByTagName(XML_TAG_TOKEN);
 		Element TokenElement = null;
 		boolean create = false;
 
@@ -522,12 +524,12 @@ public class OfflineProfiles
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
 			Document doc = dBuilder.newDocument();
-			TokenElement = doc.createElement(this.XML_TAG_TOKEN);
+			TokenElement = doc.createElement(XML_TAG_TOKEN);
 
 			create = true;
 		}
 
-		token = (token != null) ? token : this.DEFAULT_TOKEN;
+		token = (token != null) ? token : DEFAULT_TOKEN;
 		TokenElement.setTextContent(token);
 		this.changed = true;
 
@@ -559,25 +561,25 @@ public class OfflineProfiles
 
 		if(this.profile == this.defaultProfile())
 		{
-			this.OfflineProfile = (Element) DefaultProfile;
+			this.OfflineProfile = DefaultProfile;
 		}
 		else
 		{
 			this.OfflineProfile = (Element) OfflineProfiles.item(this.profile);
 		}
 
-		NodeList GhostNodes = this.OfflineProfile.getElementsByTagName(this.XML_TAG_GHOSTS);
-		this.GhostElements = new ArrayList<GhostElement>(0);
+		NodeList GhostNodes = this.OfflineProfile.getElementsByTagName(XML_TAG_GHOSTS);
+		this.GhostElements = new ArrayList<>(0);
 
 		if(GhostNodes.getLength() > 0)
 		{
 			this.TrainingNode = GhostNodes.item(0);
 			this.TrainingElement = (Element) this.TrainingNode;
-			this.TrainingGhosts = this.TrainingElement.getElementsByTagName(this.XML_TAG_GHOST);
+			this.TrainingGhosts = this.TrainingElement.getElementsByTagName(XML_TAG_GHOST);
 
 			if(this.getGhostCount() > 0)
 			{
-				this.GhostElements = new ArrayList<GhostElement>(this.getGhostCount());
+				this.GhostElements = new ArrayList<>(this.getGhostCount());
 
 				for(int i = 0; i < this.getGhostCount(); i++)
 				{

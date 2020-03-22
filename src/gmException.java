@@ -1,6 +1,6 @@
 /**
  * gmException.java: gmHelper exception
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+@SuppressWarnings("serial")
 public class gmException extends Exception
 {
 	public gmException(String message)

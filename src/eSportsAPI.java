@@ -1,6 +1,6 @@
 /**
  * eSportsAPI.java: HAPPYTEC-eSports-API interface
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ import java.net.URL;
 
 import java.text.ParseException;
 
+import java.time.Instant;
+
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,6 +69,7 @@ public class eSportsAPI
 	private String useragent;
 	private String osdata;
 
+	private ArrayList<HashMap<String,Object>> lastResultDestinations;
 	private final static int RESULT_TYPE_NEXT = 0;
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
@@ -135,11 +138,16 @@ public class eSportsAPI
 		return this.lastTypeIndex[RESULT_TYPE_PREV];
 	}
 
+	public ArrayList<HashMap<String,Object>> getLastResultDestinations()
+	{
+		return this.lastResultDestinations;
+	}
+
 	public GhostElement getGhostByID(int id) throws eSportsAPIException
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("byID", id);
 
 			return new GhostElement(this.request("OFFLINE", "ghost.get", args));
@@ -154,7 +162,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			StringBuilder value = new StringBuilder();
 
 			for(int i = 0; i < ids.length; i++)
@@ -195,7 +203,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			StringBuilder data = new StringBuilder();
 
 			for(int i = 0; i < ghosts.length; i++)
@@ -226,9 +234,12 @@ public class eSportsAPI
 
 	public List<Map<String,Object>> getExtendedGhostIDs(GhostElement[] ghosts) throws eSportsAPIException
 	{
+		// TODO: Cache implementieren?
+		// ...
+
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			StringBuilder data = new StringBuilder();
 
 			for(int i = 0; i < ghosts.length; i++)
@@ -249,19 +260,19 @@ public class eSportsAPI
 				throw new eSportsAPIException("SERVER_DUMB");
 			}
 
-			List<Map<String,Object>> info = new ArrayList<Map<String,Object>>(GhostNodes.getLength());
+			List<Map<String,Object>> info = new ArrayList<>(GhostNodes.getLength());
 
 			for(int i = 0; i < GhostNodes.getLength(); i++)
 			{
 				Element ghost = (Element) GhostNodes.item(i);
-				Map<String,Object> hm = new HashMap<String,Object>(3);
+				Map<String,Object> hm = new HashMap<>(3);
 
 				hm.put("GhostID", Integer.parseInt(ghost.getAttribute("ID")));
 				hm.put("Applicable", (!ghost.hasAttribute("Applicable") || !ghost.getAttribute("Applicable").equalsIgnoreCase("false")) ? 1 : 0);
 
 				if(!ghost.hasAttribute("FO"))
 				{
-					hm.put("FilterOption", ghosts[i].hasTicket() ? this.FO_TICKET : this.FO_NONE);
+					hm.put("FilterOption", ghosts[i].hasTicket() ? FO_TICKET : FO_NONE);
 				}
 				else
 				{
@@ -283,7 +294,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("ghostID", Integer.toString(ghostID));
 			String result = this.request("OFFLINE", "result.apply", args);
 
@@ -317,9 +328,11 @@ public class eSportsAPI
 
 	public int applyResultByGhostIDExtended(int ghostID) throws eSportsAPIException
 	{
+		lastResultDestinations = null;
+
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("ghostID", Integer.toString(ghostID));
 			args.put("includePosition", "true");
 
@@ -336,6 +349,182 @@ public class eSportsAPI
 				if(id == ghostID)
 				{
 					NodeList position = doc.getElementsByTagName("ExpectedPosition");
+					NodeList destinationsNode = doc.getElementsByTagName("ResultDestinations");
+
+					if(destinationsNode.getLength() > 0)
+					{
+						Element destinationsElement = (Element) destinationsNode.item(0);
+						NodeList destinationsList = destinationsElement.getElementsByTagName("ResultDestination");
+						lastResultDestinations = new ArrayList<>(destinationsList.getLength());
+
+						for(int i = 0; i < destinationsList.getLength(); i++)
+						{
+							String t, n; t = n = null;
+							boolean de, ae, ad, pt, r, x, s; de = ae = ad = pt = r = x = s = false;
+							int tID, b, a, gID, or, op, nr, np, g, w; tID = gID = b = a = or = op = nr = np = g = w = -1;
+							HashMap<String,Object> item = new HashMap<>();
+
+							Element destination = (Element) destinationsList.item(i);
+							NodeList trackNode = destination.getElementsByTagName("Track");
+							NodeList groupNode = destination.getElementsByTagName("Group");
+							NodeList stateNode = destination.getElementsByTagName("ResultState");
+							NodeList oldResultNode = destination.getElementsByTagName("OldResult");
+							NodeList newResultNode = destination.getElementsByTagName("NewResult");
+
+							if(stateNode.getLength() > 0)
+							{
+								Element stateElement = (Element) stateNode.item(0);
+								NodeList duplicate = stateElement.getElementsByTagName("Duplicate");
+								NodeList applicable = stateElement.getElementsByTagName("Applicable");
+								NodeList applied = stateElement.getElementsByTagName("Applied");
+
+								if(duplicate.getLength() > 0 && duplicate.item(0).getTextContent().equalsIgnoreCase("true"))
+								{
+									de = true;
+								}
+
+								if(applicable.getLength() > 0 && applicable.item(0).getTextContent().equalsIgnoreCase("true"))
+								{
+									ae = true;
+								}
+
+								if(applied.getLength() > 0 && applied.item(0).getTextContent().equalsIgnoreCase("true"))
+								{
+									ad = true;
+								}
+							}
+
+							if(oldResultNode.getLength() > 0)
+							{
+								Element oldResultElement = (Element) oldResultNode.item(0);
+								NodeList oldResult = oldResultElement.getElementsByTagName("Result");
+								NodeList oldPosition = oldResultElement.getElementsByTagName("Position");
+
+								if(oldResult.getLength() > 0 && oldPosition.getLength() > 0)
+								{
+									or = FNX.intval(oldResult.item(0).getTextContent(), true);
+									op = FNX.intval(oldPosition.item(0).getTextContent(), true);
+								}
+							}
+
+							if(newResultNode.getLength() > 0)
+							{
+								Element newResultElement = (Element) newResultNode.item(0);
+								NodeList newResult = newResultElement.getElementsByTagName("Result");
+								NodeList newPosition = newResultElement.getElementsByTagName("Position");
+
+								if(newResult.getLength() > 0 && newPosition.getLength() > 0)
+								{
+									nr = FNX.intval(newResult.item(0).getTextContent(), true);
+									np = FNX.intval(newPosition.item(0).getTextContent(), true);
+								}
+							}
+
+							if(trackNode.getLength() > 0)
+							{
+								Element trackElement = (Element) trackNode.item(0);
+								NodeList trackID = trackElement.getElementsByTagName("TrackID");
+								NodeList begin = trackElement.getElementsByTagName("Begin");
+								NodeList end = trackElement.getElementsByTagName("End");
+								t = trackElement.getAttribute("Track");
+
+								try
+								{
+									g = gmHelper.parseGameMode(trackElement.getAttribute("GameMode"));
+									w = gmHelper.parseWeather(trackElement.getAttribute("Weather"));
+								}
+								catch(gmException e)
+								{
+									throw new eSportsAPIException(e);
+								}
+
+								if(trackElement.getAttribute("Race").equalsIgnoreCase("true"))
+								{
+									r = true;
+								}
+
+								if(trackElement.getAttribute("Ticket").equalsIgnoreCase("true"))
+								{
+									x = true;
+								}
+
+								if(trackElement.getAttribute("SUC").equalsIgnoreCase("true"))
+								{
+									s = true;
+								}
+
+								if(trackElement.getAttribute("PT").equalsIgnoreCase("true") && groupNode.getLength() > 0)
+								{
+									Element groupElement = (Element) groupNode.item(0);
+									NodeList name = groupElement.getElementsByTagName("Name");
+									NodeList groupID = groupElement.getElementsByTagName("GroupID");
+
+									if(groupID.getLength() > 0)
+									{
+										gID = Integer.parseInt(groupID.item(0).getTextContent());
+									}
+
+									if(name.getLength() > 0)
+									{
+										n = name.item(0).getTextContent();
+									}
+
+									pt = true;
+								}
+
+								if(trackID.getLength() > 0)
+								{
+									tID = Integer.parseInt(trackID.item(0).getTextContent());
+								}
+
+								if(begin.getLength() > 0)
+								{
+									b = Integer.parseInt(begin.item(0).getTextContent());
+								}
+
+								if(end.getLength() > 0)
+								{
+									a = Integer.parseInt(end.item(0).getTextContent());
+								}
+							}
+
+							if(tID < 0)
+							{
+								throw new ParserConfigurationException("Missing or invalid <TrackID> tag in reply");
+							}
+
+							item.put("GhostID", ghostID);
+							item.put("Time", Instant.now().toEpochMilli() / 1000);
+							item.put("Duplicate", de);
+							item.put("Applicable", ae);
+							item.put("Applied", ad);
+
+							item.put("TrackID", tID);
+							item.put("Begin", b);
+							item.put("End", a);
+
+							item.put("GameMode", g);
+							item.put("Track", t);
+							item.put("Weather", w);
+
+							item.put("Race", r);
+							item.put("Ticket", x);
+							item.put("SUC", s);
+							item.put("PT", pt);
+
+							item.put("GroupID", gID);
+							item.put("GroupName", n);
+
+							item.put("OldResult", or);
+							item.put("OldPosition", op);
+
+							item.put("NewResult", nr);
+							item.put("NewPosition", np);
+
+							//FNX.dbgf("item = %s", item.toString());
+							lastResultDestinations.add(i, item);
+						}
+					}
 
 					if(position.getLength() > 0)
 					{
@@ -366,7 +555,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> values = new HashMap<String,Object>();
+			Map<String,Object> values = new HashMap<>();
 			String result = this.request("OFFLINE", "player.info", null);
 
 			Document doc = FNX.getDOMDocument(result);
@@ -421,7 +610,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("byGameModeID", mode);
 			args.put("byTrack", track);
 			args.put("byWeatherID", weather);
@@ -430,14 +619,14 @@ public class eSportsAPI
 
 			Document doc = FNX.getDOMDocument(result);
 			NodeList OfflineResults = doc.getElementsByTagName("OfflineResult");
-			List<Map<String,Object>> values = new ArrayList<Map<String,Object>>(OfflineResults.getLength());
+			List<Map<String,Object>> values = new ArrayList<>(OfflineResults.getLength());
 
 			if(OfflineResults.getLength() > 0)
 			{
 				for(int i = 0; i < OfflineResults.getLength(); i++)
 				{
 					Element OfflineResult = (Element) OfflineResults.item(i);
-					Map<String,Object> hm = new HashMap<String,Object>(4);
+					Map<String,Object> hm = new HashMap<>(4);
 
 					hm.put("Nickname", OfflineResult.getElementsByTagName("Nickname").item(0).getTextContent());
 					hm.put("Result", Integer.parseInt(OfflineResult.getElementsByTagName("Result").item(0).getTextContent()));
@@ -484,9 +673,9 @@ public class eSportsAPI
 
 		// Es ist intern wesentlich einfacher mit numerischen Schlüsseln zu arbeiten.
 		// Eine Map würde nur unnötigen Overhead erzeugen, der nicht notwendig ist.
-		int results[][][][] = new int[this.FOS][modes.length][tracks.length][weathers.length];
+		int results[][][][] = new int[FOS][modes.length][tracks.length][weathers.length];
 
-		for(int o = 0; o < this.FOS; o++)
+		for(int o = 0; o < FOS; o++)
 		{
 			for(int m = 0; m < modes.length; m++)
 			{
@@ -502,7 +691,7 @@ public class eSportsAPI
 
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 
 			// DO NOT USE FALSE!
 			args.put("includeTicket", "true");
@@ -537,13 +726,13 @@ public class eSportsAPI
 				for(int i = 0; i < OfflineResults.getLength(); i++)
 				{
 					Element OfflineResult = (Element) OfflineResults.item(i);
-					Map<String,Object> hm = new HashMap<String,Object>(4);
+					Map<String,Object> hm = new HashMap<>(4);
 
 					String track = OfflineResult.getAttribute("Track").toLowerCase();
 					String weather = OfflineResult.getAttribute("Weather").toLowerCase();
 					String gamemode = OfflineResult.getAttribute("GameMode").toLowerCase();
 
-					int o = this.FO_NONE;
+					int o = FO_NONE;
 					int m = -1;
 					int t = -1;
 					int w = -1;
@@ -577,11 +766,11 @@ public class eSportsAPI
 
 					if(OfflineResult.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
-						o = this.FO_TICKET;
+						o = FO_TICKET;
 					}
 					else if(OfflineResult.getAttribute("SUC").equalsIgnoreCase("true"))
 					{
-						o = this.FO_SUC;
+						o = FO_SUC;
 					}
 
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t][w] != -1)
@@ -601,7 +790,7 @@ public class eSportsAPI
 		return results;
 	}
 
-	// ACHTUNG: Das erste Array ist nun für this.FO_* reserviert!
+	// ACHTUNG: Das erste Array ist nun für FO_* reserviert!
 	public int[][][] getRaceWeather() throws eSportsAPIException
 	{
 		// TODO: forceOption implementieren!
@@ -610,9 +799,9 @@ public class eSportsAPI
 		int[] modes = gmHelper.getGameModeIDs();
 		String[] tracks = gmHelper.getTracks(true);
 		int[] weathers = gmHelper.getWeatherIDs(true, true, true);
-		int results[][][] = new int[this.FOS][modes.length][tracks.length];
+		int results[][][] = new int[FOS][modes.length][tracks.length];
 
-		for(int o = 0; o < this.FOS; o++)
+		for(int o = 0; o < FOS; o++)
 		{
 			for(int m = 0; m < modes.length; m++)
 			{
@@ -625,7 +814,7 @@ public class eSportsAPI
 
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 
 			// DO NOT USE FALSE!
 			args.put("includeTicket", "true");
@@ -649,7 +838,7 @@ public class eSportsAPI
 					String weather = Track.getAttribute("Weather").toLowerCase();
 					String gamemode = Track.getAttribute("GameMode").toLowerCase();
 
-					int o = this.FO_NONE;
+					int o = FO_NONE;
 					int m = -1;
 					int t = -1;
 					int w = -1;
@@ -715,11 +904,11 @@ public class eSportsAPI
 
 					if(Track.getAttribute("Ticket").equalsIgnoreCase("true"))
 					{
-						o = this.FO_TICKET;
+						o = FO_TICKET;
 					}
 					else if(Track.getAttribute("SUC").equalsIgnoreCase("true"))
 					{
-						o = this.FO_SUC;
+						o = FO_SUC;
 					}
 
 					if(m == -1 || t == -1 || w == -1 || results[o][m][t] != gmHelper.WEATHER_NONE)
@@ -760,7 +949,7 @@ public class eSportsAPI
 	{
 		try
 		{
-			Map<String,Object> args = new HashMap<String,Object>();
+			Map<String,Object> args = new HashMap<>();
 			args.put("autocheck", ((autocheck) ? "true" : "false"));
 			args.put("application", app); args.put("version", version);
 			String result = this.request("OFFLINE", "update.check", args);
@@ -817,7 +1006,7 @@ public class eSportsAPI
 
 		String postdata = (data != null) ? FNX.buildQueryString(data) : "";
 		String url = String.format(API_REQUEST, apihost, API_VERSION, module, method);
-		System.err.printf("HTTP POST: %s (%d byte)%n", url, postdata.length());
+		FNX.dbgf("HTTP POST: %s (%d byte)", url, postdata.length());
 		// System.err.printf("POST DATA: %s%n", postdata);
 
 		try
@@ -867,7 +1056,7 @@ public class eSportsAPI
 			rx.close();
 
 			String content = response.toString();
-			System.err.printf("HTTP %d: %s (%s; %d byte)%n", code, url, msg, content.length());
+			FNX.dbgf("HTTP %d: %s (%s; %d byte)", code, url, msg, content.length());
 
 			if(code != 200)
 			{

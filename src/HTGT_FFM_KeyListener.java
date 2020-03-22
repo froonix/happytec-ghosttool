@@ -1,5 +1,5 @@
 /**
- * FNX_LookAndFeel.java: Context menu for everything
+ * HTGT_FFM_KeyListener.java: Control VK_ESCAPE binding
  * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,45 +17,37 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-import javax.swing.LookAndFeel;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
-public class FNX_LookAndFeel extends LookAndFeel
+class HTGT_FFM_KeyListener extends KeyAdapter
 {
-	private final FNX_UIDefaults defaults = new FNX_UIDefaults();
+	private boolean disable;
 
-	@Override
-	public FNX_UIDefaults getDefaults()
+	public void enable()
 	{
-		return defaults;
-	};
-
-	@Override
-	public String getID()
-	{
-		return "FNX_ContextMenu";
+		disable = false;
 	}
 
-	@Override
-	public String getName()
+	public void disable()
 	{
-		return getID();
+		disable = true;
 	}
 
-	@Override
-	public String getDescription()
+	public void keyPressed(KeyEvent e)
 	{
-		return getID();
-	}
-
-	@Override
-	public boolean isNativeLookAndFeel()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean isSupportedLookAndFeel()
-	{
-		return true;
+		if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
+		{
+			if(disable)
+			{
+				FNX.dbg("Ignoring VK_ESCAPE event");
+				e.consume();
+			}
+			else
+			{
+				FNX.dbg("VK_ESCAPE event triggered");
+				HTGT.fastFollowStop(false);
+			}
+		}
 	}
 }

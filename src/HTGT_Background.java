@@ -1,5 +1,5 @@
 /**
- * FNX_LookAndFeel.java: Context menu for everything
+ * HTGT_Background.java: Legacy thread implementation
  * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,45 +17,33 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-import javax.swing.LookAndFeel;
-
-public class FNX_LookAndFeel extends LookAndFeel
+class HTGT_Background implements Runnable
 {
-	private final FNX_UIDefaults defaults = new FNX_UIDefaults();
+	public static final int EXEC_UPDATECHECK = 1;
+	public static final int EXEC_DLLCHECK    = 3;
 
-	@Override
-	public FNX_UIDefaults getDefaults()
-	{
-		return defaults;
-	};
+	private int exec;
 
-	@Override
-	public String getID()
+	public HTGT_Background(int exec)
 	{
-		return "FNX_ContextMenu";
+		this.exec = exec;
 	}
 
 	@Override
-	public String getName()
+	public void run()
 	{
-		return getID();
-	}
+		switch(this.exec)
+		{
+			case EXEC_UPDATECHECK:
+				HTGT.updateCheck(false, true);
+				break;
 
-	@Override
-	public String getDescription()
-	{
-		return getID();
-	}
-
-	@Override
-	public boolean isNativeLookAndFeel()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean isSupportedLookAndFeel()
-	{
-		return true;
+			case EXEC_DLLCHECK:
+				HTGT.updateCheckDLL(false, true);
+				break;
+		}
 	}
 }
+
+// TODO: Migrate to SwingWorker?
+// ...

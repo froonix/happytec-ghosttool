@@ -1,6 +1,6 @@
 /**
  * gmHelper.java: GentleMagic / Greentube / HAPPYTEC
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ public abstract class gmHelper
 	// Bitte niemals "-1" dafür verwenden!
 	public final static int WEATHER_TICKET = -6;
 	public final static int WEATHER_SUC    = -7;
+	public final static int WEATHER_PT     = -8; // <-- RESERVIERT!
 
 	// ----------------------- //
 	// GentleMagic Wetter IDs: //
@@ -217,6 +218,10 @@ public abstract class gmHelper
 				weatherString = "suc";
 				break;
 
+			case WEATHER_PT:
+				weatherString = "pt";
+				break;
+
 			default:
 				throw new gmException(String.format("Invalid weather type: %d", weatherType));
 		}
@@ -287,6 +292,9 @@ public abstract class gmHelper
 			// Das HAPPYTEC-Format nutzt einen Beistrich.
 			// Andere Implementierungen nutzen einen Punkt.
 			ResultFormat = new SimpleDateFormat("mm:ss,SSS");
+
+			// TODO: Anpassen an Locale?
+			// ...
 		}
 
 		return ResultFormat.format(new Date(ms));
@@ -459,7 +467,7 @@ public abstract class gmHelper
 		return values;
 	}
 
-	private static ResourceBundle getLangBundle()
+	public static ResourceBundle getLangBundle()
 	{
 		if(lang == null)
 		{

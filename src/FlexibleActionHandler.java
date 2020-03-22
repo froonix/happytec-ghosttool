@@ -1,6 +1,6 @@
 /**
  * FlexibleActionHandler.java: Avoid anonymous inner classes
- * Copyright (C) 2019 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JMenuItem;
 
+@SuppressWarnings("serial")
 public class FlexibleActionHandler extends JMenuItem implements ActionListener
 {
 	String className;

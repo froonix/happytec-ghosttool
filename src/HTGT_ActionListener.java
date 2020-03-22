@@ -1,5 +1,5 @@
 /**
- * FNX_LookAndFeel.java: Context menu for everything
+ * HTGT_ActionListener.java: Hotkeys without menu bindings
  * Copyright (C) 2020 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,45 +17,30 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-import javax.swing.LookAndFeel;
+import java.awt.event.ActionEvent;
+import javax.swing.AbstractAction;
 
-public class FNX_LookAndFeel extends LookAndFeel
+@SuppressWarnings("serial")
+class HTGT_ActionListener extends AbstractAction
 {
-	private final FNX_UIDefaults defaults = new FNX_UIDefaults();
+	private String action;
+	private Object[] args;
 
-	@Override
-	public FNX_UIDefaults getDefaults()
+	public void setPrivateAction(String m)
 	{
-		return defaults;
-	};
-
-	@Override
-	public String getID()
-	{
-		return "FNX_ContextMenu";
+		action = m;
 	}
 
-	@Override
-	public String getName()
+	public void setPrivateArguments(Object[] a)
 	{
-		return getID();
+		args = a;
 	}
 
-	@Override
-	public String getDescription()
+	public void actionPerformed(ActionEvent e)
 	{
-		return getID();
-	}
-
-	@Override
-	public boolean isNativeLookAndFeel()
-	{
-		return false;
-	}
-
-	@Override
-	public boolean isSupportedLookAndFeel()
-	{
-		return true;
+		if(action != null)
+		{
+			FNX.actionCallback("HTGT", action, args);
+		}
 	}
 }
