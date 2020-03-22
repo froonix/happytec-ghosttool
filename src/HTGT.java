@@ -126,6 +126,7 @@ public class HTGT
 	final public static long      WEATHER_INTERVAL    = 3600000L; // hourly
 	final public static int       FF_CHECK_INTERVAL   = 2000; // 2 seconds
 	final public static long      FF_OBSERVER_DELAY   = 1000; // 1 second
+	final public static long      FF_PT_LIMIT         = 10;
 	final public static String    SPECIAL_PROFILE     = "SpecialProfile";
 	final public static String    DEFAULT_PROFILE     = "DefaultUser";
 	final public static String    VERSION_FILE        = "htgt-version.txt";
@@ -143,10 +144,10 @@ public class HTGT
 	final public static double    FONTSMALL           = 0.75;
 	final public static int       HISTORY_SIZE        = 10;
 
-	final public static int        NONE  = 0;
-	final public static int        CTRL  = FNX.getCtrlMask();
-	final public static int        SHIFT = ActionEvent.SHIFT_MASK;
-	final public static int        ALT   = ActionEvent.ALT_MASK;
+	final public static int       NONE  = 0;
+	final public static int       CTRL  = FNX.getCtrlMask();
+	final public static int       SHIFT = ActionEvent.SHIFT_MASK;
+	final public static int       ALT   = ActionEvent.ALT_MASK;
 
 	// Diverse Links ohne https:// davor, da sie als Ziel direkt angezeigt werden sollen!
 	final public static String    URL_WWW  = "github.com/froonix/happytec-ghosttool";
@@ -2266,13 +2267,12 @@ public class HTGT
 			StringBuilder data = new StringBuilder();
 			data.insert(0, System.lineSeparator());
 
-			int i = 0; int[] r = new int[lastApplicationDestinations.size()];
+			int i = 0;
+			int pts = 0;
+			int[] r = new int[lastApplicationDestinations.size()];
+
 			for(Map<String,Object> v : lastApplicationDestinations.values())
 			{
-				// TODO: Limit einbauen, falls es zu viele GR gibt?
-				// Das sollte aber definitiv nur für PT-Items gelten!
-				// ...
-
 				try
 				{
 					// Wenn sich die Spielmodus/Strecke/Wetter Kombination geändert hat, werden bisherige Statuseinträge ausgeblendet und gelöscht. Aber nur, wenn sie schon angezeigt wurden.
@@ -2283,14 +2283,16 @@ public class HTGT
 						continue;
 					}
 
-					// -----------------------------------------
-					// Nicht verwendte Elemente:
-					// Time=1582141897, GhostID=787, GroupID=1, Begin=1581995570, End=1582153200, TrackID=2660
-					// -----------------------------------------
-
 					String suffix = " (%s)";
 					if((boolean) v.get("PT"))
 					{
+						if(pts++ > FF_PT_LIMIT)
+						{
+							FNX.dbgf("Too many PT destinations! Skipping PT from group %s...", (String) v.get("GroupName"));
+
+							continue;
+						}
+
 						suffix = String.format(suffix, FNX.formatLangString(gmHelper.getLangBundle(), "pt_group", (String) v.get("GroupName")));
 					}
 					else if((boolean) v.get("SUC"))
