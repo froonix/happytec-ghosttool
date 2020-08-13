@@ -33,16 +33,18 @@ public abstract class gmHelper
 	public final static int WEATHER_SNOW =  3;
 	public final static int WEATHER_ICE  =  4;
 	public final static int WEATHER_RACE =  5;
+	public final static int WEATHER_RAIN =  6; // [RESERVIERT]
 
 	// Wird für eSportsAPI.FO_* benötigt.
 	// Bitte niemals "-1" dafür verwenden!
 	public final static int WEATHER_TICKET = -6;
 	public final static int WEATHER_SUC    = -7;
-	public final static int WEATHER_PT     = -8; // <-- RESERVIERT!
+	public final static int WEATHER_PT     = -8; // [RESERVIERT]
 
 	// ----------------------- //
 	// GentleMagic Wetter IDs: //
 	//   2=ice; 3=sun; 4=snow  //
+	//   6=rain                //
 	// ----------------------- //
 
 	// Interne Minimode-IDs von HAPPYTEC.
@@ -52,13 +54,14 @@ public abstract class gmHelper
 	public final static int GAMEMODE_MM_ARCADE        = 3;
 	public final static int GAMEMODE_MM_EXTREME       = 4;
 	public final static int GAMEMODE_MM_EXTREMEICE    = 5; // ACHTUNG: Nur bei Eis verfügbar!
-	public final static int GAMEMODE_MM_LASTDOWNSWING = 6;
+	public final static int GAMEMODE_MM_LASTDOWNSWING = 6; // [RESERVIERT]
+	public final static int GAMEMODE_MM_TARGETJUMP    = 7; // [RESERVIERT]
 
 	// ----------------------------------- //
 	// GentleMagic Spielmodus IDs:         //
 	//   1=default; 4=rowdy; 5=extremeice  //
 	//   6=timeattack; 8=arcade; 9=extreme //
-	//   ???=lastdownswing                 //
+	//   7=lastdownswing; 10=targetjump    //
 	// ----------------------------------- //
 
 	private static DateFormat ResultFormat;
