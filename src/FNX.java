@@ -228,7 +228,7 @@ public abstract class FNX
 		return string;
 	}
 
-	public static void displayExceptionSummary(Exception e, String title, String header, String footer)
+	public static void displayExceptionSummary(Throwable e, String title, String header, String footer)
 	{
 		e.printStackTrace();
 
@@ -633,5 +633,10 @@ public abstract class FNX
 		{
 			return dtk.getMenuShortcutKeyMask();
 		}
+	}
+
+	public static String escapeHTML(String s)
+	{
+		return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace(String.format("%n"), "<br />");
 	}
 }

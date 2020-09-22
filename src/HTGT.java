@@ -330,17 +330,16 @@ public class HTGT
 		}
 	}
 
-	public static void exceptionHandler(Exception e)
+	public static void exceptionHandler(Throwable e)
 	{
 		exceptionHandler(e, null);
 	}
 
-	private static void exceptionHandler(Exception e, String msg)
+	private static void exceptionHandler(Throwable e, String msg)
 	{
 		if(!FNX.requireEDT())
 		{
 			e.printStackTrace();
-
 			return;
 		}
 
@@ -3522,6 +3521,13 @@ public class HTGT
 
 		msg = (msg == null) ? FNX.formatLangString(lang, "APIError") : msg;
 		msg = FNX.formatLangString(lang, "APIErrorDetails", msg, e.getErrorCode(), e.getErrorMessage()).trim();
+
+		// Das ist nur eine schnelle Notlösung...
+		// Langfristig soll #82 implementiert werden.
+		if(e.getErrorCode().startsWith("INTERNAL_") && e.getCause() != null)
+		{
+			msg = String.format("<html><body><p>%2$s</p><br /><p style=\"width: %1$.0fpx; background-color: #888888; border: 1px solid #cccccc; color: #ffffff; padding: 5px;\">%3$s</p></body></html>", WINDOW_SIZE_MIN.getWidth() / 2, FNX.escapeHTML(msg), FNX.escapeHTML(e.getCause().toString()));
+		}
 
 		if(e.getCalming())
 		{
