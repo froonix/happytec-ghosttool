@@ -23,7 +23,6 @@ import java.util.ResourceBundle;
 public class eSportsAPIException extends Exception
 {
 	private ResourceBundle lang;
-	private Exception primaryException;
 	private boolean calmDown = false;
 
 	public eSportsAPIException()
@@ -37,16 +36,16 @@ public class eSportsAPIException extends Exception
 		this.processCode(code);
 	}
 
-	public eSportsAPIException(Exception e)
+	public eSportsAPIException(Throwable e)
 	{
-		super("INTERNAL_CLIENT_EXCEPTION");
-		this.setException(e);
+		super("INTERNAL_CLIENT_EXCEPTION", e);
+		e.printStackTrace();
 	}
 
-	public eSportsAPIException(Exception e, String code)
+	public eSportsAPIException(Throwable e, String code)
 	{
-		super(code);
-		this.setException(e);
+		super(code, e);
+		e.printStackTrace();
 		this.processCode(code);
 	}
 
@@ -68,15 +67,9 @@ public class eSportsAPIException extends Exception
 		}
 	}
 
-	private void setException(Exception e)
+	public Throwable getException()
 	{
-		this.primaryException = e;
-		e.printStackTrace();
-	}
-
-	public Exception getException()
-	{
-		return this.primaryException;
+		return getCause();
 	}
 
 	public String getErrorCode()
