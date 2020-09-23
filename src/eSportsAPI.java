@@ -74,6 +74,9 @@ public class eSportsAPI
 	private final static int RESULT_TYPE_PREV = 1;
 	private int[] lastTypeIndex = new int[2];
 
+	private String serverMessageText;
+	private int serverMessageVersion;
+
 	public final static int FOS       =  3;
 //	public final static int FO_REV    = -1;
 	public final static int FO_NONE   =  0;
@@ -86,12 +89,14 @@ public class eSportsAPI
 	public eSportsAPI(String token)
 	{
 		this.setToken(token);
+		this.resetLastServerMessage();
 	}
 
 	public eSportsAPI(String token, String useragent)
 	{
 		this.setToken(token);
 		this.setUseragent(useragent);
+		this.resetLastServerMessage();
 	}
 
 	public static void setHost(String fqdn)
@@ -945,17 +950,27 @@ public class eSportsAPI
 		return results;
 	}
 
-	public boolean updateAvailable(String app, String version, boolean autocheck) throws eSportsAPIException
+	public boolean updateAvailable(String app, String version, boolean autocheck, int lastMessageVersion) throws eSportsAPIException
 	{
 		try
 		{
 			Map<String,Object> args = new HashMap<>();
+			args.put("messageVersion", lastMessageVersion);
+			args.put("messageLanguage", Locale.getDefault());
 			args.put("autocheck", ((autocheck) ? "true" : "false"));
 			args.put("application", app); args.put("version", version);
 			String result = this.request("OFFLINE", "update.check", args);
 
 			Document doc = FNX.getDOMDocument(result);
+			NodeList MessageNodeList = doc.getElementsByTagName("Message");
 			NodeList ResultNodeList = doc.getElementsByTagName("Result");
+
+			if(MessageNodeList.getLength() > 0)
+			{
+				Element MessageElement = (Element) MessageNodeList.item(0);
+				this.serverMessageText = MessageElement.getTextContent().replace("\\n", String.format("%n"));
+				this.serverMessageVersion = FNX.intval(MessageElement.getAttribute("Version"));
+			}
 
 			if(ResultNodeList.getLength() > 0)
 			{
@@ -987,7 +1002,23 @@ public class eSportsAPI
 
 	public boolean updateAvailable(String app, String version) throws eSportsAPIException
 	{
-		return this.updateAvailable(app, version, false);
+		return this.updateAvailable(app, version, false, -1);
+	}
+
+	public int getLastServerMessageVersion()
+	{
+		return this.serverMessageVersion;
+	}
+
+	public String getLastServerMessageText()
+	{
+		return this.serverMessageText;
+	}
+
+	public void resetLastServerMessage()
+	{
+		this.serverMessageText = null;
+		this.serverMessageVersion = -1;
 	}
 
 	private String request(String module, String method, Map<?,?> data) throws eSportsAPIException
