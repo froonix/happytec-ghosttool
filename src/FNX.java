@@ -637,12 +637,12 @@ public abstract class FNX
 
 	public static String removeLineBreaks(String s)
 	{
-		return s.replace(String.format("%n"), "");
+		return s.replace("\r", "").replace("\n", "");
 	}
 
 	public static String nl2br(String s)
 	{
-		return s.replace(String.format("%n"), "<br />");
+		return removeLineBreaks(s.replace(String.format("%n"), "<br />"));
 	}
 
 	public static String escapeHTML(String s)

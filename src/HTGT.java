@@ -99,6 +99,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
@@ -119,9 +120,10 @@ public class HTGT
 	final public static String    APPLICATION_NAME    = "HTGT"; // cfg, updates, …
 	final public static String    APPLICATION_TITLE   = "HTGT.app";
 	final public static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
-	final public static String    APPLICATION_IDENT   = "HTGT %s <https://github.com/froonix/happytec-ghosttool>";
+	final public static String    APPLICATION_IDENT   = "HTGT %s <https://htgt.app/>";
 	final public static Dimension WINDOW_SIZE_START   = new Dimension(900, 600);
 	final public static Dimension WINDOW_SIZE_MIN     = new Dimension(600, 200);
+	final public static int[]     TEXTAREA_SIZE       = {16, 76}; // rows/cols
 	final public static long      UPDATE_INTERVAL     = 86400000L; // daily
 	final public static long      WEATHER_INTERVAL    = 3600000L; // hourly
 	final public static int       FF_CHECK_INTERVAL   = 2000; // 2 seconds
@@ -186,6 +188,7 @@ public class HTGT
 	final public static String CFG_WC          = "weather-check";
 	final public static String CFG_TRACKS      = "track-order";
 	final public static String CFG_RACE        = "race.%s.%s";
+	final public static String CFG_IPV4        = "ipv4";
 
 	// ALWAYS THE INDEX NUMBER! WITHOUT THE EXTRA COUNT.
 	final public static int OFFSET_RACE   =  0;
@@ -435,6 +438,13 @@ public class HTGT
 		// account. Das heißt, dass mehrere unterschiedliche Bewerbe und
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
+
+		if(cfg(CFG_IPV4) == null)
+		{
+			// Bevorzuge IPv6-Verbindungen, wenn diese verfügbar sind.
+			System.setProperty("java.net.preferIPv6Addresses", "true");
+			FNX.dbg("java.net.preferIPv6Addresses enabled");
+		}
 
 		// ...
 		setupLocale();
@@ -3398,6 +3408,19 @@ public class HTGT
 		FNX.dbgf("Invalid locale string: %s", locale);
 
 		return null;
+	}
+
+	private static void displayTextArea(String msg)
+	{
+		displayTextArea(msg, null);
+	}
+
+	private static void displayTextArea(String msg, String title)
+	{
+		JTextArea textarea = new JTextArea(msg, TEXTAREA_SIZE[0], TEXTAREA_SIZE[1]);
+		textarea.setEditable(false); textarea.setWrapStyleWord(true); textarea.setLineWrap(true);
+		JScrollPane jScrollPane = new JScrollPane(textarea, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		JOptionPane.showMessageDialog(mainWindow, jScrollPane, title, JOptionPane.PLAIN_MESSAGE);
 	}
 
 /***********************************************************************
