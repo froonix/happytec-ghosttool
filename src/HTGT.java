@@ -2236,11 +2236,11 @@ public class HTGT
 				ldt = LocalDateTime.ofEpochSecond(ffModification, 0, OffsetDateTime.now().getOffset());
 				dtf = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
 
-				ffBody.setMessage(
-					FNX.formatLangString(lang, "fastFollowModeBody", OfflineProfiles.getProfiles()[profile]) +
-					FNX.formatLangString(lang, "fastFollowMode" + ((ffModification > 0) ? "Extended" : "Empty"), ldt.format(dtf), uploadedCount, appliedCount) +
+				ffBody.setMessage(FNX.nl2br(String.format("<html><body>%s</body></html>",
+					FNX.formatLangString(lang, "fastFollowModeBody", FNX.getLangString(lang, "fastFollowModeExplain" + ((ffForce ? "Force" : ""))), FNX.escapeHTML(OfflineProfiles.getProfiles()[profile])) +
+					FNX.formatLangString(lang, "fastFollowMode" + ((ffModification > 0) ? "Extended" : "Empty"), FNX.escapeHTML(ldt.format(dtf)), uploadedCount, appliedCount) +
 					getResultDestinations()
-				);
+				)));
 
 				if(ffDialog != null)
 				{
@@ -2313,14 +2313,14 @@ public class HTGT
 
 					data.append(FNX.formatLangString(lang, "fastFollowModeState",
 						(int) v.get("GhostID"),
-						gmHelper.getGameModeName((int) v.get("GameMode")),
-						gmHelper.getTrack((String) v.get("Track")),
-						gmHelper.getWeatherName((int) v.get("Weather")),
-						gmHelper.getResult((int) v.get("OldResult")),
+						FNX.escapeHTML(gmHelper.getGameModeName((int) v.get("GameMode"))),
+						FNX.escapeHTML(gmHelper.getTrack((String) v.get("Track"))),
+						FNX.escapeHTML(gmHelper.getWeatherName((int) v.get("Weather"))),
+						FNX.escapeHTML(gmHelper.getResult((int) v.get("OldResult"))),
 						(int) v.get("OldPosition"),
-						gmHelper.getResult((int) v.get("NewResult")),
+						FNX.escapeHTML(gmHelper.getResult((int) v.get("NewResult"))),
 						(int) v.get("NewPosition"),
-						suffix
+						FNX.escapeHTML(suffix)
 					));
 
 					v.put("__seen", true);
@@ -4009,7 +4009,7 @@ public class HTGT
 
 							if(!silent)
 							{
-								infoDialog(APPLICATION_API, FNX.formatLangString(lang, "ghostApplySuccess", ghostID) + getResultDestinations());
+								infoDialog(APPLICATION_API, String.format("<html><body>%s</body></html>", FNX.nl2br(FNX.formatLangString(lang, "ghostApplySuccess", ghostID) + getResultDestinations())));
 							}
 
 							lastApplicationPosition = position;
