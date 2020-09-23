@@ -188,6 +188,7 @@ public class HTGT
 	final public static String CFG_WC          = "weather-check";
 	final public static String CFG_TRACKS      = "track-order";
 	final public static String CFG_RACE        = "race.%s.%s";
+	final public static String CFG_SMSG        = "server-message";
 	final public static String CFG_IPV4        = "ipv4";
 
 	// ALWAYS THE INDEX NUMBER! WITHOUT THE EXTRA COUNT.
@@ -646,10 +647,15 @@ public class HTGT
 		menu.add(getMenu("view"));
 		menu.add(getMenu("api"));
 		menu.add(getMenu("help"));
-
 		disableMenuItems();
 
 		menu.add(Box.createHorizontalGlue());
+
+		if(FNX.getDebugging())
+		{
+			menu.add(getMenu("debug"));
+		}
+
 		menu.add(langButton);
 
 		return menu;
@@ -752,6 +758,15 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableQuestions",           "enableQuestions"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetConfiguration",        "clearConfigDialog",      KeyStroke.getKeyStroke(KeyEvent.VK_R,      CTRL)));
+				break;
+
+			case "debug":
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableIPv6",                "enableIPv6"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableIPv6",               "disableIPv6"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetServerMessage",        "resetServerMessageVersion"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				break;
 
 			default:
@@ -2837,7 +2852,7 @@ public class HTGT
 				String hash = FNX.sha512(dll);
 				FNX.dbgf("SHA512: %s", hash);
 
-				if(anonAPI.updateAvailable("SC.DLL", hash, auto))
+				if(anonAPI.updateAvailable("SC.DLL", hash, auto, FNX.intval(cfg(CFG_SMSG))))
 				{
 					FNX.dbg("New DLL available!" + ((auto) ? " (autocheck)" : ""));
 
@@ -2862,6 +2877,8 @@ public class HTGT
 						infoDialog(FNX.formatLangString(lang, "patchUpdatesNone"));
 					}
 				}
+
+				handleServerMessage(anonAPI);
 			}
 			catch(eSportsAPIException e)
 			{
@@ -3608,7 +3625,7 @@ public class HTGT
 
 			try
 			{
-				if(anonAPI.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION, auto))
+				if(anonAPI.updateAvailable(APPLICATION_NAME, APPLICATION_VERSION, auto, FNX.intval(cfg(CFG_SMSG))))
 				{
 					FNX.dbg("New update available!" + ((auto) ? " (autocheck)" : ""));
 
@@ -3633,6 +3650,8 @@ public class HTGT
 						infoDialog(FNX.formatLangString(lang, "updatesNone"));
 					}
 				}
+
+				handleServerMessage(anonAPI);
 			}
 			catch(eSportsAPIException e)
 			{
@@ -4674,6 +4693,42 @@ public class HTGT
 		}
 
 		return regularProfiles;
+	}
+
+	public static void handleServerMessage(eSportsAPI a)
+	{
+		int version = a.getLastServerMessageVersion();
+		String text = a.getLastServerMessageText();
+
+		if(text != null && text.length() > 0)
+		{
+			FNX.dbg("Server message received! Displaying it now...");
+			displayTextArea(text, FNX.formatLangString(lang, "serverMessageTitle", ((version > -1) ? version : 0)));
+		}
+
+		if(version > -1)
+		{
+			cfg(CFG_SMSG, Integer.toString(a.getLastServerMessageVersion()));
+		}
+
+		a.resetLastServerMessage();
+	}
+
+	public static void resetServerMessageVersion()
+	{
+		removeConfig(CFG_SMSG);
+	}
+
+	public static void enableIPv6()
+	{
+		removeConfig(CFG_IPV4);
+		infoDialog(FNX.formatLangString(lang, "debugRestart"));
+	}
+
+	public static void disableIPv6()
+	{
+		cfg(CFG_IPV4, "true");
+		infoDialog(FNX.formatLangString(lang, "debugRestart"));
 	}
 
 /***********************************************************************
