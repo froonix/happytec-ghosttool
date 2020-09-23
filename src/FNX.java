@@ -635,8 +635,18 @@ public abstract class FNX
 		}
 	}
 
+	public static String removeLineBreaks(String s)
+	{
+		return s.replace(String.format("%n"), "");
+	}
+
+	public static String nl2br(String s)
+	{
+		return s.replace(String.format("%n"), "<br />");
+	}
+
 	public static String escapeHTML(String s)
 	{
-		return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace(String.format("%n"), "<br />");
+		return nl2br(s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"));
 	}
 }
