@@ -35,6 +35,10 @@ import java.net.UnknownHostException;
 import java.net.URL;
 
 import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLPeerUnverifiedException;
+
+import java.security.cert.Certificate;
 
 import java.text.ParseException;
 
@@ -95,6 +99,7 @@ public class eSportsAPI
 
 	private static HostnameVerifier HV = HttpsURLConnection.getDefaultHostnameVerifier();
 	private static InsecureHostnameVerifier IHV = new InsecureHostnameVerifier();
+	private Certificate[] lastCertificateChain;
 
 	public eSportsAPI(String token)
 	{
@@ -1071,8 +1076,8 @@ public class eSportsAPI
 
 	private String request(String module, String method, Map<?,?> data) throws eSportsAPIException
 	{
-		HostnameVerifier hostnameVerifier;
-		HttpURLConnection connection;
+		lastCertificateChain = null;
+		HttpURLConnection connection = null;
 		StringBuffer response;
 		DataOutputStream tx;
 		BufferedReader rx;
@@ -1123,6 +1128,18 @@ public class eSportsAPI
 			tx.writeBytes(postdata); tx.flush(); tx.close();
 			// System.out.println(postdata);
 
+			if(FNX.getDebugging() && connection instanceof HttpsURLConnection)
+			{
+				try
+				{
+					lastCertificateChain = ((HttpsURLConnection) connection).getServerCertificates();
+				}
+				catch(SSLPeerUnverifiedException n)
+				{
+					/* ... */
+				}
+			}
+
 			int code = connection.getResponseCode();
 			String msg = connection.getResponseMessage();
 
@@ -1170,5 +1187,10 @@ public class eSportsAPI
 		{
 			throw new eSportsAPIException(e);
 		}
+	}
+
+	public Certificate[] getCertificateChain()
+	{
+		return lastCertificateChain;
 	}
 }
