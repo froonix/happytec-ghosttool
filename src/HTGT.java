@@ -34,6 +34,8 @@ import java.net.URI;
 
 import java.lang.IndexOutOfBoundsException;
 
+import java.security.cert.Certificate;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
@@ -782,6 +784,7 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".useHTTP",                   "useHTTP"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableVerification",        "enableVerification"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableVerification",       "disableVerification"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".getCertChain",              "displayCertificateChain"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableIPv6",                "enableIPv6"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableIPv6",               "disableIPv6"));
@@ -4863,6 +4866,27 @@ public class HTGT
 				exceptionHandler(e);
 				removeConfig(CFG_API_HOST);
 			}
+		}
+	}
+
+	public static void displayCertificateChain()
+	{
+		if(api == null)
+		{
+			return;
+		}
+
+		Certificate[] chain = api.getCertificateChain();
+
+		if(chain != null && chain.length > 0)
+		{
+			StringBuilder s = new StringBuilder();
+			for(int i = 0; i < chain.length; i++)
+			{
+				s.append(String.format("----- CERTIFICATE #%d -----%n%n%s%n%n", i, chain[i].toString()));
+			}
+
+			displayTextArea(s.toString().trim(), FNX.getLangString(lang, "menu.debug.getCertChain"));
 		}
 	}
 
