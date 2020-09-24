@@ -18,7 +18,7 @@
  */
 
 @SuppressWarnings("serial")
-public class gmException extends Exception
+public class gmException extends RuntimeException
 {
 	public gmException(String message)
 	{

@@ -36,17 +36,17 @@ public class eSportsAPIException extends Exception
 		this.processCode(code);
 	}
 
+	public eSportsAPIException(String code, Throwable e)
+	{
+		super(code, e);
+		this.processCode(code);
+		e.printStackTrace();
+	}
+
 	public eSportsAPIException(Throwable e)
 	{
 		super("INTERNAL_CLIENT_EXCEPTION", e);
 		e.printStackTrace();
-	}
-
-	public eSportsAPIException(Throwable e, String code)
-	{
-		super(code, e);
-		e.printStackTrace();
-		this.processCode(code);
 	}
 
 	private void processCode(String code)
@@ -65,11 +65,6 @@ public class eSportsAPIException extends Exception
 					break;
 			}
 		}
-	}
-
-	public Throwable getException()
-	{
-		return getCause();
 	}
 
 	public String getErrorCode()

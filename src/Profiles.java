@@ -18,11 +18,14 @@
  */
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,6 +33,7 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 public class Profiles
 {
@@ -41,14 +45,21 @@ public class Profiles
 	private Document document = null;
 	private Node     profiles = null;
 
-	public Profiles(File xmlfile) throws Exception
+	public Profiles(File xmlfile) throws ProfileException
 	{
-		this.file = xmlfile;
-		this.document = FNX.getDOMDocument(this.file);
-		this.postParsing();
+		try
+		{
+			this.file = xmlfile;
+			this.document = FNX.getDOMDocument(this.file);
+			this.postParsing();
+		}
+		catch(ParserConfigurationException|SAXException|IOException e)
+		{
+			throw new ProfileException("Could not parse XML file", e);
+		}
 	}
 
-	private void postParsing() throws ProfileException, GhostException
+	private void postParsing()
 	{
 		this.document.setXmlStandalone(true);
 
@@ -62,13 +73,20 @@ public class Profiles
 		this.profiles = profileNodes.item(0);
 	}
 
-	public void reload() throws Exception
+	public void reload() throws ProfileException
 	{
-		this.document = FNX.getDOMDocument(this.file);
-		this.postParsing();
+		try
+		{
+			this.document = FNX.getDOMDocument(this.file);
+			this.postParsing();
+		}
+		catch(ParserConfigurationException|SAXException|IOException e)
+		{
+			throw new ProfileException("Could not reload XML file", e);
+		}
 	}
 
-	public void addProfile(String nickname) throws Exception
+	public void addProfile(String nickname)
 	{
 		// TODO: In eigene Datei auslagern, einlesen und Nicknamen ersetzen.
 		// Siehe auch die Verwendung von VERSION_FILE in HTGT.getVersion()!
@@ -76,20 +94,27 @@ public class Profiles
 
 		String xml = String.format("<Profile xsi:type=\"GameProfile\"><Progress><Entries /></Progress><Inventory /><Controls entries=\"\" nickname=\"\" OnlineSaved=\"False\" /><Player Nickname=\"%s\" OnlineSaved=\"false\" SocialId=\"\" SocialName=\"\" SocialNetworkType=\"1\" ShowAgb=\"false\"><Location>-1</Location></Player><TrackList OnlineSaved=\"false\" /><Settings entries=\"\" nickname=\"\" OnlineSaved=\"False\" /></Profile>", nickname);
 
-		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-
-		Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
-		NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
-
-		if(profileNodes.getLength() != 1)
+		try
 		{
-			throw new ProfileException(String.format("Missing <%s> tag", XML_TAG_PROFILE));
-		}
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
-		Element profileElement = (Element) profileNodes.item(0);
-		Node importedNode = this.document.importNode(profileElement, true);
-		this.profiles.insertBefore(importedNode, this.profiles.getFirstChild());
+			Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
+			NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
+
+			if(profileNodes.getLength() != 1)
+			{
+				throw new ProfileException(String.format("Missing <%s> tag", XML_TAG_PROFILE));
+			}
+
+			Element profileElement = (Element) profileNodes.item(0);
+			Node importedNode = this.document.importNode(profileElement, true);
+			this.profiles.insertBefore(importedNode, this.profiles.getFirstChild());
+		}
+		catch(ParserConfigurationException|SAXException|IOException e)
+		{
+			throw new ProfileException("Could not parse XML template for new Profile", e);
+		}
 	}
 
 	public void deleteProfile(String nickname) throws ProfileException
@@ -111,7 +136,7 @@ public class Profiles
 		throw new ProfileException(String.format("Profile not found: %s", nickname));
 	}
 
-	public void renameProfile(String oldNickname, String newNickname) throws Exception
+	public void renameProfile(String oldNickname, String newNickname) throws ProfileException
 	{
 		Node[] profileNodes = this.getProfiles();
 
@@ -129,7 +154,7 @@ public class Profiles
 		throw new ProfileException(String.format("Profile not found: %s", oldNickname));
 	}
 
-	private Node[] getProfiles() throws ProfileException
+	private Node[] getProfiles()
 	{
 		NodeList profileNodes = this.document.getElementsByTagName(XML_TAG_PROFILE);
 
@@ -148,7 +173,7 @@ public class Profiles
 		return profiles;
 	}
 
-	private Node getPlayerNode(Element c) throws ProfileException
+	private Node getPlayerNode(Element c)
 	{
 		NodeList players = c.getElementsByTagName(XML_TAG_PLAYER);
 
@@ -162,7 +187,7 @@ public class Profiles
 		}
 	}
 
-	private boolean compareProfile(Element c, String n) throws ProfileException
+	private boolean compareProfile(Element c, String n)
 	{
 		Element player = (Element) this.getPlayerNode(c);
 
@@ -176,7 +201,7 @@ public class Profiles
 		}
 	}
 
-	private void renamePlayer(Element c, String n) throws Exception
+	private void renamePlayer(Element c, String n)
 	{
 		((Element) this.getPlayerNode(c)).setAttribute("Nickname", n);
 	}
@@ -184,32 +209,25 @@ public class Profiles
 	// ACHTUNG: DefaultProfile nicht implementiert!
 	public boolean profileExists(String nickname)
 	{
-		try
-		{
-			Node[] profileNodes = this.getProfiles();
+		Node[] profileNodes = this.getProfiles();
 
-			for(int i = 0; i < profileNodes.length; i++)
-			{
-				if(compareProfile((Element) profileNodes[i], nickname))
-				{
-					return true;
-				}
-			}
-		}
-		catch(Exception e)
+		for(int i = 0; i < profileNodes.length; i++)
 		{
-			e.printStackTrace();
+			if(compareProfile((Element) profileNodes[i], nickname))
+			{
+				return true;
+			}
 		}
 
 		return false;
 	}
 
-	public int getCurrentProfile() throws ProfileException
+	public int getCurrentProfile()
 	{
 		return FNX.intval(this.document.getDocumentElement().getAttribute("CurrentProfile"));
 	}
 
-	public void resetCurrentProfile() throws ProfileException
+	public void resetCurrentProfile()
 	{
 		this.setCurrentProfile(0);
 	}
@@ -224,17 +242,10 @@ public class Profiles
 		}
 	}
 
-	public void saveProfiles() throws Exception
+	public void saveProfiles() throws ProfileException, FileNotFoundException
 	{
-		String xml = FNX.getCleanXML(this.document);
-
-		if(xml == null)
-		{
-			throw new Exception();
-		}
-
 		PrintWriter tmp = new PrintWriter(file);
-		tmp.printf("%s", FNX.getWinNL(xml));
+		tmp.printf("%s", FNX.getWinNL(FNX.getCleanXML(this.document)));
 		tmp.close();
 	}
 }

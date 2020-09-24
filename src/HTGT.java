@@ -170,7 +170,8 @@ public class HTGT
 	// Konfigurationsnamen für java.util.prefs
 	final public static String CFG_LOCALE      = "locale";
 	final public static String CFG_TRANSLATION = "translation";
-	final public static String CFG_API         = "api-host";
+	final public static String CFG_API_HOST    = "api-host";
+	final public static String CFG_API_PROTO   = "api-proto";
 	final public static String CFG_DC          = "dll-check";
 	final public static String CFG_UC          = "update-check";
 	final public static String CFG_DEFAULT     = "default-file";
@@ -328,7 +329,7 @@ public class HTGT
 				Desktop.getDesktop().browse(new URI(getRedirectURL(dst)));
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			e.printStackTrace();
 		}
@@ -392,7 +393,7 @@ public class HTGT
 					}
 				}
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				/* ... */
 			}
@@ -460,7 +461,14 @@ public class HTGT
 			cfg(CFG_TRANSLATION, Integer.toString(TRANSLATION_VERSION));
 		}
 
-		String apihost = cfg(CFG_API);
+		String apiproto = cfg(CFG_API_PROTO);
+		if(apiproto != null && apiproto.length() > 0)
+		{
+			FNX.dbg("API Protocol: " + apiproto);
+			eSportsAPI.setProtocol(apiproto);
+		}
+
+		String apihost = cfg(CFG_API_HOST);
 		if(apihost != null && apihost.length() > 0)
 		{
 			FNX.dbg("API FQDN: " + apihost);
@@ -762,10 +770,21 @@ public class HTGT
 
 			case "debug":
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".useHTTP",                   "useHTTP"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".useHTTPS",                  "useHTTPS"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".changeAPI",                 "changeAPI"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableIPv6",                "enableIPv6"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableIPv6",               "disableIPv6"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetTranslation",          "resetTranslationVersion"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".decrementTranslation",      "decrementTranslationVersion"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetServerMessage",        "resetServerMessageVersion"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetUpdateCheck",          "resetUpdateCheckTimers"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetTrackList",            "resetTrackListTimer"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".dumpLastVars",              "dumpLastVariables"));
+				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".quickDebug",                "quickDebugWrapper"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				break;
 
@@ -820,7 +839,7 @@ public class HTGT
 				op = false;
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1229,7 +1248,7 @@ public class HTGT
 
 			selectProfile(selected);
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1311,7 +1330,7 @@ public class HTGT
 		{
 			selectProfile(n);
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1336,7 +1355,7 @@ public class HTGT
 				selectDefaultProfile();
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1386,7 +1405,7 @@ public class HTGT
 
 			selectProfile(selectedProfile);
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1407,7 +1426,7 @@ public class HTGT
 				selectProfile(defaultProfile);
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1430,7 +1449,7 @@ public class HTGT
 
 			throw new Exception("Special profile not found!");
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1442,7 +1461,7 @@ public class HTGT
 		{
 			selectProfile(FNX.intval(cfg(CFG_RPROFILE)));
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1484,7 +1503,7 @@ public class HTGT
 				OfflineProfiles.addGhost(ghost);
 				updateWindowTitle();
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 				return;
@@ -1509,7 +1528,7 @@ public class HTGT
 			mainModel.removeRow(index);
 			updateWindowTitle();
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1578,7 +1597,7 @@ public class HTGT
 				}
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -1636,7 +1655,7 @@ public class HTGT
 					tmp = new OfflineProfiles(file);
 					tmp.selectProfile(profile);
 				}
-				catch(Exception e)
+				catch(Throwable e)
 				{
 					exceptionHandler(e);
 					return false;
@@ -1885,7 +1904,7 @@ public class HTGT
 					FNX.dbgf("Restoring profile %d...", profile);
 					OfflineProfiles.selectProfile(profile);
 				}
-				catch(Exception e)
+				catch(Throwable e)
 				{
 					exceptionHandler(e);
 					syncGUI();
@@ -1982,7 +2001,7 @@ public class HTGT
 				}
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -2006,7 +2025,7 @@ public class HTGT
 
 			fastFollowStart(force);
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -2162,7 +2181,7 @@ public class HTGT
 				APIError(e);
 				continue;
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				HTGT.fastFollowStop();
 				exceptionHandler(e);
@@ -2181,7 +2200,7 @@ public class HTGT
 					reloadFile(true);
 					syncGUI();
 				}
-				catch(Exception e)
+				catch(Throwable e)
 				{
 					exceptionHandler(e);
 				}
@@ -2297,63 +2316,56 @@ public class HTGT
 
 			for(Map<String,Object> v : lastApplicationDestinations.values())
 			{
-				try
+				// Wenn sich die Spielmodus/Strecke/Wetter Kombination geändert hat, werden bisherige Statuseinträge ausgeblendet und gelöscht. Aber nur, wenn sie schon angezeigt wurden.
+				if(lastApplicationGhost != null && v.containsKey("__seen") && (lastApplicationGhost.getGameMode() != (int) v.get("GameMode") || !lastApplicationGhost.getTrack().equalsIgnoreCase((String) v.get("Track")) || lastApplicationGhost.getWeather() != (int) v.get("Weather"))
+				)
 				{
-					// Wenn sich die Spielmodus/Strecke/Wetter Kombination geändert hat, werden bisherige Statuseinträge ausgeblendet und gelöscht. Aber nur, wenn sie schon angezeigt wurden.
-					if(lastApplicationGhost != null && v.containsKey("__seen") && (lastApplicationGhost.getGameMode() != (int) v.get("GameMode") || !lastApplicationGhost.getTrack().equalsIgnoreCase((String) v.get("Track")) || lastApplicationGhost.getWeather() != (int) v.get("Weather"))
-					)
+					r[i++] = (int) v.get("TrackID");
+					continue;
+				}
+
+				String suffix = " (%s)";
+				if((boolean) v.get("PT"))
+				{
+					if(pts++ > FF_PT_LIMIT)
 					{
-						r[i++] = (int) v.get("TrackID");
+						FNX.dbgf("Too many PT destinations! Skipping PT from group %s...", (String) v.get("GroupName"));
+
 						continue;
 					}
 
-					String suffix = " (%s)";
-					if((boolean) v.get("PT"))
-					{
-						if(pts++ > FF_PT_LIMIT)
-						{
-							FNX.dbgf("Too many PT destinations! Skipping PT from group %s...", (String) v.get("GroupName"));
-
-							continue;
-						}
-
-						suffix = String.format(suffix, FNX.formatLangString(gmHelper.getLangBundle(), "pt_group", (String) v.get("GroupName")));
-					}
-					else if((boolean) v.get("SUC"))
-					{
-						suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_SUC));
-					}
-					else if((boolean) v.get("Ticket"))
-					{
-						suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_TICKET));
-					}
-					else if((boolean) v.get("Race"))
-					{
-						suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_RACE));
-					}
-					else
-					{
-						suffix = "";
-					}
-
-					data.append(FNX.formatLangString(lang, "fastFollowModeState",
-						(int) v.get("GhostID"),
-						FNX.escapeHTML(gmHelper.getGameModeName((int) v.get("GameMode"))),
-						FNX.escapeHTML(gmHelper.getTrack((String) v.get("Track"))),
-						FNX.escapeHTML(gmHelper.getWeatherName((int) v.get("Weather"))),
-						FNX.escapeHTML(gmHelper.getResult((int) v.get("OldResult"))),
-						(int) v.get("OldPosition"),
-						FNX.escapeHTML(gmHelper.getResult((int) v.get("NewResult"))),
-						(int) v.get("NewPosition"),
-						FNX.escapeHTML(suffix)
-					));
-
-					v.put("__seen", true);
+					suffix = String.format(suffix, FNX.formatLangString(gmHelper.getLangBundle(), "pt_group", (String) v.get("GroupName")));
 				}
-				catch(gmException e)
+				else if((boolean) v.get("SUC"))
 				{
-					exceptionHandler(e);
+					suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_SUC));
 				}
+				else if((boolean) v.get("Ticket"))
+				{
+					suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_TICKET));
+				}
+				else if((boolean) v.get("Race"))
+				{
+					suffix = String.format(suffix, gmHelper.getWeatherName(gmHelper.WEATHER_RACE));
+				}
+				else
+				{
+					suffix = "";
+				}
+
+				data.append(FNX.formatLangString(lang, "fastFollowModeState",
+					(int) v.get("GhostID"),
+					FNX.escapeHTML(gmHelper.getGameModeName((int) v.get("GameMode"))),
+					FNX.escapeHTML(gmHelper.getTrack((String) v.get("Track"))),
+					FNX.escapeHTML(gmHelper.getWeatherName((int) v.get("Weather"))),
+					FNX.escapeHTML(gmHelper.getResult((int) v.get("OldResult"))),
+					(int) v.get("OldPosition"),
+					FNX.escapeHTML(gmHelper.getResult((int) v.get("NewResult"))),
+					(int) v.get("NewPosition"),
+					FNX.escapeHTML(suffix)
+				));
+
+				v.put("__seen", true);
 			}
 
 			if(r.length > 0)
@@ -2409,7 +2421,7 @@ public class HTGT
 			{
 				APIError(e);
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 			}
@@ -2462,7 +2474,7 @@ public class HTGT
 					return profileHandle;
 				}
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 			}
@@ -2543,7 +2555,7 @@ public class HTGT
 			profile = 0;
 			reloadFile();
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 			reloadFile();
@@ -2627,7 +2639,7 @@ public class HTGT
 			profile = 0;
 			reloadFile();
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 			reloadFile();
@@ -2687,7 +2699,7 @@ public class HTGT
 			profile = 0;
 			reloadFile();
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 			reloadFile();
@@ -2722,7 +2734,7 @@ public class HTGT
 					return true;
 				}
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				e.printStackTrace();
 			}
@@ -2840,11 +2852,7 @@ public class HTGT
 
 		if(force)
 		{
-			if(anonAPI == null)
-			{
-				// Der Token wird absichtlich nicht mitgesendet!
-				anonAPI = new eSportsAPI(null, getIdent());
-			}
+			setupAnonymousAPI();
 
 			try
 			{
@@ -2891,7 +2899,7 @@ public class HTGT
 					e.printStackTrace();
 				}
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				e.printStackTrace();
 			}
@@ -3526,7 +3534,7 @@ public class HTGT
 				}
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e, null);
 		}
@@ -3617,11 +3625,7 @@ public class HTGT
 
 		if(force)
 		{
-			if(anonAPI == null)
-			{
-				// Der Token wird absichtlich nicht mitgesendet!
-				anonAPI = new eSportsAPI(null, getIdent());
-			}
+			setupAnonymousAPI();
 
 			try
 			{
@@ -3664,7 +3668,7 @@ public class HTGT
 					e.printStackTrace();
 				}
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				e.printStackTrace();
 			}
@@ -3691,7 +3695,7 @@ public class HTGT
 				}
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -3725,7 +3729,7 @@ public class HTGT
 				}
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -3755,7 +3759,7 @@ public class HTGT
 				}
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -3844,6 +3848,15 @@ public class HTGT
 		api = null;
 		token = null;
 		return false;
+	}
+
+	private static void setupAnonymousAPI()
+	{
+		if(anonAPI == null)
+		{
+			// Der Token wird absichtlich nicht mitgesendet!
+			anonAPI = new eSportsAPI(null, getIdent());
+		}
 	}
 
 	// Markierte Geister über die API hochladen.
@@ -4464,11 +4477,7 @@ public class HTGT
 				break;
 			}
 		}
-		catch(gmException e)
-		{
-			e.printStackTrace();
-		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -4552,7 +4561,7 @@ public class HTGT
 				Map<String,Object> data = api.getPlayerInfo();
 				data.forEach((k,v) -> FNX.dbgf("playerDetails.%s: %s", k, v));
 
-				messageDialog(APPLICATION_API, FNX.formatLangString(lang, "playerInfo", data.get("Useraccount"), data.get("Nickname"), data.get("CompetitionName")));
+				messageDialog(APPLICATION_API, String.format("<html><body>%s</body></html>", FNX.nl2br(FNX.formatLangString(lang, "playerInfo", FNX.escapeHTML((String) data.get("Useraccount")), FNX.escapeHTML((String) data.get("Nickname")), FNX.escapeHTML((String) data.get("CompetitionName"))))));
 			}
 		}
 		catch(eSportsAPIException e)
@@ -4627,10 +4636,6 @@ public class HTGT
 				{
 					APIError(e);
 				}
-				catch(gmException e)
-				{
-					e.printStackTrace();
-				}
 			}
 
 			return false;
@@ -4653,7 +4658,7 @@ public class HTGT
 				return isSpecialProfile(OfflineProfiles.getProfiles()[i]);
 			}
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -4714,9 +4719,56 @@ public class HTGT
 		a.resetLastServerMessage();
 	}
 
+/***********************************************************************
+ *                            DEBUG STUFF                              *
+ ***********************************************************************/
+
 	public static void resetServerMessageVersion()
 	{
 		removeConfig(CFG_SMSG);
+	}
+
+	public static void resetTranslationVersion()
+	{
+		removeConfig(CFG_TRANSLATION);
+		infoDialog(FNX.formatLangString(lang, "debugRestart"));
+	}
+
+	public static void decrementTranslationVersion()
+	{
+		cfg(CFG_TRANSLATION, String.valueOf(TRANSLATION_VERSION - 1));
+		infoDialog(FNX.formatLangString(lang, "debugRestart"));
+	}
+
+	public static void resetUpdateCheckTimers()
+	{
+		removeConfig(CFG_DC);
+		removeConfig(CFG_UC);
+	}
+
+	public static void resetTrackListTimer()
+	{
+		removeConfig(CFG_WC);
+	}
+
+	public static void dumpLastVariables()
+	{
+		StringBuilder t = new StringBuilder();
+		String[] a = {CFG_CWD, CFG_CWDPORT, null, CFG_RPROFILE, CFG_PROFILE, null, CFG_MODE, CFG_TRACK, CFG_WEATHER};
+
+		for(String e : a)
+		{
+			if(e == null)
+			{
+				t.append(String.format("%n"));
+			}
+			else
+			{
+				t.append(String.format("%s = %s%n", e, cfg(e)));
+			}
+		}
+
+		displayTextArea(t.toString().trim(), FNX.getLangString(lang, "menu.debug.dumpLastVars"));
 	}
 
 	public static void enableIPv6()
@@ -4729,6 +4781,73 @@ public class HTGT
 	{
 		cfg(CFG_IPV4, "true");
 		infoDialog(FNX.formatLangString(lang, "debugRestart"));
+	}
+
+	public static void useHTTP()
+	{
+		changeProtocol("http");
+	}
+
+	public static void useHTTPS()
+	{
+		changeProtocol("https");
+	}
+
+	private static void changeProtocol(String protocol)
+	{
+		if(eSportsAPI.getDefaultProtocol().toLowerCase().equals(protocol))
+		{
+			removeConfig(CFG_API_PROTO);
+			protocol = null;
+		}
+		else
+		{
+			cfg(CFG_API_PROTO, protocol);
+		}
+
+		try
+		{
+			eSportsAPI.setProtocol(protocol);
+		}
+		catch(IllegalArgumentException e)
+		{
+			exceptionHandler(e);
+			removeConfig(CFG_API_PROTO);
+		}
+	}
+
+	public static void changeAPI()
+	{
+		String fqdn = cfg(CFG_API_HOST);
+
+		while(true)
+		{
+			if((fqdn = (String) inputDialog(FNX.getLangString(lang, "menu.debug.changeAPI"), FNX.formatLangString(lang, "debugChangeAPI"), fqdn)) == null || fqdn.length() <= 0 || eSportsAPI.getDefaultHost().toLowerCase().equals(fqdn))
+			{
+				removeConfig(CFG_API_HOST);
+				fqdn = null;
+			}
+			else
+			{
+				cfg(CFG_API_HOST, fqdn);
+			}
+
+			try
+			{
+				eSportsAPI.setHost(fqdn);
+				return;
+			}
+			catch(IllegalArgumentException e)
+			{
+				exceptionHandler(e);
+				removeConfig(CFG_API_HOST);
+			}
+		}
+	}
+
+	public static void quickDebugWrapper()
+	{
+		FNX.dbg("Refused to debug without 0xCOFFEE! ;-)");
 	}
 
 /***********************************************************************
@@ -4777,7 +4896,7 @@ public class HTGT
 		{
 			errorMessage(FNX.formatLangString(lang, "fileNotFound", e.getMessage()));
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			reset();
 			exceptionHandler(e);
@@ -4909,7 +5028,7 @@ public class HTGT
 		{
 			reloadFile(false);
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -5006,7 +5125,7 @@ public class HTGT
 
 			return true;
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			e.printStackTrace();
 		}
@@ -5039,7 +5158,7 @@ public class HTGT
 				OfflineProfiles.updateFile(file);
 				FNX.dbg("File saved to new location.");
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 			}
@@ -5156,7 +5275,7 @@ public class HTGT
 
 				return true;
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 			}
@@ -5189,7 +5308,7 @@ public class HTGT
 					errorMessage(FNX.formatLangString(lang, "noGhostsInFile"));
 				}
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 			}
@@ -5315,7 +5434,7 @@ public class HTGT
 				dumpHistory();
 				return true;
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 			}
@@ -5442,7 +5561,7 @@ public class HTGT
 			FNX.dbg("Clearing config!");
 			cfg.clear(); return true;
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			exceptionHandler(e);
 		}
@@ -5701,7 +5820,7 @@ public class HTGT
 					}
 				}
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				exceptionHandler(e);
 			}
@@ -5713,7 +5832,7 @@ public class HTGT
 					FNX.dbgf("Restoring profile %d...", profile);
 					OfflineProfiles.selectProfile(profile);
 				}
-				catch(Exception e)
+				catch(Throwable e)
 				{
 					exceptionHandler(e);
 					syncGUI();
