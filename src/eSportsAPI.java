@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import java.util.regex.Pattern;
+
 import javax.net.ssl.HttpsURLConnection;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -57,12 +59,14 @@ import org.xml.sax.SAXException;
 
 public class eSportsAPI
 {
-	private final static String API_VERSION = "1.0";
-	private final static String API_REQUEST = "%s/%s/%s/%s";
-	private final static String API_MAINURL = "https://%s/api";
-	private final static String API_HOST    = "htgt.app";
-	private final static int    API_TIMEOUT = 10000;
+	private final static String API_VERSION  = "1.0";
+	private final static String API_REQUEST  = "%s/%s/%s/%s";
+	private final static String API_MAINURL  = "%s://%s/api";
+	private final static String API_PROTOCOL = "https";
+	private final static String API_HOST     = "htgt.app";
+	private final static int    API_TIMEOUT  = 10000;
 
+	private static String protocol;
 	private static String host;
 
 	private String token;
@@ -99,17 +103,45 @@ public class eSportsAPI
 		this.resetLastServerMessage();
 	}
 
-	public static void setHost(String fqdn)
+	public static String getDefaultProtocol()
 	{
-		if(fqdn == null)
+		return API_PROTOCOL;
+	}
+
+	public static String getDefaultHost()
+	{
+		return API_HOST;
+	}
+
+	public static void setProtocol(String proto)
+	{
+		if(proto == null)
 		{
-			host = API_HOST;
+			protocol = getDefaultProtocol();
+		}
+		else if(!Pattern.matches("^(?i)http[s]?$", proto))
+		{
+			throw new IllegalArgumentException("Invalid API protocol (not HTTP/HTTPS)");
 		}
 		else
 		{
-			// TODO: Validation hinzufügen?
-			// (host oder host:port Format!)
-			host = fqdn;
+			protocol = proto;
+		}
+	}
+
+	public static void setHost(String address)
+	{
+		if(address == null)
+		{
+			host = getDefaultHost();
+		}
+		else if(!Pattern.matches("^(?i)([A-Z0-9-]+\\.)+[A-Z]+(:[0-9]+)?$", address))
+		{
+			throw new IllegalArgumentException("Invalid API adress (<FQDN> or <FQDN:<PORT> required>)");
+		}
+		else
+		{
+			host = address;
 		}
 	}
 
@@ -1023,14 +1055,15 @@ public class eSportsAPI
 
 	private String request(String module, String method, Map<?,?> data) throws eSportsAPIException
 	{
-		HttpsURLConnection connection;
+		HttpURLConnection connection;
 		StringBuffer response;
 		DataOutputStream tx;
 		BufferedReader rx;
 		String line;
 
 		if(host == null) { setHost(null); }
-		String apihost = String.format(API_MAINURL, host);
+		if(protocol == null) { setProtocol(null); }
+		String apihost = String.format(API_MAINURL, protocol, host);
 
 		module = module.toLowerCase();
 		method = method.toLowerCase();
@@ -1042,7 +1075,7 @@ public class eSportsAPI
 
 		try
 		{
-			connection = (HttpsURLConnection) new URL(url).openConnection();
+			connection = (HttpURLConnection) new URL(url).openConnection();
 			connection.setReadTimeout(API_TIMEOUT * 3);
 			connection.setConnectTimeout(API_TIMEOUT);
 
@@ -1108,7 +1141,7 @@ public class eSportsAPI
 		}
 		catch(UnknownHostException|SocketTimeoutException e)
 		{
-			throw new eSportsAPIException(e, "INTERNAL_NETWORK_ERROR");
+			throw new eSportsAPIException("INTERNAL_NETWORK_ERROR", e);
 		}
 		catch(IOException e)
 		{

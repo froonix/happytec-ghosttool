@@ -73,7 +73,7 @@ public abstract class gmHelper
 		return (gameModeType == GAMEMODE_MM_TIMEATTACK);
 	}
 
-	public static String getGameMode(int gameModeType, boolean uppercase) throws gmException
+	public static String getGameMode(int gameModeType, boolean uppercase)
 	{
 		String gameModeString = getGameMode(gameModeType);
 
@@ -85,7 +85,7 @@ public abstract class gmHelper
 		return gameModeString;
 	}
 
-	public static String getGameMode(int gameModeType) throws gmException
+	public static String getGameMode(int gameModeType)
 	{
 		String gameModeString = "";
 
@@ -126,7 +126,7 @@ public abstract class gmHelper
 		return gameModeString;
 	}
 
-	public static String getGameModeName(int gameModeType) throws gmException
+	public static String getGameModeName(int gameModeType)
 	{
 		String gameModeName = getGameMode(gameModeType);
 
@@ -138,7 +138,7 @@ public abstract class gmHelper
 		throw new gmException(String.format("Invalid game mode type: %d", gameModeType));
 	}
 
-	public static int parseGameMode(String gameModeString) throws gmException
+	public static int parseGameMode(String gameModeString)
 	{
 		int gameModeType = -1;
 
@@ -179,7 +179,7 @@ public abstract class gmHelper
 		return gameModeType;
 	}
 
-	public static String getWeather(int weatherType, boolean uppercase) throws gmException
+	public static String getWeather(int weatherType, boolean uppercase)
 	{
 		String weatherString = getWeather(weatherType);
 
@@ -191,7 +191,7 @@ public abstract class gmHelper
 		return weatherString;
 	}
 
-	public static String getWeather(int weatherType) throws gmException
+	public static String getWeather(int weatherType)
 	{
 		String weatherString = "";
 
@@ -232,7 +232,7 @@ public abstract class gmHelper
 		return weatherString;
 	}
 
-	public static String getWeatherName(int weatherType) throws gmException
+	public static String getWeatherName(int weatherType)
 	{
 		String weatherName = String.format("weather_%s", getWeather(weatherType));
 
@@ -244,7 +244,7 @@ public abstract class gmHelper
 		throw new gmException(String.format("Invalid weather type: %d", weatherType));
 	}
 
-	public static int parseWeather(String weatherString) throws gmException
+	public static int parseWeather(String weatherString)
 	{
 		int weatherType = WEATHER_NONE;
 
@@ -276,7 +276,7 @@ public abstract class gmHelper
 	// Die Kurzbezeichnungen der Strecken bleiben unverändert.
 	// Diese sind auf HAPPYTEC sowieso in der DB vorhanden.
 	// Es muss also nur eine Richtung implementiert werden.
-	public static String getTrack(String trackKey) throws gmException
+	public static String getTrack(String trackKey)
 	{
 		String trackName = String.format("track_%s", trackKey.toLowerCase());
 

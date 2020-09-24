@@ -67,6 +67,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
@@ -174,12 +175,14 @@ public abstract class FNX
 	public static Document getDOMDocument(String xml) throws SAXException, ParserConfigurationException, IOException
 	{
 		setupDOMParser();
+
 		return dBuilder.parse(new InputSource(new StringReader(xml)));
 	}
 
 	public static Document getDOMDocument(File file) throws SAXException, ParserConfigurationException, IOException
 	{
 		setupDOMParser();
+
 		return dBuilder.parse(file);
 	}
 
@@ -393,7 +396,7 @@ public abstract class FNX
 		return getCleanXML(doc, true);
 	}
 
-	public static String getCleanXML(Document doc, boolean full)
+	public static String getCleanXML(Document doc, boolean full) throws RuntimeException
 	{
 		String XML;
 
@@ -410,12 +413,10 @@ public abstract class FNX
 
 			return FNX.getStringFromDOM(doc, full);
 		}
-		catch(Exception e)
+		catch(XPathExpressionException|TransformerException e)
 		{
-			e.printStackTrace();
+			throw new RuntimeException("Could not get clean XML string", e);
 		}
-
-		return null;
 	}
 
 	public static JEditorPane getHTMLPane(String html)

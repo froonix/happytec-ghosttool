@@ -18,15 +18,30 @@
  */
 
 @SuppressWarnings("serial")
-public class GhostException extends Exception
+public class GhostException extends RuntimeException
 {
 	public GhostException(String message)
 	{
 		super(message);
 	}
 
-	public GhostException(int i, String msg)
+	public GhostException(String message, Throwable cause)
 	{
-		super(String.format("[%d] %s", i, msg));
+		super(message, cause);
+	}
+
+	public GhostException(int index, String message)
+	{
+		super(String.format("[%d] %s", index, message));
+	}
+
+	public GhostException(int index, String message, Throwable cause)
+	{
+		super(String.format("[%d] %s", index, message), cause);
+	}
+
+	public GhostException(int index, Throwable cause)
+	{
+		super(String.format("[%d] %s", index, cause.getMessage()), cause);
 	}
 }
