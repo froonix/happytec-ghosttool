@@ -34,6 +34,8 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.net.URL;
 
+import javax.net.ssl.HostnameVerifier;
+
 import java.text.ParseException;
 
 import java.time.Instant;
@@ -66,6 +68,7 @@ public class eSportsAPI
 	private final static String API_HOST     = "htgt.app";
 	private final static int    API_TIMEOUT  = 10000;
 
+	private static boolean verify = true;
 	private static String protocol;
 	private static String host;
 
@@ -90,6 +93,9 @@ public class eSportsAPI
 
 	private static String[] serverTracks; // = new String[0];
 
+	private static HostnameVerifier HV = HttpsURLConnection.getDefaultHostnameVerifier();
+	private static InsecureHostnameVerifier IHV = new InsecureHostnameVerifier();
+
 	public eSportsAPI(String token)
 	{
 		this.setToken(token);
@@ -101,6 +107,16 @@ public class eSportsAPI
 		this.setToken(token);
 		this.setUseragent(useragent);
 		this.resetLastServerMessage();
+	}
+
+	public static void enableVerification()
+	{
+		verify = true;
+	}
+
+	public static void disableVerification()
+	{
+		verify = false;
 	}
 
 	public static String getDefaultProtocol()
@@ -1055,6 +1071,7 @@ public class eSportsAPI
 
 	private String request(String module, String method, Map<?,?> data) throws eSportsAPIException
 	{
+		HostnameVerifier hostnameVerifier;
 		HttpURLConnection connection;
 		StringBuffer response;
 		DataOutputStream tx;
@@ -1078,6 +1095,12 @@ public class eSportsAPI
 			connection = (HttpURLConnection) new URL(url).openConnection();
 			connection.setReadTimeout(API_TIMEOUT * 3);
 			connection.setConnectTimeout(API_TIMEOUT);
+
+			if(connection instanceof HttpsURLConnection)
+			{
+				FNX.dbgf("Set HV to %s", verify ? HV.getClass().getName() : IHV.getClass().getName());
+				((HttpsURLConnection) connection).setHostnameVerifier(verify ? HV : IHV);
+			}
 
 			if(this.useragent != null)
 			{

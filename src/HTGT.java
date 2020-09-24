@@ -172,6 +172,7 @@ public class HTGT
 	final public static String CFG_TRANSLATION = "translation";
 	final public static String CFG_API_HOST    = "api-host";
 	final public static String CFG_API_PROTO   = "api-proto";
+	final public static String CFG_API_VERIFY  = "api-insecure";
 	final public static String CFG_DC          = "dll-check";
 	final public static String CFG_UC          = "update-check";
 	final public static String CFG_DEFAULT     = "default-file";
@@ -464,15 +465,21 @@ public class HTGT
 		String apiproto = cfg(CFG_API_PROTO);
 		if(apiproto != null && apiproto.length() > 0)
 		{
-			FNX.dbg("API Protocol: " + apiproto);
+			FNX.dbgf("API Protocol: %s", apiproto);
 			eSportsAPI.setProtocol(apiproto);
 		}
 
 		String apihost = cfg(CFG_API_HOST);
 		if(apihost != null && apihost.length() > 0)
 		{
-			FNX.dbg("API FQDN: " + apihost);
+			FNX.dbgf("API Hostname: %s", apihost);
 			eSportsAPI.setHost(apihost);
+		}
+
+		if(cfg(CFG_API_VERIFY) != null)
+		{
+			FNX.dbg("API: Certificate verification disabled!");
+			eSportsAPI.disableVerification();
 		}
 
 		// Wird u.a. für das Kontextmenü bei Eingaben benötigt.
@@ -770,9 +777,11 @@ public class HTGT
 
 			case "debug":
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".useHTTP",                   "useHTTP"));
-				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".useHTTPS",                  "useHTTPS"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".changeAPI",                 "changeAPI"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".useHTTPS",                  "useHTTPS"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".useHTTP",                   "useHTTP"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableVerification",        "enableVerification"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableVerification",       "disableVerification"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableIPv6",                "enableIPv6"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableIPv6",               "disableIPv6"));
@@ -4783,6 +4792,18 @@ public class HTGT
 		infoDialog(FNX.formatLangString(lang, "debugRestart"));
 	}
 
+	public static void enableVerification()
+	{
+		removeConfig(CFG_API_VERIFY);
+		eSportsAPI.enableVerification();
+	}
+
+	public static void disableVerification()
+	{
+		cfg(CFG_API_VERIFY, "true");
+		eSportsAPI.disableVerification();
+	}
+
 	public static void useHTTP()
 	{
 		changeProtocol("http");
@@ -4795,7 +4816,7 @@ public class HTGT
 
 	private static void changeProtocol(String protocol)
 	{
-		if(eSportsAPI.getDefaultProtocol().toLowerCase().equals(protocol))
+		if(eSportsAPI.getDefaultProtocol().equalsIgnoreCase(protocol))
 		{
 			removeConfig(CFG_API_PROTO);
 			protocol = null;
@@ -4822,7 +4843,7 @@ public class HTGT
 
 		while(true)
 		{
-			if((fqdn = (String) inputDialog(FNX.getLangString(lang, "menu.debug.changeAPI"), FNX.formatLangString(lang, "debugChangeAPI"), fqdn)) == null || fqdn.length() <= 0 || eSportsAPI.getDefaultHost().toLowerCase().equals(fqdn))
+			if((fqdn = (String) inputDialog(FNX.getLangString(lang, "menu.debug.changeAPI"), FNX.formatLangString(lang, "debugChangeAPI"), fqdn)) == null || fqdn.length() <= 0 || eSportsAPI.getDefaultHost().equalsIgnoreCase(fqdn))
 			{
 				removeConfig(CFG_API_HOST);
 				fqdn = null;
