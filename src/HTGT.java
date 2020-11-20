@@ -5172,7 +5172,7 @@ public class HTGT
 		}
 		catch(Throwable e)
 		{
-			e.printStackTrace();
+			exceptionHandler(e);
 		}
 
 		return false;
