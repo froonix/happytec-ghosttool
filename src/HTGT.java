@@ -5859,7 +5859,7 @@ public class HTGT
 
 				if(move)
 				{
-					for(int i = 0; i < selection.length; i++)
+					for(int i = selection.length - 1; i > -1; i--)
 					{
 						deleteGhost(selection[i]);
 					}
