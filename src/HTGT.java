@@ -2023,7 +2023,7 @@ public class HTGT
 
 	public static void fastFollow(boolean force)
 	{
-		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges() || (hasOnlineToken() && !confirmDialog(FNX.formatLangString(lang, "onlineModeConfirmation"))))
+		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges() || onlineMode())
 		{
 			return;
 		}
@@ -2782,6 +2782,11 @@ public class HTGT
 		}
 
 		return false;
+	}
+
+	private static boolean onlineMode()
+	{
+		return (hasOnlineToken() && !confirmDialog(FNX.formatLangString(lang, "onlineModeConfirmation")));
 	}
 
 	public static void resort()
@@ -3715,7 +3720,7 @@ public class HTGT
 
 	public static void copyTokenToProfile()
 	{
-		if(OfflineProfiles == null || checkProfile() || !prepareAPI())
+		if(OfflineProfiles == null || checkProfile() || onlineMode() || !prepareAPI())
 		{
 			return;
 		}
@@ -3745,7 +3750,7 @@ public class HTGT
 
 	public static void copyTokenFromProfile()
 	{
-		if(OfflineProfiles == null || checkProfile())
+		if(OfflineProfiles == null || checkProfile() || onlineMode())
 		{
 			return;
 		}
