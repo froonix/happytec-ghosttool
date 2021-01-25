@@ -222,6 +222,30 @@ public class Profiles
 		return false;
 	}
 
+	public boolean hasOnlineToken(String nickname) throws ProfileException
+	{
+		Node[] profileNodes = this.getProfiles();
+
+		for(int i = 0; i < profileNodes.length; i++)
+		{
+			Element profile = (Element) profileNodes[i];
+
+			if(compareProfile(profile, nickname))
+			{
+				String token = ((Element) this.getPlayerNode(profile)).getAttribute("OnlineToken");
+
+				if(token != null && token.length() > 0)
+				{
+					return true;
+				}
+
+				return false;
+			}
+		}
+
+		throw new ProfileException(String.format("Profile not found: %s", nickname));
+	}
+
 	public int getCurrentProfile()
 	{
 		return FNX.intval(this.document.getDocumentElement().getAttribute("CurrentProfile"));
