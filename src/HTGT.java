@@ -2023,7 +2023,7 @@ public class HTGT
 
 	public static void fastFollow(boolean force)
 	{
-		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges())
+		if(OfflineProfiles == null || checkProfile(true) || unsavedChanges() || (hasOnlineToken() && !confirmDialog(FNX.formatLangString(lang, "onlineModeConfirmation"))))
 		{
 			return;
 		}
@@ -2750,10 +2750,36 @@ public class HTGT
 			{
 				e.printStackTrace();
 			}
+
+			if(hasOnlineToken())
+			{
+				FNX.dbg("ONLINE mode is active.");
+				return true;
+			}
 		}
 
 		FNX.dbg("MultiGhost setting is disabled.");
 		FNX.dbg("TrainingGhostNick selection is empty.");
+		FNX.dbg("OnlineToken not set or empty.");
+
+		return false;
+	}
+
+	private static boolean hasOnlineToken()
+	{
+		try
+		{
+			Profiles profiles = getProfileHandle(null);
+
+			if(profiles != null && profiles.hasOnlineToken(nickname))
+			{
+				return true;
+			}
+		}
+		catch(Throwable e)
+		{
+			e.printStackTrace();
+		}
 
 		return false;
 	}
