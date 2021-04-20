@@ -166,7 +166,7 @@ public class GhostElement
 			this.Time = FNX.intval(xml.getAttribute("Time"), true);
 			this.DataRaw = xml.getAttribute("Data");
 
-			if(this.Time <= 0 || this.Time > 660000)
+			if(this.Time <= 0 || this.Time >= 6000000)
 			{
 				throw new GhostException("Attribute \"Time\" is missing, empty or invalid value.");
 			}
