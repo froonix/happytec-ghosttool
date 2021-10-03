@@ -330,9 +330,19 @@ public class GhostElement
 
 	public String getHash()
 	{
+		return this.getHash("SHA-512");
+	}
+
+	public String getSimpleHash()
+	{
+		return this.getHash("MD5");
+	}
+
+	public String getHash(String algorithm)
+	{
 		if(this.Hash == null)
 		{
-			this.Hash = String.format("%08x%s", this.DataBinary.length, FNX.sha512(this.DataBinary));
+			this.Hash = String.format("%08x%s", this.DataBinary.length, FNX.getMessageDigest(algorithm, this.DataBinary));
 		}
 
 		return this.Hash;
@@ -340,6 +350,11 @@ public class GhostElement
 
 	public void printDetails()
 	{
+		if(!FNX.getDebugging())
+		{
+			return;
+		}
+
 		try
 		{
 			FNX.dbgf("--------------------------------");

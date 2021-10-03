@@ -3110,25 +3110,6 @@ public class HTGT
 			FNX.dbg("return FALSE (not confirmed)");
 			return false;
 		}
-
-		/*
-		Integer[] values = new Integer[]{BUTTON_YES, BUTTON_NO};
-		String[] buttons = FNX.getLangStrings(lang, new String[]{"yes", "no"});
-		Object defaultButton = buttons[0];
-
-		int result = JOptionPane.showOptionDialog(mainWindow, msg, title, JOptionPane.YES_NO_OPTION, type, null, buttons, defaultButton);
-
-		if(result != JOptionPane.CLOSED_OPTION && values[result] == BUTTON_YES)
-		{
-			FNX.dbg("return TRUE (confirmed)");
-			return true;
-		}
-		else
-		{
-			FNX.dbg("return FALSE (not confirmed)");
-			return false;
-		}
-		*/
 	}
 
 	private static int threesomeDialog(String msg, boolean appendix)
@@ -5206,6 +5187,36 @@ public class HTGT
 	{
 		try
 		{
+			if(!compareFileHash())
+			{
+				FNX.dbg("Disk on file has changed. Asking the user for confirmation...");
+
+				Integer[] values = new Integer[]{BUTTON_NO, BUTTON_YES};
+				String[] buttons = FNX.getLangStrings(lang, new String[]{"fileChangedConfirmationReload", "fileChangedConfirmationOverwrite"});
+				Object defaultButton = buttons[1];
+
+				while(true)
+				{
+					int result = JOptionPane.showOptionDialog(mainWindow, FNX.formatLangString(lang, "fileChangedConfirmation"), null, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, buttons, defaultButton);
+
+					if(result == JOptionPane.CLOSED_OPTION)
+					{
+						FNX.dbg("Confirmation closed...");
+						continue;
+					}
+					else if(values[result] == BUTTON_NO)
+					{
+						FNX.dbg("Aborted on user request! Reloading file...");
+						reloadFile(true);
+						return false;
+					}
+					else
+					{
+						FNX.dbg("Overwriting disk on file...");
+					}
+				}
+			}
+
 			PrintWriter tmp = new PrintWriter(file);
 			tmp.printf("%s", xml);
 			tmp.close();
@@ -5237,6 +5248,7 @@ public class HTGT
 			try
 			{
 				file = selectedFile;
+
 				if(!saveFile(true))
 				{
 					throw new Exception();
@@ -5510,7 +5522,11 @@ public class HTGT
 
 			try
 			{
-				saveFile(history[newIndex]);
+				if(!saveFile(history[newIndex]))
+				{
+					return false;
+				}
+
 				OfflineProfiles.reload();
 				selectProfile(profile);
 				syncGUI();
@@ -5553,6 +5569,31 @@ public class HTGT
 		}
 
 		FNX.dbgf("----- END OF HISTORY DUMP%s -----", title);
+	}
+
+	private static boolean compareFileHash()
+	{
+		if(OfflineProfiles != null && file != null)
+		{
+			try
+			{
+				String newHash = (new OfflineProfiles(file)).getInitialGhostsHash();
+				String oldHash = OfflineProfiles.getInitialGhostsHash();
+				FNX.dbgf("oldHash=%s; newHash=%s", oldHash, newHash);
+
+				if(oldHash.equals(newHash))
+				{
+					return true;
+				}
+			}
+			catch(Throwable e)
+			{
+				exceptionHandler(e);
+				return false;
+			}
+		}
+
+		return false;
 	}
 
 /***********************************************************************

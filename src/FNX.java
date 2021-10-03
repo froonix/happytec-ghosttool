@@ -270,7 +270,37 @@ public abstract class FNX
 	}
 	*/
 
+	public static String md5(File file)
+	{
+		return getMessageDigest("MD5", file);
+	}
+
+	public static String md5(String input)
+	{
+		return getMessageDigest("MD5", input);
+	}
+
+	public static String md5(byte[] input)
+	{
+		return getMessageDigest("MD5", input);
+	}
+
 	public static String sha512(File file)
+	{
+		return getMessageDigest("SHA-512", file);
+	}
+
+	public static String sha512(String input)
+	{
+		return getMessageDigest("SHA-512", input);
+	}
+
+	public static String sha512(byte[] input)
+	{
+		return getMessageDigest("SHA-512", input);
+	}
+
+	public static String getMessageDigest(String algorithm, File file)
 	{
 		int length;
 		byte[] block;
@@ -285,7 +315,7 @@ public abstract class FNX
 		try
 		{
 			in = new FileInputStream(file);
-			md = MessageDigest.getInstance("SHA-512");
+			md = MessageDigest.getInstance(algorithm);
 
 			block = new byte[4096];
 			while((length = in.read(block)) > 0)
@@ -312,11 +342,11 @@ public abstract class FNX
 		return hash;
 	}
 
-	public static String sha512(String input)
+	public static String getMessageDigest(String algorithm, String input)
 	{
 		try
 		{
-			return sha512(input.getBytes("ISO-8859-1"));
+			return getMessageDigest(algorithm, input.getBytes("ISO-8859-1"));
 		}
 		catch(UnsupportedEncodingException e)
 		{
@@ -325,7 +355,7 @@ public abstract class FNX
 		}
 	}
 
-	public static String sha512(byte[] input)
+	public static String getMessageDigest(String algorithm, byte[] input)
 	{
 		byte[] bytes;
 		StringBuilder sb;
@@ -333,7 +363,7 @@ public abstract class FNX
 
 		try
 		{
-			bytes = MessageDigest.getInstance("SHA-512").digest(input);
+			bytes = MessageDigest.getInstance(algorithm).digest(input);
 			sb = new StringBuilder();
 
 			for(int i = 0; i < bytes.length; i++)
