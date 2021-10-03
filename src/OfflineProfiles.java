@@ -52,6 +52,7 @@ public class OfflineProfiles
 
 	private File     file     = null;
 	private Document document = null;
+	private String   hash     = null;
 	private boolean  changed  = false;
 	private int      profile  = 0;
 
@@ -132,9 +133,8 @@ public class OfflineProfiles
 	private void postParsing()
 	{
 		this.document.setXmlStandalone(true);
-
-		this.TrainingElement  = null;
-		this.OfflineProfile  = null;
+		this.TrainingElement = null;
+		this.OfflineProfile = null;
 
 		// xsi:type="GameOfflineProfile"
 		this.OfflineProfiles = document.getElementsByTagName(XML_TAG_PROFILE);
@@ -158,6 +158,7 @@ public class OfflineProfiles
 			this.DefaultProfile = null;
 		}
 
+		this.hash = this.getCurrentGhostsHash();
 		this.selectProfile(0);
 	}
 
@@ -627,6 +628,55 @@ public class OfflineProfiles
 		}
 	}
 
+	public String getInitialGhostsHash()
+	{
+		return this.hash;
+	}
+
+	public String getCurrentGhostsHash()
+	{
+		Element currentProfile;
+		NodeList trainingGhosts;
+		NodeList ghostNodes;
+
+		StringBuilder fullHash = new StringBuilder();
+		for(int p = 0; p < this.getProfileCount(); p++)
+		{
+			if(p == this.defaultProfile())
+			{
+				currentProfile = DefaultProfile;
+			}
+			else
+			{
+				currentProfile = (Element) OfflineProfiles.item(p);
+			}
+
+			ghostNodes = currentProfile.getElementsByTagName(XML_TAG_GHOSTS);
+
+			if(ghostNodes.getLength() > 0)
+			{
+				trainingGhosts = ((Element) ghostNodes.item(0)).getElementsByTagName(XML_TAG_GHOST);
+
+				if(trainingGhosts != null && trainingGhosts.getLength() > 0)
+				{
+					for(int i = 0; i < trainingGhosts.getLength(); i++)
+					{
+						try
+						{
+							fullHash.append((new GhostElement((Element) trainingGhosts.item(i))).getSimpleHash());
+						}
+						catch(GhostException e)
+						{
+							throw new GhostException(i, e);
+						}
+					}
+				}
+			}
+		}
+
+		return FNX.md5(fullHash.toString());
+	}
+
 	public String toString()
 	{
 		return FNX.getWinNL(FNX.getCleanXML(this.document));
@@ -639,6 +689,7 @@ public class OfflineProfiles
 
 	public void saved()
 	{
+		this.hash = this.getCurrentGhostsHash();
 		this.changed = false;
 	}
 }
