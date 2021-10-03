@@ -1006,17 +1006,28 @@ public class HTGT
 
 	private static void highlightRows(int start, int end)
 	{
+		scrolltoRow(end);
 		mainTable.clearSelection();
 		mainTable.addRowSelectionInterval(start, end);
 	}
 
 	private static void highlightRows(int[] rows)
 	{
+		if(rows.length > 0)
+		{
+			scrolltoRow(rows[rows.length - 1]);
+		}
+
 		mainTable.clearSelection();
 		for(int i = 0; i < rows.length; i++)
 		{
 			mainTable.addRowSelectionInterval(rows[i], rows[i]);
 		}
+	}
+
+	private static void scrolltoRow(int row)
+	{
+		mainTable.scrollRectToVisible(mainTable.getCellRect(row, 1, true));
 	}
 
 	public static void selectAll()
