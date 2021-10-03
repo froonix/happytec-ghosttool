@@ -37,8 +37,6 @@ import java.util.Base64;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.InputSource;
@@ -122,10 +120,7 @@ public class GhostElement
 	{
 		try
 		{
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-
-			Document doc = dBuilder.parse(new InputSource(new StringReader(xml)));
+			Document doc = FNX.getDOMDocument(xml);
 			NodeList gdp = doc.getElementsByTagName("GhostDataPair");
 
 			if(gdp.getLength() == 0)

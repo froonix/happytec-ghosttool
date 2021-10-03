@@ -87,6 +87,8 @@ public abstract class FNX
 	private static boolean                debugMode;
 	private static DateFormat             debugDate;
 
+	private static final Object lockParser = new Object();
+
 	public static String getDateString()
 	{
 		if(dateFormat == null)
@@ -174,16 +176,22 @@ public abstract class FNX
 
 	public static Document getDOMDocument(String xml) throws SAXException, ParserConfigurationException, IOException
 	{
-		setupDOMParser();
+		synchronized(lockParser)
+		{
+			setupDOMParser();
 
-		return dBuilder.parse(new InputSource(new StringReader(xml)));
+			return dBuilder.parse(new InputSource(new StringReader(xml)));
+		}
 	}
 
 	public static Document getDOMDocument(File file) throws SAXException, ParserConfigurationException, IOException
 	{
-		setupDOMParser();
+		synchronized(lockParser)
+		{
+			setupDOMParser();
 
-		return dBuilder.parse(file);
+			return dBuilder.parse(file);
+		}
 	}
 
 	public static String getStringFromDOM(Document input, boolean full) throws TransformerException
@@ -374,15 +382,18 @@ public abstract class FNX
 	{
 		try
 		{
-			setupDOMParser();
+			synchronized(lockParser)
+			{
+				setupDOMParser();
 
-			StreamResult output = new StreamResult(new StringWriter());
-			TransformerFactory tf = TransformerFactory.newInstance();
-			Transformer t = tf.newTransformer();
+				StreamResult output = new StreamResult(new StringWriter());
+				TransformerFactory tf = TransformerFactory.newInstance();
+				Transformer t = tf.newTransformer();
 
-			t.transform(new DOMSource(input), output);
+				t.transform(new DOMSource(input), output);
 
-			return getCleanXML(dBuilder.parse(new InputSource(new StringReader(output.getWriter().toString()))), full);
+				return getCleanXML(dBuilder.parse(new InputSource(new StringReader(output.getWriter().toString()))), full);
+			}
 		}
 		catch(SAXException|TransformerException|ParserConfigurationException|IOException e)
 		{

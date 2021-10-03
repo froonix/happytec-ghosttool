@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
@@ -96,10 +94,7 @@ public class Profiles
 
 		try
 		{
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-
-			Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
+			Document profileDoc = FNX.getDOMDocument(xml);
 			NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
 
 			if(profileNodes.getLength() != 1)

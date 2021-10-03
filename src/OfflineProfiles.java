@@ -413,10 +413,7 @@ public class OfflineProfiles
 
 		try
 		{
-			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-
-			Document profileDoc = dBuilder.parse(new InputSource(new StringReader(xml)));
+			Document profileDoc = FNX.getDOMDocument(xml);
 			NodeList profileNodes = profileDoc.getElementsByTagName(XML_TAG_PROFILE);
 
 			if(profileNodes.getLength() != 1)
