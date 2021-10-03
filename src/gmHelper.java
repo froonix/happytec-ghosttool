@@ -292,12 +292,7 @@ public abstract class gmHelper
 	{
 		if(ResultFormat == null)
 		{
-			// Das HAPPYTEC-Format nutzt einen Beistrich.
-			// Andere Implementierungen nutzen einen Punkt.
-			ResultFormat = new SimpleDateFormat("mm:ss,SSS");
-
-			// TODO: Anpassen an Locale?
-			// ...
+			ResultFormat = new SimpleDateFormat("mm:ss.SSS");
 		}
 
 		return ResultFormat.format(new Date(ms));
