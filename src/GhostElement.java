@@ -54,6 +54,7 @@ public class GhostElement
 
 	private Element XML;
 	private String  Hash;
+	private String  SimpleHash;
 	private boolean Ticket;
 	private int     GameMode;
 	private String  Track;
@@ -330,22 +331,27 @@ public class GhostElement
 
 	public String getHash()
 	{
-		return this.getHash("SHA-512");
+		if(this.Hash == null)
+		{
+			this.Hash = this.getHash("SHA-512");
+		}
+
+		return this.Hash;
 	}
 
 	public String getSimpleHash()
 	{
-		return this.getHash("MD5");
+		if(this.SimpleHash == null)
+		{
+			this.SimpleHash = this.getHash("MD5");
+		}
+
+		return this.SimpleHash;
 	}
 
 	public String getHash(String algorithm)
 	{
-		if(this.Hash == null)
-		{
-			this.Hash = String.format("%08x%s", this.DataBinary.length, FNX.getMessageDigest(algorithm, this.DataBinary));
-		}
-
-		return this.Hash;
+		return String.format("%08x%s", this.DataBinary.length, FNX.getMessageDigest(algorithm, this.DataBinary));
 	}
 
 	public void printDetails()
