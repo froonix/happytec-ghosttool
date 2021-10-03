@@ -1123,7 +1123,8 @@ public class HTGT
 	{
 		FNX.dbg("ghosts.length: " + ghosts.length);
 		ArrayList<Integer> selection = new ArrayList<>();
-		boolean deleteDuplicates = isSpecialProfile() ? false : true;
+		String[] importedGhosts = new String[ghosts.length];
+		boolean deleteDuplicates = !isSpecialProfile();
 		boolean delete = false;
 
 		if(ghosts.length > 0)
@@ -1147,10 +1148,26 @@ public class HTGT
 				}
 			}
 
+			ghostloop:
 			for(int i = 0; i < ghosts.length; i++)
 			{
-				addGhost(ghosts[i], true);
 				ghosts[i].printDetails();
+				String ghostHash = ghosts[i].getSimpleHash();
+				importedGhosts[i] = ghostHash;
+
+				if(!deleteDuplicates)
+				{
+					for(int h = 0; h < OfflineProfiles.getGhostCount(); h++)
+					{
+						if(OfflineProfiles.getGhost(h).getSimpleHash().equals(ghostHash))
+						{
+							FNX.dbgf("Not importing ghost #%d, because it already exists at destination as item #%d. Skipping!", i, h);
+							continue ghostloop;
+						}
+					}
+				}
+
+				addGhost(ghosts[i], true);
 
 				if(deleteDuplicates)
 				{
@@ -1162,23 +1179,24 @@ public class HTGT
 				}
 			}
 
-			if(!deleteDuplicates)
+			for(int i = 0; i < importedGhosts.length; i++)
 			{
-				highlightLastRows(ghosts.length);
-			}
-			else
-			{
-				for(int i = 0; i < ghosts.length; i++)
+				if(importedGhosts[i] == null)
 				{
-					for(int h = 0; h < OfflineProfiles.getGhostCount(); h++)
-					{
-						if(OfflineProfiles.getGhost(h).getConditions().equals(ghosts[i].getConditions()))
-						{
-							selection.add(h);
-						}
-					}
+					continue;
 				}
 
+				for(int h = 0; h < OfflineProfiles.getGhostCount(); h++)
+				{
+					if(OfflineProfiles.getGhost(h).getSimpleHash().equals(importedGhosts[i]))
+					{
+						selection.add(h);
+					}
+				}
+			}
+
+			if(selection.size() > 0)
+			{
 				highlightRows(selection.stream().mapToInt(i -> i).toArray());
 			}
 		}
@@ -5748,6 +5766,7 @@ public class HTGT
 
 			boolean warnSRC = false;
 			boolean warnDST = false;
+			String ghostHash = null;
 
 			try
 			{
@@ -5919,17 +5938,34 @@ public class HTGT
 					}
 				}
 
+				ghostloop:
 				for(int i = 0; i < ghosts.length; i++)
 				{
-					if(warnDST)
+					if(warnDST || isSpecialProfile(selected))
 					{
+						if(!warnDST)
+						{
+							ghostHash = ghosts[i].getSimpleHash();
+						}
+
 						for(int h = (OfflineProfiles.getGhostCount() - 1); h > -1; h--)
 						{
 							GhostElement ghost = OfflineProfiles.getGhost(h);
 
-							if(ghost.getGameMode() == ghosts[i].getGameMode() && ghost.getTrack().equals(ghosts[i].getTrack()) && ghost.getWeather() == ghosts[i].getWeather())
+							if(warnDST)
 							{
-								OfflineProfiles.deleteGhost(h);
+								if(ghost.getGameMode() == ghosts[i].getGameMode() && ghost.getTrack().equals(ghosts[i].getTrack()) && ghost.getWeather() == ghosts[i].getWeather())
+								{
+									OfflineProfiles.deleteGhost(h);
+								}
+							}
+							else
+							{
+								if(ghost.getSimpleHash().equals(ghostHash))
+								{
+									FNX.dbgf("Selected ghost #%d already exists at destination as item #%d. Skipping!", i, h);
+									continue ghostloop;
+								}
 							}
 						}
 					}
