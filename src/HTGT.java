@@ -5231,6 +5231,7 @@ public class HTGT
 					else
 					{
 						FNX.dbg("Overwriting disk on file...");
+						break;
 					}
 				}
 			}
