@@ -5215,7 +5215,7 @@ public class HTGT
 
 				while(true)
 				{
-					int result = JOptionPane.showOptionDialog(mainWindow, FNX.formatLangString(lang, "fileChangedConfirmation"), null, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, buttons, defaultButton);
+					int result = JOptionPane.showOptionDialog(mainWindow, FNX.formatLangString(lang, "fileChangedConfirmation"), null, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, buttons, defaultButton);
 
 					if(result == JOptionPane.CLOSED_OPTION)
 					{
