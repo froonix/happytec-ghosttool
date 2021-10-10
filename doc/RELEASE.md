@@ -1,17 +1,17 @@
 Schritte für eine neue Veröffentlichung:
 
-* Neuen Branch erstellen und zu diesem wechseln. (z.B. `v0.1.10`)
+* Neuen Branch erstellen und zu diesem wechseln. (z.B. `v0.1.11`)
 * `APPLICATION_VERSION` in HTGT.java aktualisieren.
 * Änderung mit `git` `commit`'en und `push`'en.
 * `make clean && make && make sig` (GPG-Sig!)
-* Neuen Tag anlegen. (z.B. `release-0.1.10`)
+* Neuen Tag anlegen. (z.B. `release-0.1.11`)
 * Neues Release auf GitHub eintragen.
 * Zurück zum `legacy-0.1` Branch wechseln.
 
 ----
 
 ```bash
-RELEASE="0.1.10"
+RELEASE="0.1.11"
 git checkout legacy-0.1 -b "v${RELEASE}"
 sed -i -r "s/(APPLICATION_VERSION) = \"git-master\";\$/\1 = \"${RELEASE}\";/" src/HTGT.java
 
