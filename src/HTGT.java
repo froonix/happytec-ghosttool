@@ -5184,7 +5184,7 @@ public class HTGT
 		{
 			FNX.dbg("Something to save...");
 
-			if(!saveFile(OfflineProfiles.toString()))
+			if(!saveFile(OfflineProfiles.toString(), force))
 			{
 				return false;
 			}
@@ -5201,11 +5201,11 @@ public class HTGT
 		return true;
 	}
 
-	private static boolean saveFile(String xml)
+	private static boolean saveFile(String xml, boolean force)
 	{
 		try
 		{
-			if(!compareFileHash())
+			if(!force && !compareFileHash())
 			{
 				FNX.dbg("Disk on file has changed. Asking the user for confirmation...");
 
@@ -5541,7 +5541,7 @@ public class HTGT
 
 			try
 			{
-				if(!saveFile(history[newIndex]))
+				if(!saveFile(history[newIndex], false))
 				{
 					return false;
 				}
