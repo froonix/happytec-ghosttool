@@ -4314,8 +4314,8 @@ public class HTGT
 
 			if(input >= 0)
 			{
-				lastMode = cfg(CFG_MODE, input.toString());
-				result = ghostSelect(input.intValue());
+				lastMode = cfg(CFG_MODE, String.valueOf(modes[input.intValue()]));
+				result = ghostSelect(modes[input.intValue()]);
 
 				if(result != null && !result)
 				{
