@@ -1145,11 +1145,11 @@ public class eSportsAPI
 
 			if(code < 400)
 			{
-				rx = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+				rx = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
 			}
 			else
 			{
-				rx = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+				rx = new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
 			}
 
 			response = new StringBuffer();
