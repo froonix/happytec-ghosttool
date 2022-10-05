@@ -1142,15 +1142,18 @@ public class eSportsAPI
 
 			int code = connection.getResponseCode();
 			String msg = connection.getResponseMessage();
+			InputStream inputStream;
 
 			if(code < 400)
 			{
-				rx = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+				inputStream = connection.getInputStream();
 			}
 			else
 			{
-				rx = new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
+				inputStream = connection.getErrorStream();
 			}
+
+			rx = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
 
 			response = new StringBuffer();
 			while((line = rx.readLine()) != null)
