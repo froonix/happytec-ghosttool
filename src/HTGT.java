@@ -194,6 +194,7 @@ public class HTGT
 	final public static String CFG_RACE        = "race.%s.%s";
 	final public static String CFG_SMSG        = "server-message";
 	final public static String CFG_IPV4        = "ipv4";
+	final public static String CFG_UC_CONSENT  = "auto-update-check";
 
 	// ALWAYS THE INDEX NUMBER! WITHOUT THE EXTRA COUNT.
 	final public static int OFFSET_RACE   =  0;
@@ -311,6 +312,11 @@ public class HTGT
 		// ...
 
 		JOptionPane.showOptionDialog(mainWindow, FNX.getHTMLPane(String.format(content, APPLICATION_NAME, APPLICATION_API, getVersion(true), licence, URL_WWW, URL_API, getRedirectURL("support"))), FNX.getLangString(lang, "aboutTitle"), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{}, null);
+	}
+
+	public static void privacy()
+	{
+		openURL("privacy");
 	}
 
 	public static void faq()
@@ -463,6 +469,10 @@ public class HTGT
 			selectLanguage(true, (cfg(CFG_TRANSLATION) != null ? true : false));
 			cfg(CFG_TRANSLATION, Integer.toString(TRANSLATION_VERSION));
 		}
+
+		// Zustimmung für automatische Updateprüfung einholen.
+		// Wird nur einmalig gemacht, danach im Menü änderbar.
+		requestUpdateCheckConsent();
 
 		String apiproto = cfg(CFG_API_PROTO);
 		if(apiproto != null && apiproto.length() > 0)
@@ -761,9 +771,11 @@ public class HTGT
 
 			case "help":
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".about",                     "about"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".privacy",                   "privacy"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".manual",                    "faq",                    KeyStroke.getKeyStroke(KeyEvent.VK_F1,     NONE)));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".support",                   "support",                KeyStroke.getKeyStroke(KeyEvent.VK_F1,     SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".updateCheck",               "setupUpdateCheck"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".updateCheckApp",            "updateCheck",            KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL)));
 				menu.add(registerDynMenuItem(MENU_DEFAULT,  langKey + ".updateCheckDLL",            "updateCheckDLL",         KeyStroke.getKeyStroke(KeyEvent.VK_U,      CTRL | SHIFT)));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2898,7 +2910,13 @@ public class HTGT
 		long lastDLLCheck;
 		int newDLLAvailable;
 
-		if(dll == null || !dll.exists() || !dll.isFile())
+		if(auto && !updateCheckConsent())
+		{
+			FNX.dbg("No consent for auto update check.");
+
+			return;
+		}
+		else if(dll == null || !dll.exists() || !dll.isFile())
 		{
 			FNX.dbg("DLL not initialized or not found.");
 
@@ -3640,6 +3658,38 @@ public class HTGT
 		}
 	}
 
+	// Zustimmung für automatische Updateprüfung erteilt?
+	public static boolean updateCheckConsent()
+	{
+		return (cfg.getInt(CFG_UC_CONSENT, 0) > 0);
+	}
+
+	// Zustimmung für automatische Updateprüfung einholen.
+	protected static void requestUpdateCheckConsent()
+	{
+		if(cfg.getInt(CFG_UC_CONSENT, 0) == 0)
+		{
+			setupUpdateCheck();
+		}
+	}
+
+	// Zustimmung für automatische Updateprüfung ändern.
+	protected static void setupUpdateCheck()
+	{
+		int value = 0;
+
+		if(confirmDialog(null, FNX.formatLangString(lang, "consentUpdateCheck", UPDATE_INTERVAL / 3600000L)))
+		{
+			value = 1;
+		}
+		else
+		{
+			value = -1;
+		}
+
+		cfg.putInt(CFG_UC_CONSENT, value);
+	}
+
 	// Erzwungene Updateprüfung.
 	public static void updateCheck()
 	{
@@ -3652,7 +3702,13 @@ public class HTGT
 		long lastUpdateCheck;
 		int updatesAvailable;
 
-		if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
+		if(auto && !updateCheckConsent())
+		{
+			FNX.dbg("No consent for auto update check.");
+
+			return;
+		}
+		else if(APPLICATION_VERSION.toUpperCase().startsWith("GIT-"))
 		{
 			FNX.dbgf("Update check disabled: %s", APPLICATION_VERSION);
 
