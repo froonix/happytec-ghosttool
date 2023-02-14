@@ -1,6 +1,6 @@
 /**
  * FNX_HyperlinkListener: Open HTML hyperlinks in browser
- * Copyright (C) 2016-2022 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2016-2023 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
