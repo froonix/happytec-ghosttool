@@ -1,6 +1,6 @@
 /**
  * HTGT.java: Main class (GUI) for Happytec-Ghosttool
- * Copyright (C) 2016-2022 Christian Schrötter <cs@fnx.li>
+ * Copyright (C) 2016-2023 Christian Schrötter <cs@fnx.li>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -277,7 +277,7 @@ public class HTGT
 	public static void about()
 	{
 		String licence = String.format(
-			  "Copyright (C) 2016-2022 Christian Schr&ouml;tter &lt;cs@fnx.li&gt;<br /><br />"
+			  "Copyright (C) 2016-2023 Christian Schr&ouml;tter &lt;cs@fnx.li&gt;<br /><br />"
 			+ "This program is free software; you can redistribute it and/or modify<br />"
 			+ "it under the terms of the GNU General Public License as published by<br />"
 			+ "the Free Software Foundation; either version 3 of the License, or<br />"
