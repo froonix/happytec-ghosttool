@@ -338,7 +338,7 @@ public abstract class gmHelper
 	{
 		String[] values;
 
-		if(mode == GAMEMODE_MM_TIMEATTACK || mode == GAMEMODE_MM_ARCADE)
+		if(mode == GAMEMODE_MM_ARCADE)
 		{
 			values = new String[]{
 				"Bcr", "Gro", "Bor", "Wen", "Kiz", "Gar", /*"Mor",*/
