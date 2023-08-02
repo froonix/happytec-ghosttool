@@ -46,6 +46,7 @@ import java.time.Instant;
 
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -1122,6 +1123,7 @@ public class eSportsAPI
 				this.osdata = String.format("%s; %s; %s; %s; %s; %s", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"), System.getProperty("java.runtime.name"), System.getProperty("java.version"), Locale.getDefault());
 			}
 			connection.setRequestProperty("X-OS-Data", this.osdata);
+			connection.setRequestProperty("X-Request-Time", String.valueOf((new Date()).getTime() / 1000));
 
 			connection.setRequestMethod("POST"); connection.setDoOutput(true);
 			tx = new DataOutputStream(connection.getOutputStream());
