@@ -34,7 +34,7 @@ i18n: $(rbundles)
 
 RealLangBundle_%.properties: LangBundle_%.properties
 	native2ascii -encoding UTF-8 $< $@
-	sed -i 's/(UTF-8!)/(ISO-8859-1!)/' $@
+	sed -i -r 's/^#.*$$//g;/^$$/d' $@
 
 compile: $(classes) i18n
 	echo Original version: $(version)
