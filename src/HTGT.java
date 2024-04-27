@@ -450,14 +450,8 @@ public class HTGT
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
 
-		if(cfg(CFG_IPV4) == null)
-		{
-			// Bevorzuge IPv6-Verbindungen, wenn diese verfügbar sind.
-			System.setProperty("java.net.preferIPv6Addresses", "true");
-			FNX.dbg("java.net.preferIPv6Addresses enabled");
-		}
-
 		// ...
+		setupIP();
 		setupLocale();
 
 		// Wenn neue Sprachen verfügbar sind, darf der User erneut auswählen.
@@ -4880,16 +4874,31 @@ public class HTGT
 		displayTextArea(t.toString().trim(), FNX.getLangString(lang, "menu.debug.dumpLastVars"));
 	}
 
+	// Bevorzuge IPv6-Verbindungen, wenn diese verfügbar sind.
+	private static void setupIP()
+	{
+		if(cfg(CFG_IPV4) == null)
+		{
+			System.setProperty("java.net.preferIPv6Addresses", "true");
+			FNX.dbg("java.net.preferIPv6Addresses enabled");
+		}
+		else
+		{
+			System.setProperty("java.net.preferIPv6Addresses", "false");
+			FNX.dbg("java.net.preferIPv6Addresses disabled");
+		}
+	}
+
 	public static void enableIPv6()
 	{
 		removeConfig(CFG_IPV4);
-		infoDialog(FNX.formatLangString(lang, "debugRestart"));
+		setupIP();
 	}
 
 	public static void disableIPv6()
 	{
 		cfg(CFG_IPV4, "true");
-		infoDialog(FNX.formatLangString(lang, "debugRestart"));
+		setupIP();
 	}
 
 	public static void enableVerification()
