@@ -1077,11 +1077,6 @@ public class eSportsAPI
 
 	private String request(String module, String method, Map<?,?> data) throws eSportsAPIException
 	{
-		return this.request(module, method, data, true);
-	}
-
-	private String request(String module, String method, Map<?,?> data, boolean firstTry) throws eSportsAPIException
-	{
 		lastCertificateChain = null;
 		HttpURLConnection connection = null;
 		StringBuffer response;
