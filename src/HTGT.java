@@ -451,7 +451,7 @@ public class HTGT
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
 
 		// ...
-		setupIP();
+		setupIPVersion();
 		setupLocale();
 
 		// Wenn neue Sprachen verfügbar sind, darf der User erneut auswählen.
@@ -4878,7 +4878,7 @@ public class HTGT
 	// Bevorzuge IPv6-Verbindungen, wenn solche Adressen verfügbar sind.
 	// Standardmäßig wird die erste Adresse der Schnittstelle ausgewertet.
 	// Mittels Debugmodus kann aber auch IPv4 oder IPv6 erzwungen werden.
-	private static void setupIP()
+	private static void setupIPVersion()
 	{
 		String preferIPv4 = cfg(CFG_IPV4);
 		String preferIPv6Addresses = "system";
