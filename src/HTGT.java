@@ -450,14 +450,8 @@ public class HTGT
 		// OfflineProfiles nicht möglich sind. Siehe GitHub Issue #7.
 		cfg = Preferences.userRoot().node(APPLICATION_NAME);
 
-		if(cfg(CFG_IPV4) == null)
-		{
-			// Bevorzuge IPv6-Verbindungen, wenn diese verfügbar sind.
-			System.setProperty("java.net.preferIPv6Addresses", "true");
-			FNX.dbg("java.net.preferIPv6Addresses enabled");
-		}
-
 		// ...
+		setupIPVersion();
 		setupLocale();
 
 		// Wenn neue Sprachen verfügbar sind, darf der User erneut auswählen.
@@ -798,8 +792,9 @@ public class HTGT
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableVerification",       "disableVerification"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".getCertChain",              "displayCertificateChain"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".enableIPv6",                "enableIPv6"));
-				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".disableIPv6",               "disableIPv6"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetIPVersion",            "resetIPVersion"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".preferIPv4",                "preferIPv4"));
+				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".preferIPv6",                "preferIPv6"));
 				menu.addSeparator(); // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".resetTranslation",          "resetTranslationVersion"));
 				menu.add(registerDynMenuItem(MENU_STATIC,   langKey + ".decrementTranslation",      "decrementTranslationVersion"));
@@ -4880,13 +4875,43 @@ public class HTGT
 		displayTextArea(t.toString().trim(), FNX.getLangString(lang, "menu.debug.dumpLastVars"));
 	}
 
-	public static void enableIPv6()
+	// Bevorzuge IPv6-Verbindungen, wenn solche Adressen verfügbar sind.
+	// Standardmäßig wird die erste Adresse der Schnittstelle ausgewertet.
+	// Mittels Debugmodus kann aber auch IPv4 oder IPv6 erzwungen werden.
+	private static void setupIPVersion()
+	{
+		String preferIPv4 = cfg(CFG_IPV4);
+		String preferIPv6Addresses = "system";
+
+		if(preferIPv4 != null)
+		{
+			if(preferIPv4.equalsIgnoreCase("true"))
+			{
+				preferIPv6Addresses = "false";
+			}
+			else if(preferIPv4.equalsIgnoreCase("false"))
+			{
+				preferIPv6Addresses = "true";
+			}
+		}
+
+		FNX.dbgf("setProperty: java.net.preferIPv6Addresses=%s", preferIPv6Addresses);
+		System.setProperty("java.net.preferIPv6Addresses", preferIPv6Addresses);
+	}
+
+	public static void resetIPVersion()
 	{
 		removeConfig(CFG_IPV4);
 		infoDialog(FNX.formatLangString(lang, "debugRestart"));
 	}
 
-	public static void disableIPv6()
+	public static void preferIPv6()
+	{
+		cfg(CFG_IPV4, "false");
+		infoDialog(FNX.formatLangString(lang, "debugRestart"));
+	}
+
+	public static void preferIPv4()
 	{
 		cfg(CFG_IPV4, "true");
 		infoDialog(FNX.formatLangString(lang, "debugRestart"));
