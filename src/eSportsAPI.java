@@ -30,7 +30,6 @@ import java.lang.RuntimeException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.net.URL;
@@ -1189,32 +1188,6 @@ public class eSportsAPI
 			{
 				return content;
 			}
-		}
-		// Poor Man's Happy Eyeballs Implementation ;-)
-		catch(SocketException e)
-		{
-			if(firstTry)
-			{
-				Boolean originalPreferIPv6Addresses = "true".equalsIgnoreCase(System.getProperty("java.net.preferIPv6Addresses"));
-				Boolean temporaryPreferIPv6Addresses = !originalPreferIPv6Addresses;
-
-				try
-				{
-					e.printStackTrace();
-
-					FNX.dbgf("Caught SocketException! Retrying with preferIPv6Addresses=%s...", temporaryPreferIPv6Addresses.toString());
-					System.setProperty("java.net.preferIPv6Addresses", temporaryPreferIPv6Addresses.toString());
-
-					return this.request(module, method, data, false);
-				}
-				finally
-				{
-					FNX.dbgf("Resetting preferIPv6Addresses=%s", originalPreferIPv6Addresses.toString());
-					System.setProperty("java.net.preferIPv6Addresses", originalPreferIPv6Addresses.toString());
-				}
-			}
-
-			throw new eSportsAPIException(e);
 		}
 		catch(UnknownHostException|SocketTimeoutException e)
 		{
