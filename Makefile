@@ -13,7 +13,7 @@ JARFILE     = build/HTGT_$(version).jar
 ZIPFILE     = build/HTGT_$(version).zip
 VFILE       = htgt-version.txt
 
-TARGET   = 8
+TARGET   = 9
 XLINT    = -Xlint:all -Xlint:-options
 JFLAGS   = -source $(TARGET) -target $(TARGET) -g -sourcepath ./src -classpath ./classes -d ./classes $(XLINT)
 VMFLAGS  = -classpath ./classes
@@ -33,7 +33,7 @@ all: clean compile jar zip simpleclean
 i18n: $(rbundles)
 
 RealLangBundle_%.properties: LangBundle_%.properties
-	native2ascii -encoding UTF-8 $< $@
+	cp -af $< $@
 	sed -i -r 's/^#.*$$//g;/^$$/d' $@
 
 compile: $(classes) i18n
