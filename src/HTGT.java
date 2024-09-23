@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import java.util.regex.Matcher;
@@ -2931,8 +2932,9 @@ public class HTGT
 
 		if(lastDLLCheck <= 0L || date.getTime() > (lastDLLCheck + UPDATE_INTERVAL))
 		{
-			cfg.putLong(CFG_DC, date.getTime());
 			force = true;
+			cfg.putLong(CFG_DC, date.getTime());
+			saveConfig();
 		}
 
 		if(force)
@@ -3683,6 +3685,7 @@ public class HTGT
 		}
 
 		cfg.putInt(CFG_UC_CONSENT, value);
+		saveConfig();
 	}
 
 	// Erzwungene Updateprüfung.
@@ -3723,8 +3726,9 @@ public class HTGT
 
 		if(lastUpdateCheck <= 0L || date.getTime() > (lastUpdateCheck + UPDATE_INTERVAL))
 		{
-			cfg.putLong(CFG_UC, date.getTime());
 			force = true;
+			cfg.putLong(CFG_UC, date.getTime());
+			saveConfig();
 		}
 
 		if(force)
@@ -4726,14 +4730,16 @@ public class HTGT
 
 								FNX.dbgf("Race weather: %s @ %s (%d) = %d", gmHelper.getGameModeName(modes[m]), gmHelper.getTrack(tracks[t]), i, test[i][m][t]);
 								cfg.putInt(String.format(CFG_RACE, gmHelper.getGameMode(modes[m], true), tracks[t].toUpperCase() + s), test[i][m][t]);
+								saveConfig();
 							}
 						}
 					}
 
 					// Streckenreihenfolge für später abspeichern...
 					cfg(CFG_TRACKS, String.join(",", api.getServerTracks()));
-
 					cfg.putLong(CFG_WC, date.getTime());
+					saveConfig();
+
 					return true;
 				}
 				catch(eSportsAPIException e)
@@ -5734,6 +5740,7 @@ public class HTGT
 			FNX.dbgf("New config for key \"%s\": %s", key, newValue);
 
 			cfg.put(key, value);
+			saveConfig();
 		}
 	}
 
@@ -5754,6 +5761,7 @@ public class HTGT
 		FNX.dbgf("Removing config for key \"%s\", old value: %s", key, oldValue);
 
 		cfg.remove(key);
+		saveConfig();
 	}
 
 	// Liefert die Konfiguration $key.
@@ -5780,6 +5788,23 @@ public class HTGT
 		return cfg(key);
 	}
 
+	// Konfiguration sofort speichern.
+	private static boolean saveConfig()
+	{
+		try
+		{
+			cfg.flush();
+
+			return true;
+		}
+		catch(Throwable e)
+		{
+			exceptionHandler(e);
+		}
+
+		return false;
+	}
+
 	// Alle Konfigurationswerte löschen.
 	// Gibt den Status der Aktion zurück.
 	private static boolean clearConfig()
@@ -5787,7 +5812,11 @@ public class HTGT
 		try
 		{
 			FNX.dbg("Clearing config!");
-			cfg.clear(); return true;
+
+			cfg.clear();
+			saveConfig();
+
+			return true;
 		}
 		catch(Throwable e)
 		{
