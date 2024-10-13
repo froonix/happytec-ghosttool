@@ -119,7 +119,7 @@ import javax.swing.table.DefaultTableModel;
 public class HTGT
 {
 	// Diverse fixe Konstanten für die Anwendung
-	final public static String    APPLICATION_VERSION = "git-master";
+	final public static String    APPLICATION_VERSION = "0.1.16";
 	final public static String    APPLICATION_NAME    = "HTGT"; // cfg, updates, …
 	final public static String    APPLICATION_TITLE   = "HTGT.app";
 	final public static String    APPLICATION_API     = "HAPPYTEC-eSports-API";
