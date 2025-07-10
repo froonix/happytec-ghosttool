@@ -56,6 +56,7 @@ public abstract class gmHelper
 	public final static int GAMEMODE_MM_EXTREMEICE    = 5; // ACHTUNG: Nur bei Eis verfügbar!
 	public final static int GAMEMODE_MM_LASTDOWNSWING = 6; // [RESERVIERT]
 	public final static int GAMEMODE_MM_TARGETJUMP    = 7; // [RESERVIERT]
+	public final static int GAMEMODE_MM_SPEEDRUN      = 8;
 
 	// ----------------------------------- //
 	// GentleMagic Spielmodus IDs:         //
@@ -119,6 +120,10 @@ public abstract class gmHelper
 				gameModeString = "minimode_lastdownswing";
 				break;
 
+			case GAMEMODE_MM_SPEEDRUN:
+				gameModeString = "minimode_speedrun";
+				break;
+
 			default:
 				throw new gmException(String.format("Invalid game mode type: %d", gameModeType));
 		}
@@ -170,6 +175,10 @@ public abstract class gmHelper
 
 			case "minimode_lastdownswing":
 				gameModeType = GAMEMODE_MM_LASTDOWNSWING;
+				break;
+
+			case "minimode_speedrun":
+				gameModeType = GAMEMODE_MM_SPEEDRUN;
 				break;
 
 			default:
@@ -460,7 +469,7 @@ public abstract class gmHelper
 
 	public static int[] getGameModeIDs()
 	{
-		int[] values = {GAMEMODE_DEFAULT, GAMEMODE_MM_ROWDY, GAMEMODE_MM_EXTREME, GAMEMODE_MM_TIMEATTACK, GAMEMODE_MM_ARCADE, GAMEMODE_MM_EXTREMEICE, GAMEMODE_MM_LASTDOWNSWING};
+		int[] values = {GAMEMODE_DEFAULT, GAMEMODE_MM_ROWDY, GAMEMODE_MM_EXTREME, GAMEMODE_MM_TIMEATTACK, GAMEMODE_MM_SPEEDRUN, GAMEMODE_MM_ARCADE, GAMEMODE_MM_EXTREMEICE, GAMEMODE_MM_LASTDOWNSWING};
 
 		return values;
 	}
