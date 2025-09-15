@@ -3589,6 +3589,7 @@ public class HTGT
 		{
 			Clipboard systemClipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 			Transferable transferData = systemClipboard.getContents(null);
+			List<String> clipboardElements = new ArrayList<String>();
 
 			for(DataFlavor dataFlavor : transferData.getTransferDataFlavors())
 			{
@@ -3596,10 +3597,20 @@ public class HTGT
 
 				if(content instanceof String)
 				{
-					ghostImport(content.toString());
-					// messageDialog(null, "");
-					break;
+					String contentAsString = content.toString();
+
+					if(!clipboardElements.contains(contentAsString))
+					{
+						clipboardElements.add(contentAsString);
+					}
 				}
+			}
+
+			if(clipboardElements.size() > 0)
+			{
+				FNX.dbgf("Found %d unique element(s) with string flavor.", clipboardElements.size());
+				ghostImport(String.join("\n\n", clipboardElements));
+				// messageDialog(null, "");
 			}
 		}
 		catch(Throwable e)
