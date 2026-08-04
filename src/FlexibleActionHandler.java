@@ -19,10 +19,10 @@
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JMenuItem;
+import javax.swing.AbstractButton;
 
 @SuppressWarnings("serial")
-public class FlexibleActionHandler extends JMenuItem implements ActionListener
+public class FlexibleActionHandler extends AbstractButton implements ActionListener
 {
 	String className;
 	String methodName;
@@ -43,8 +43,3 @@ public class FlexibleActionHandler extends JMenuItem implements ActionListener
 		FNX.actionCallback(this.className, this.methodName);
 	}
 }
-
-// TODO: Diese Klasse sollte nicht JMenuItem erweitern.
-//       Ich bin jetzt aber zu faul die passende zu suchen,
-//       bei der addActionListener() implementiert ist.
-// ...
