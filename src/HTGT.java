@@ -4484,6 +4484,13 @@ public class HTGT
 								continue;
 							}
 						}
+						else if(mode == gmHelper.GAMEMODE_MM_LASTDOWNSWING)
+						{
+							if(weathers[h] == gmHelper.WEATHER_SUN || weathers[h] == gmHelper.WEATHER_ICE)
+							{
+								continue;
+							}
+						}
 
 						if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] < -1)
 						{
@@ -4521,7 +4528,7 @@ public class HTGT
 									values[key] = String.format("%s (%s)", gmHelper.getTrack(tracks[i]), gmHelper.getWeatherName(weathers[h]));
 								}
 							}
-							else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE)
+							else if(mode == gmHelper.GAMEMODE_MM_EXTREMEICE || mode == gmHelper.GAMEMODE_MM_LASTDOWNSWING)
 							{
 								if(weathers[h] == gmHelper.WEATHER_RACE || weathers[h] < -1)
 								{
