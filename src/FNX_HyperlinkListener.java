@@ -29,18 +29,15 @@ public class FNX_HyperlinkListener implements HyperlinkListener
 	@Override
 	public void hyperlinkUpdate(HyperlinkEvent e)
 	{
-		if(e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED))
+		if(e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED) && Desktop.isDesktopSupported())
 		{
-			if(Desktop.isDesktopSupported())
+			try
 			{
-				try
-				{
-					Desktop.getDesktop().browse(new URI(e.getURL().toString()));
-				}
-				catch(Exception err)
-				{
-					err.printStackTrace();
-				}
+				Desktop.getDesktop().browse(new URI(e.getURL().toString()));
+			}
+			catch(Exception err)
+			{
+				err.printStackTrace();
 			}
 		}
 	}
