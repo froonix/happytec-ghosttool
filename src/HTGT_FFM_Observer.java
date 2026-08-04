@@ -100,95 +100,104 @@ class HTGT_FFM_Observer extends SwingWorker<Integer,Integer>
 			publish((int) (oldTime.toMillis() / 1000));
 		}
 
-		int m;
 		while(true)
 		{
 			if(HTGT.ENABLE_WATCHSERVICE)
 			{
-				FNX.dbg("Preparing watchservice...");
-
-				WatchService watchService = FileSystems.getDefault().newWatchService();
-
-				File file = HTGT.getFile();
-				String basename = file.getName();
-
-				Path path = Paths.get(file.getParent().toString());
-				path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
-
-				FNX.dbg("Waiting for first event...");
-
-				WatchKey key;
-				Long last = 0L;
-				while((key = watchService.take()) != null)
-				{
-					for(WatchEvent<?> event : key.pollEvents())
-					{
-						if(basename.equals(event.context().toString()))
-						{
-							newTime = Files.getLastModifiedTime(fileHandle.toPath());
-
-							if(newTime.toMillis() > last)
-							{
-								last = newTime.toMillis();
-
-								if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
-								{
-									// publish((int) (newTime.toMillis() / 1000));
-									Thread.sleep(HTGT.FF_OBSERVER_DELAY);
-
-									newTime = Files.getLastModifiedTime(fileHandle.toPath());
-
-									if(newTime.toMillis() > last)
-									{
-										FNX.dbgf("Watchservice event delayed: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
-
-										continue;
-									}
-								}
-
-								FNX.dbgf("Watchservice event received: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
-								publish((int) (newTime.toMillis() / 1000) * -1);
-								oldTime = newTime;
-							}
-							else
-							{
-								FNX.dbgf("Watchservice event ignored: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
-							}
-						}
-					}
-					key.reset();
-				}
+				doModernBackground();
 				break;
 			}
 			else
 			{
-				newTime = Files.getLastModifiedTime(fileHandle.toPath());
-				m = 1;
-
-				if(newTime.compareTo(oldTime) > 0)
-				{
-					// Durch diesen Teil sparen wir uns die Wartezeit vor dem Laden der XML-Datei.
-					// Dadurch soll sichergestell werden, dass das Spiel mit dem Speichern fertig ist.
-					// Klar, das ist auch kein 100% Schutz und es gibt zig andere problematische Stellen.
-					// Aber es ist ein grundlegender Schutz, dass wir keine halbfertigen Dateien einlesen.
-					if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
-					{
-						FNX.dbgf("File modification time changed, but it's too early: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
-					}
-					else
-					{
-						FNX.dbgf("File modification time changed: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
-						oldTime = newTime;
-						m = -1;
-					}
-				}
-
-				publish((int) (newTime.toMillis() / 1000) * m);
-				Thread.sleep(HTGT.FF_CHECK_INTERVAL);
+				doLegacyBackground();
 			}
 		}
 
 		return 0;
+	}
+
+	private void doModernBackground() throws IOException, InterruptedException
+	{
+		FNX.dbg("Preparing watchservice...");
+
+		WatchService watchService = FileSystems.getDefault().newWatchService();
+
+		File file = HTGT.getFile();
+		String basename = file.getName();
+
+		Path path = Paths.get(file.getParent().toString());
+		path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+
+		FNX.dbg("Waiting for first event...");
+
+		WatchKey key;
+		Long last = 0L;
+		while((key = watchService.take()) != null)
+		{
+			for(WatchEvent<?> event : key.pollEvents())
+			{
+				if(!basename.equals(event.context().toString()))
+				{
+					continue;
+				}
+
+				newTime = Files.getLastModifiedTime(fileHandle.toPath());
+
+				if(newTime.toMillis() <= last)
+				{
+					FNX.dbgf("Watchservice event ignored: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
+					continue;
+				}
+
+				last = newTime.toMillis();
+
+				if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
+				{
+					// publish((int) (newTime.toMillis() / 1000));
+					Thread.sleep(HTGT.FF_OBSERVER_DELAY);
+
+					newTime = Files.getLastModifiedTime(fileHandle.toPath());
+
+					if(newTime.toMillis() > last)
+					{
+						FNX.dbgf("Watchservice event delayed: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
+						continue;
+					}
+				}
+
+				FNX.dbgf("Watchservice event received: %s (o=%d n=%d)", event.kind(), oldTime.toMillis(), newTime.toMillis());
+				publish((int) (newTime.toMillis() / 1000) * -1);
+				oldTime = newTime;
+			}
+			key.reset();
+		}
+	}
+
+	private void doLegacyBackground() throws IOException, InterruptedException
+	{
+		newTime = Files.getLastModifiedTime(fileHandle.toPath());
+		int m = 1;
+
+		if(newTime.compareTo(oldTime) > 0)
+		{
+			// Durch diesen Teil sparen wir uns die Wartezeit vor dem Laden der XML-Datei.
+			// Dadurch soll sichergestellt werden, dass das Spiel mit dem Speichern fertig ist.
+			// Klar, das ist auch kein 100% Schutz und es gibt zig andere problematische Stellen.
+			// Aber es ist ein grundlegender Schutz, dass wir keine halbfertigen Dateien einlesen.
+			if(newTime.toInstant().isAfter(Instant.now().minusMillis(HTGT.FF_OBSERVER_DELAY)))
+			{
+				FNX.dbgf("File modification time changed, but it's too early: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
+			}
+			else
+			{
+				FNX.dbgf("File modification time changed: o=%d n=%d d=%d", oldTime.toMillis(), newTime.toMillis(), HTGT.FF_OBSERVER_DELAY);
+				oldTime = newTime;
+				m = -1;
+			}
+		}
+
+		publish((int) (newTime.toMillis() / 1000) * m);
+		Thread.sleep(HTGT.FF_CHECK_INTERVAL);
 	}
 
 	protected void process(List<Integer> chunks)
