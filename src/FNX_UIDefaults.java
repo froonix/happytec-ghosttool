@@ -30,13 +30,10 @@ class FNX_UIDefaults extends UIDefaults
 	@Override
 	public ComponentUI getUI(JComponent c)
 	{
-		if(c instanceof JTextComponent)
+		if((c instanceof JTextComponent) && c.getClientProperty(this) == null)
 		{
-			if(c.getClientProperty(this) == null)
-			{
-				c.setComponentPopupMenu(FNX_ContextMenu.INSTANCE);
-				c.putClientProperty(this, Boolean.TRUE);
-			}
+			c.setComponentPopupMenu(FNX_ContextMenu.INSTANCE);
+			c.putClientProperty(this, Boolean.TRUE);
 		}
 
 		return null;
